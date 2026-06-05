@@ -1,0 +1,52 @@
+---
+description: Lumotus frontend — React 18, TypeScript, Vite, API client
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# Lumotus — Frontend
+
+Stack: React 18, TypeScript, Vite, TailwindCSS v4, React Query v5, Zustand, Framer Motion, Axios.
+
+## Cấu trúc
+
+- `src/api/` — Axios client + hàm gọi API theo nhóm (`auth`, `decks`, `review`, ...)
+- `src/pages/` — route-level; `src/components/ui/` — shared UI
+- `src/types/` — interfaces khớp DTO backend
+- `src/store/` — Zustand (auth, UI state nhẹ)
+
+## API client
+
+- Base URL `/api/v1`; interceptor gắn `Authorization: Bearer`
+- Silent refresh: 401 → `POST /auth/refresh` (httpOnly cookie) → retry
+- React Query: `staleTime` hợp lý; invalidate sau mutation (rate card, CRUD deck)
+
+## Patterns
+
+```typescript
+// Poll async job (AI generate / import)
+const pollJob = (jobId: string) =>
+  queryClient.fetchQuery({
+    queryKey: ['job', jobId],
+    queryFn: () => api.jobs.get(jobId),
+    refetchInterval: (data) =>
+      data?.status === 'PENDING' || data?.status === 'PROCESSING' ? 2000 : false,
+  });
+```
+
+- Review UI: Again / Hard / Good / Easy → `POST /review/{cardId}/rate`
+- Card list: hỗ trợ pagination (`page`, `size`); loading skeleton
+- Explore: filter `topicId`, search `q` (FTS backend)
+
+## UI
+
+- Tailwind utility-first; responsive mobile-first
+- Framer Motion cho flip card review
+- Hiển thị `phonetic`, `image_url`, `audio_url` khi có
+- Error toast + form validation message từ API
+
+## Types
+
+- Rating: `'AGAIN' | 'HARD' | 'GOOD' | 'EASY'`
+- Role: `'USER' | 'ADMIN'`
+- Protected routes: check role cho `/admin/*`

@@ -1,0 +1,84 @@
+---
+description: Lumotus — format commit type(module):message bắt buộc
+alwaysApply: true
+---
+
+# Lumotus — Commit message
+
+Mọi commit **bắt buộc** theo format:
+
+```
+<type>(<module>): <message>
+```
+
+- **type**: loại thay đổi (feat, fix, style, …)
+- **module**: module nghiệp vụ của dự án (trong ngoặc)
+- **message**: ngắn gọn, imperative, đủ ý; lowercase; không chấm cuối dòng
+
+**Không** dùng `backend`, `frontend`, `BE`, `FE` làm module.
+
+## Type
+
+| Type | Khi dùng |
+|---|---|
+| `feat` | Tính năng mới |
+| `fix` | Sửa bug |
+| `style` | UI/CSS/layout, không đổi logic |
+| `refactor` | Tái cấu trúc, không đổi hành vi |
+| `docs` | Cập nhật tài liệu |
+| `test` | Unit/integration test |
+| `chore` | tooling, cấu trúc thư mục, deps |
+
+## Module (area)
+
+Theo domain / nhóm API trong `spec.md`:
+
+| Module | Phạm vi |
+|---|---|
+| `auth` | Đăng ký, đăng nhập, JWT, refresh token, RBAC |
+| `topic` | Chủ đề hệ thống (Admin) |
+| `deck` | Deck, card, copy, import, generate |
+| `tag` | Nhãn cá nhân `deck_tags` |
+| `review` | SRS, SM-2, starred card |
+| `quiz` | Quiz session, nộp bài, chấm điểm |
+| `progress` | Heatmap, streak, stats, leaderboard |
+| `media` | Upload ảnh Cloudinary |
+| `admin` | Quản lý user, thống kê hệ thống |
+| `async` | Job nền AI generate / file import |
+| `db` | Flyway migration, schema, index, trigger |
+| `core` | Config, security, exception, base entity — dùng khi không thuộc module trên |
+| `docs` | spec, plan, README, skill/rule |
+| `infra` | Docker, env, CI/CD, gitignore |
+
+Commit đụng nhiều module → chọn module **chịu tác động chính**.
+
+## Ví dụ
+
+```
+feat(auth): add jwt auth filter
+feat(deck): add copy deck endpoint
+feat(db): add V1 init schema migration
+fix(review): correct sm-2 interval on again rating
+style(review): align card flip animation
+feat(progress): add redis sorted set leaderboard
+feat(async): queue ai generate job with polling status
+docs(docs): sync spec indexes with project plan
+chore(infra): add docker compose for postgres and redis
+chore(core): add global exception handler
+```
+
+## ❌ Không chấp nhận
+
+```
+feat(BE): add jwt filter        # sai — dùng feat(auth):
+fix(FE): login redirect         # sai — dùng fix(auth):
+backend:add jwt filter          # sai format
+feat: add auth                  # thiếu (module)
+feat(auth): Add JWT Filter.     # message có chữ hoa đầu / chấm cuối
+```
+
+## Khi tạo commit (agent)
+
+1. Chọn **type** theo bản chất thay đổi
+2. Chọn **module** theo feature/API đang sửa — không theo thư mục `backend/` hay `frontend/`
+3. **message** một dòng, ≤ 72 ký tự; đủ chi tiết để hiểu thay đổi mà không dài dòng

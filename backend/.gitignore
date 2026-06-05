@@ -1,0 +1,50 @@
+# ── Build / Compiled output ────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# ── Maven wrapper jar (chỉ giữ .properties) ────────────────
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# ── Logs ───────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Environment / Secrets ──────────────────────────────────
+.env
+.env.local
+application-local.yml
+application-local.yaml
+application-dev.yml
+application-dev.yaml
+application-prod.yml
+application-prod.yaml
+
+# ── Media uploads (runtime) ────────────────────────────────
+uploads/
+
+# ── IntelliJ IDEA ──────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# ── VS Code ────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+
+# ── Eclipse / STS ──────────────────────────────────────────
+.classpath
+.project
+.settings/
+bin/
+
+# ── OS ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

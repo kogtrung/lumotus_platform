@@ -1,0 +1,35 @@
+---
+description: Lumotus — nguồn docs, quy ước chung, đồng bộ spec/plan
+alwaysApply: true
+---
+
+# Lumotus — Core
+
+## Nguồn sự thật
+
+- Schema, API, SM-2: `spec.md`
+- Roadmap, cấu trúc repo, Redis, perf: `flashcard-project-plan.md`
+- Quick start: `README.md`
+- Ngữ cảnh đầy đủ: skill `lumotus` (`.cursor/skills/lumotus/SKILL.md`)
+
+Đổi schema/index → cập nhật **cả** `spec.md` §2.2–2.3 **và** `flashcard-project-plan.md` §2.2–2.3 trước migration.
+
+## Flyway
+
+- Không sửa migration đã chạy; chỉ thêm `V{n}__*.sql`
+- Migration gồm tables + indexes + FTS `search_vector` + trigger `total_cards`
+
+## Quy ước chung
+
+- API: `/api/v1`, JSON, phân trang `page`/`size` cho list endpoints
+- UUID PK; composite PK cho bảng junction
+- Soft-delete: `deleted_at IS NULL` trong query và partial index
+- `user_card_review.deck_id`: gán khi tạo review; không JOIN `cards` chỉ để lọc SRS theo deck
+- Commit message: `<type>(<module>): <message>` — xem rule `lumotus-commits`
+- Branch: `feature/*` → `develop` → `main`
+- Không commit `.env`, secrets, API keys
+
+## Phạm vi thay đổi
+
+- Chỉ sửa code/docs liên quan task; không refactor ngoài scope
+- Không tạo file markdown mới trừ khi user yêu cầu

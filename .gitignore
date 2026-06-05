@@ -1,0 +1,15 @@
+# ── Environment / Secrets ──────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── OS ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ────────────────────────────────────────────────────
+.idea/
+.vscode/
+!.vscode/extensions.json
+*.iml

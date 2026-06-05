@@ -1,0 +1,59 @@
+---
+description: Lumotus backend — Spring Boot, JPA, Flyway, SRS, Redis
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Lumotus — Backend
+
+Package gốc: `com.backend.lumotus`. Layer: `controller` → `service` → `repository`.
+
+## Entity
+
+- Kế thừa `BaseEntity` hoặc `SoftDeleteEntity` (`entity/common/`)
+- Composite PK: `@IdClass` hoặc `@EmbeddedId` cho `UserCardReview`, `UserDeckProgress`, `DeckTopic`, `DeckTag`, `DailyActivity`
+- `UserCardReview`: bắt buộc field `deckId`; set từ `card.deckId` khi insert
+- `search_vector`: read-only ở JPA (`insertable = false, updatable = false`) hoặc bỏ qua
+- Enum DB: PostgreSQL ENUM trong migration; JPA `@Enumerated(STRING)` OK
+
+## Service patterns
+
+```java
+// SRS rate — một transaction
+@Transactional
+public RateResult rateCard(UUID userId, UUID cardId, Rating rating) {
+  // 1. user_card_review (SM-2)
+  // 2. daily_activity
+  // 3. users.xp
+  // 4. user_deck_progress
+}
+```
+
+- `GET /decks/{id}/cards`: `Pageable` default size 50; projection DTO (không load `generation_prompt`)
+- `GET /review/due`: filter `deck_id` trên `user_card_review`, không JOIN `cards`
+- FTS: native query `search_vector @@ plainto_tsquery('simple', ?)`
+- Leaderboard: Redis `ZADD leaderboard score member`; `ZREVRANGE` top 50
+- Streak scheduler: `findByLastStudyDateBeforeAndIsActiveTrue(...)`
+
+## Config
+
+```yaml
+spring.datasource.hikari.maximum-pool-size: 10
+spring.datasource.hikari.minimum-idle: 2
+```
+
+## Async
+
+- Dùng `TaskDispatcher` interface; implement `SpringAsyncDispatcher`
+- Job: insert `async_jobs` PENDING → `@Async` → DONE/FAILED + Redis `job:{jobId}`
+
+## Error & security
+
+- `@ControllerAdvice` + exception hierarchy
+- JWT filter; `@PreAuthorize` cho ADMIN endpoints
+- Validate input (`@Valid`); BCrypt password
+
+## Test
+
+- JUnit 5 + MockMvc; `@SpringBootTest` hoặc slice test cho service
+- Test SRS SM-2 edge cases (AGAIN reset, EF floor 1.3)
