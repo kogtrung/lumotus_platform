@@ -276,7 +276,7 @@ Push lên branch `main` → tự động:
 git checkout -b feature/your-feature-name
 
 # Commit theo convention
-git commit -m "feat: add SRS review endpoint"
+git commit -m "feat(review): add srs review endpoint"
 
 # Push và tạo Pull Request vào develop
 git push origin feature/your-feature-name
