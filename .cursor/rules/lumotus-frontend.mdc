@@ -8,6 +8,15 @@ alwaysApply: false
 
 Stack: React 18, TypeScript, Vite, TailwindCSS v4, React Query v5, Zustand, Framer Motion, Axios.
 
+## Design docs (nguồn sự thật UI)
+
+- [`ui-design-plan.md`](../../ui-design-plan.md) — design system, palette sáng, spec từng màn hình
+- [`figma-wireframe-spec.md`](../../figma-wireframe-spec.md) — wireframe spec cho Figma MCP (frame size, layers, màu hex)
+
+Khi implement UI: đọc `ui-design-plan.md` trước; theme **light-first** (thay dark tokens cũ trong `index.css`).
+
+**Font:** Plus Jakarta Sans (UI) · Literata (`.flashcard-front`) · Be Vietnam Pro (`.flashcard-back`). Desktop wireframe **16:9** = 1440×810.
+
 ## Cấu trúc
 
 - `src/api/` — Axios client + hàm gọi API theo nhóm (`auth`, `decks`, `review`, ...)
