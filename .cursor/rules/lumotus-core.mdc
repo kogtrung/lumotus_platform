@@ -7,12 +7,14 @@ alwaysApply: true
 
 ## Nguồn sự thật
 
-- Schema, API, SM-2: `spec.md`
-- Roadmap, cấu trúc repo, Redis, perf: `flashcard-project-plan.md`
-- Quick start: `README.md`
+- Schema, API, SM-2: `docs/spec.md`
+- Roadmap, cấu trúc repo, Redis, perf: `docs/flashcard-project-plan.md`
+- Tiến độ session: `docs/progress.md`
+- Kế hoạch sprint code: `docs/development-plan.md`
+- Quick start: `README.md` (root)
 - Ngữ cảnh đầy đủ: skill `lumotus` (`.cursor/skills/lumotus/SKILL.md`)
 
-Đổi schema/index → cập nhật **cả** `spec.md` §2.2–2.3 **và** `flashcard-project-plan.md` §2.2–2.3 trước migration.
+Đổi schema/index → cập nhật **cả** `docs/spec.md` §2.2–2.3 **và** `docs/flashcard-project-plan.md` §2.2–2.3 trước migration. Sau buổi làm việc → cập nhật `docs/progress.md`.
 
 ## Flyway
 

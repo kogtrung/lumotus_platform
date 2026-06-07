@@ -293,6 +293,21 @@ git push origin feature/your-feature-name
 
 ---
 
+## 📚 Documentation
+
+Tài liệu chi tiết trong thư mục [`docs/`](docs/README.md):
+
+| File | Nội dung |
+|---|---|
+| [`docs/progress.md`](docs/progress.md) | **Tiến độ session** — đã xong gì, làm tiếp gì |
+| [`docs/development-plan.md`](docs/development-plan.md) | Kế hoạch sprint code (Sprint 0–6) |
+| [`docs/spec.md`](docs/spec.md) | Đặc tả kỹ thuật: schema, API, SM-2 |
+| [`docs/flashcard-project-plan.md`](docs/flashcard-project-plan.md) | Roadmap tổng thể, Redis, deploy |
+| [`docs/ui-design-plan.md`](docs/ui-design-plan.md) | Design system & màn hình FE |
+| [`docs/figma-wireframe-spec.md`](docs/figma-wireframe-spec.md) | Wireframe Figma |
+
+---
+
 ## 📄 License
 
 MIT License — xem [LICENSE](LICENSE) để biết thêm.

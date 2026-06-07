@@ -10,10 +10,11 @@ Stack: React 18, TypeScript, Vite, TailwindCSS v4, React Query v5, Zustand, Fram
 
 ## Design docs (nguồn sự thật UI)
 
-- [`ui-design-plan.md`](../../ui-design-plan.md) — design system, palette sáng, spec từng màn hình
-- [`figma-wireframe-spec.md`](../../figma-wireframe-spec.md) — wireframe spec cho Figma MCP (frame size, layers, màu hex)
+- [`docs/ui-design-plan.md`](../../docs/ui-design-plan.md) — design system, palette sáng, spec từng màn hình
+- [`docs/figma-wireframe-spec.md`](../../docs/figma-wireframe-spec.md) — wireframe spec cho Figma MCP
+- [`docs/progress.md`](../../docs/progress.md) — tiến độ session
 
-Khi implement UI: đọc `ui-design-plan.md` trước; theme **light-first** (thay dark tokens cũ trong `index.css`).
+Khi implement UI: đọc `docs/ui-design-plan.md` trước; theme **light-first** (thay dark tokens cũ trong `index.css`).
 
 **Font:** Plus Jakarta Sans (UI) · Literata (`.flashcard-front`) · Be Vietnam Pro (`.flashcard-back`). Desktop wireframe **16:9** = 1440×810.
 

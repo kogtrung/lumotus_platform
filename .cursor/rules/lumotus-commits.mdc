@@ -31,7 +31,7 @@ Mọi commit **bắt buộc** theo format:
 
 ## Module (area)
 
-Theo domain / nhóm API trong `spec.md`:
+Theo domain / nhóm API trong `docs/spec.md`:
 
 | Module | Phạm vi |
 |---|---|

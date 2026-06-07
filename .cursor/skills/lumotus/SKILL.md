@@ -3,8 +3,8 @@ name: lumotus
 description: >-
   Lumotus — ứng dụng flashcard học tiếng Anh (SRS SM-2, quiz, XP, AI generate).
   Monorepo Spring Boot 4 + React 18. Dùng khi sửa bug, thêm API/UI, migration DB,
-  đồng bộ docs. Căn spec.md (đặc tả kỹ thuật) và flashcard-project-plan.md
-  (roadmap triển khai); README cho quick start.
+  đồng bộ docs. Căn docs/spec.md và docs/flashcard-project-plan.md;
+  docs/progress.md cho tiến độ session; README root cho quick start.
 ---
 
 # Lumotus — ngữ cảnh dự án
@@ -28,20 +28,27 @@ lumotus/
 ├── backend/src/main/java/com/backend/lumotus/   # controller, service, repository, entity, dto, mapper, security, async, scheduler
 ├── backend/src/main/resources/db/migration/       # Flyway V1__init.sql, ...
 ├── frontend/src/                                  # api, components, pages, hooks, store, types
-├── spec.md                                        # Đặc tả kỹ thuật (schema, API, SM-2, streak)
-├── flashcard-project-plan.md                      # Roadmap 6 giai đoạn, cấu trúc, Redis, perf
-└── README.md                                      # Quick start, env vars
+├── docs/
+│   ├── spec.md                                    # Đặc tả kỹ thuật (schema, API, SM-2)
+│   ├── flashcard-project-plan.md                  # Roadmap 6 giai đoạn
+│   ├── development-plan.md                        # Sprint code
+│   ├── progress.md                                # Tiến độ session
+│   ├── ui-design-plan.md
+│   └── figma-wireframe-spec.md
+└── README.md                                      # Quick start (root)
 ```
 
 ## Nguồn sự thật — đọc trước khi code
 
 | File | Dùng khi |
 |---|---|
-| `spec.md` | Schema §2, index/trigger §2.3, API §4, SM-2 §5, import §6 |
-| `flashcard-project-plan.md` | Cấu trúc thư mục §8, API inventory §4, Redis §6, roadmap §9, perf Giai đoạn 2 |
-| `README.md` | Chạy local, biến môi trường, branching |
+| `docs/spec.md` | Schema §2, index/trigger §2.3, API §4, SM-2 §5, import §6 |
+| `docs/flashcard-project-plan.md` | Cấu trúc §8, API §4, Redis §6, roadmap §9 |
+| `docs/development-plan.md` | Thứ tự sprint, branch |
+| `docs/progress.md` | Session log, checklist, việc tiếp theo |
+| `README.md` | Chạy local, env, branching |
 
-**Đồng bộ docs:** `spec.md` và `flashcard-project-plan.md` phải khớp §2.2–2.3 (schema, index, FTS, trigger). Sửa schema → cập nhật **cả hai** trước khi viết migration mới.
+**Đồng bộ docs:** `docs/spec.md` và `docs/flashcard-project-plan.md` phải khớp §2.2–2.3. Sửa schema → cập nhật **cả hai** trước migration. Cuối session → `docs/progress.md`.
 
 **Không sửa** file migration Flyway đã chạy — chỉ thêm `V{n}__*.sql`.
 
@@ -98,7 +105,7 @@ Khi task không rõ phạm vi → xác định giai đoạn hiện tại trong p
 
 ## Workflow khi nhận task
 
-1. Đọc `spec.md` + `flashcard-project-plan.md` liên quan
+1. Đọc `docs/progress.md` (Next) + `docs/spec.md` / `docs/development-plan.md` liên quan
 2. Nếu đụng DB → kiểm tra §2.3 index; không thêm query JOIN `cards` chỉ để lọc deck trên SRS
 3. Implement theo cấu trúc package hiện có (`controller` → `service` → `repository`)
 4. Cập nhật docs nếu đổi schema/API
