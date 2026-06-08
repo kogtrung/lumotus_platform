@@ -23,6 +23,10 @@ public class User extends BaseEntity {
         ADMIN
     }
 
+    public enum OauthProvider {
+        GOOGLE
+    }
+
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
@@ -50,4 +54,11 @@ public class User extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "oauth_provider", length = 20)
+    private OauthProvider oauthProvider;
+
+    @Column(name = "oauth_subject")
+    private String oauthSubject;
 }

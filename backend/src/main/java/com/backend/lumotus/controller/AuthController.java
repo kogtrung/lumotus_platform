@@ -1,5 +1,6 @@
 package com.backend.lumotus.controller;
 
+import com.backend.lumotus.dto.request.GoogleLoginRequest;
 import com.backend.lumotus.dto.request.LoginRequest;
 import com.backend.lumotus.dto.request.RegisterRequest;
 import com.backend.lumotus.dto.response.AuthResponse;
@@ -45,6 +46,14 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         var result = authService.login(request);
+        setRefreshCookie(response, result.refreshToken());
+        return ResponseEntity.ok(result.toResponse());
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request, HttpServletResponse response) {
+        var result = authService.googleLogin(request);
         setRefreshCookie(response, result.refreshToken());
         return ResponseEntity.ok(result.toResponse());
     }

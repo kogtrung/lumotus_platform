@@ -36,7 +36,11 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/google")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh")
                         .permitAll()

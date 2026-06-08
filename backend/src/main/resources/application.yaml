@@ -76,6 +76,8 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   base-url: ${APP_BASE_URL:http://localhost:8080}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
 
   # Cloudinary (Media Storage)
   cloudinary:
