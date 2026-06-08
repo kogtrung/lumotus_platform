@@ -94,6 +94,7 @@ Một bộ thẻ (Deck) chứa danh sách các thẻ từ vựng.
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY | |
+| `slug` | VARCHAR(120) | NOT NULL | URL-friendly; unique theo `(owner_id, slug)` khi chưa xóa mềm |
 | `title` | VARCHAR(200) | NOT NULL | Tiêu đề bộ thẻ |
 | `description` | TEXT | NULL | Mô tả nội dung bộ thẻ |
 | `cover_image_url`| TEXT | NULL | Ảnh bìa đại diện bộ thẻ |
@@ -275,6 +276,8 @@ Theo dõi trạng thái các tác vụ xử lý nền không đồng bộ (AI Ge
 ```sql
 -- Deck listing & library
 CREATE INDEX idx_decks_owner ON decks(owner_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_decks_owner_slug ON decks(owner_id, slug) WHERE deleted_at IS NULL;
+CREATE INDEX idx_decks_public_slug ON decks(slug) WHERE deleted_at IS NULL AND is_public = TRUE;
 CREATE INDEX idx_decks_public ON decks(is_public, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_deck_topics_topic ON deck_topics(topic_id, deck_id);
 CREATE INDEX idx_deck_tags_user ON deck_tags(user_id, deck_id);
@@ -422,20 +425,25 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 #### Nhóm 2: Chủ đề hệ thống (`/api/v1/topics`)
 - **`GET /`**: Danh sách tất cả topic để phân loại (public).
 - **`POST /`**: Tạo topic mới (ADMIN).
-- **`PUT /{id}`**: Cập nhật topic (ADMIN).
-- **`DELETE /{id}`**: Xóa topic (ADMIN).
+- **`GET /{slug}`**: Chi tiết topic theo slug.
+- **`PUT /{slug}`**: Cập nhật topic (ADMIN).
+- **`DELETE /{slug}`**: Xóa topic (ADMIN).
 
 #### Nhóm 3: Bộ thẻ & Thẻ từ vựng (`/api/v1/decks`)
-- **`GET /`**: Danh sách deck (hỗ trợ phân trang `page`, `size`, tìm kiếm `q`, lọc theo `topicId`).
-- **`POST /`**: Tạo deck trống.
-- **`GET /{id}`**: Chi tiết bộ thẻ và metadata đi kèm.
-- **`PUT /{id}`**: Cập nhật thông tin deck (title, description, cover image, status public).
-- **`DELETE /{id}`**: Xóa deck (xóa mềm).
-- **`POST /{id}/copy`**: Sao chép deck công khai về thư viện cá nhân.
-- **`GET /{id}/cards`**: Lấy danh sách thẻ trong deck.
-- **`POST /{id}/cards`**: Thêm một thẻ từ vựng vào deck.
-- **`PUT /{deckId}/cards/{cardId}`**: Sửa thẻ từ vựng.
-- **`DELETE /{deckId}/cards/{cardId}`**: Xóa thẻ từ vựng (xóa mềm).
+- **`GET /`**: Danh sách deck (`page`, `size`, `q`, `topicId` hoặc `topicSlug`, `mine`).
+- **`POST /`**: Tạo deck trống (tự sinh `slug` từ `title` nếu không gửi).
+- **`GET /{deckRef}`**: Chi tiết deck — `deckRef` = UUID hoặc `slug` (trong phạm vi deck user được xem).
+- **`PUT /{deckRef}`**: Cập nhật deck (owner).
+- **`DELETE /{deckRef}`**: Xóa mềm deck.
+- **`POST /{deckRef}/copy`**: Copy deck công khai.
+- **`GET /{deckRef}/cards`**: Danh sách thẻ (phân trang, default 50).
+- **`POST /{deckRef}/cards`**: Thêm thẻ.
+- **`PUT /{deckRef}/cards/{cardId}`**: Sửa thẻ (`cardId` vẫn UUID).
+- **`DELETE /{deckRef}/cards/{cardId}`**: Xóa mềm thẻ.
+
+> **Quy ước slug:** `deckRef` nhận UUID hoặc slug. Slug unique theo `owner_id`. Response luôn trả cả `id` và `slug`.
+
+> **Quiz (Sprint 4):** `quiz_attempts` sẽ thêm `slug` unique theo `(user_id, slug)` — path `/quiz/{attemptRef}`; chưa migration ở Sprint 2b.
 - **`POST /import`**: Nhập thẻ hàng loạt từ tệp (Multipart file: CSV). Trả về mã job bất đồng bộ.
 - **`POST /generate`**: Yêu cầu AI sinh bộ thẻ tự động. Trả về mã `jobId`.
 

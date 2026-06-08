@@ -33,10 +33,10 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 1 — Auth (implementation xong, chờ merge PR) |
-| **Branch** | `feature/auth-login` |
-| **Sprint đang focus** | Sprint 2 — Deck & Card |
-| **Việc tiếp theo** | Topic / Deck / Card CRUD + Explore FE |
+| **Giai đoạn** | Sprint 2b — Slug URLs (backend xong) |
+| **Branch** | `feature/deck-card-crud` |
+| **Sprint đang focus** | Sprint 2 — FE Explore (chưa làm) |
+| **Việc tiếp theo** | FE Explore/Dashboard/DeckDetail; quiz slug khi Sprint 4 |
 | **Cập nhật lần cuối** | 2026-06-08 |
 
 ### Tóm tắt nhanh
@@ -81,8 +81,21 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 ### Sprint 2 — Deck & Card
 
-- [ ] Deck / Card / Topic CRUD + copy deck
+- [x] BE: entities Topic / Deck / Card / DeckTopic + repositories
+- [x] BE: Topic CRUD (ADMIN), Deck & Card CRUD + copy deck
+- [x] Fix update deck `topicIds` + `deleteAllByDeckId` query
+- [x] `ADMIN_BOOTSTRAP_EMAIL` — promote user thành ADMIN (dev)
+- [ ] FTS search (`q`) nâng cao qua `search_vector`
 - [ ] Explore, Dashboard, DeckDetail FE
+
+### Sprint 2b — Slug URLs
+
+- [x] Docs: `spec.md` + plan — `decks.slug`; quiz slug ghi chú Sprint 4
+- [x] Migration `V3__decks_slug.sql` + index `idx_decks_owner_slug`
+- [x] `SlugUtils`, deck path `{deckRef}` hybrid UUID/slug
+- [x] Topic `GET/PUT/DELETE /topics/{slug}`; filter `?topicSlug=`
+- [ ] Quiz `attemptRef` slug — Sprint 4
+- [ ] FE routes dùng slug
 
 ### Sprint 3 — SRS Review
 
@@ -105,6 +118,95 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-06-08 — Sprint 2b Slug URLs (backend only)
+
+**Đã làm**
+
+- `V3__decks_slug.sql`: cột `slug`, backfill, unique `(owner_id, slug)`
+- `SlugUtils` — slugify title, nhận diện UUID
+- Deck API: path `{deckRef}` (UUID hoặc slug); response có `slug`
+- Topic API: `GET/PUT/DELETE /topics/{slug}`; list decks `?topicSlug=`
+- Cập nhật `spec.md`, `flashcard-project-plan.md`, Postman (`deckSlug`, `topicSlug`)
+
+**Chưa xong / blocker**
+
+- Quiz slug — chờ Sprint 4 (đã ghi trong spec)
+- FE Explore / DeckDetail chưa làm (cố ý bỏ qua session này)
+
+**Next**
+
+- FE: `ExplorePage`, `DashboardPage`, `DeckDetailPage` dùng slug trong URL
+- FTS `search_vector` cho `q` (Sprint 2 còn lại)
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp tiếp Sprint 2 | `feature/deck-card-crud` |
+| Chỉ FE | `style/deck-explore-pages` |
+
+---
+
+### Session 2026-06-08 — Fix deck update + ADMIN bootstrap + kế hoạch slug
+
+**Đã làm**
+
+- Fix `topicIds` null (Postman `{{topicId}}` rỗng) — normalize, bỏ null thay vì 400
+- Fix `deleteAllByDeckId` @Query (tránh 500 update deck)
+- `AdminBootstrapRunner` + `ADMIN_BOOTSTRAP_EMAIL` trong `.env`
+- `AccessDeniedException` → 403 message rõ (cần ADMIN)
+- Cập nhật `development-plan.md` Sprint 2b — slug cho deck, quiz, entity sau
+- Postman collection: hướng dẫn ADMIN + bỏ topicIds mặc định khi update
+
+**Chưa xong / blocker**
+
+- User phải **Login lại** sau khi được promote ADMIN (role nằm trong JWT)
+- Chưa migration `decks.slug`
+
+**Next (session tiếp)**
+
+- Sprint 2b: slug deck + quiz (docs → migration → API hybrid)
+- Topic path `/topics/{slug}`; filter `?topicSlug=`
+- FE Explore / DeckDetail
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Slug deck + quiz | `feature/deck-quiz-slug` |
+| Chỉ deck slug | `feature/deck-slug-api` |
+
+---
+
+### Session 2026-06-08 — JWT script + Sprint 2 Deck API (backend)
+
+**Đã làm**
+
+- `scripts/ensure-jwt-secret.mjs` — tự sinh `JWT_SECRET` nếu `.env` còn placeholder; hook Maven `initialize` trước `spring-boot:run`
+- `frontend/vite.config.ts`: `envDir` → đọc `.env` monorepo (Google OAuth FE)
+- BE Sprint 2: `Topic`, `Deck`, `Card`, `DeckTopic` entities + repos
+- BE: `TopicController` (GET public, ADMIN CRUD), `DeckController` (list/create/detail/update/delete/copy/cards)
+- `ForbiddenException`, `@SQLRestriction` soft-delete trên `SoftDeleteEntity`
+
+**Chưa xong / blocker**
+
+- Chưa có FE Explore / DeckDetail
+- Chưa seed topics mẫu (migration hoặc admin tạo tay)
+
+**Next**
+
+- FE: `ExplorePage`, `DashboardPage`, `DeckDetailPage` + API client
+- FTS `q` qua `search_vector` (native query) nếu cần
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp (đang dùng) | `feature/deck-card-crud` |
+| Chỉ frontend | `style/deck-explore-pages` |
 
 ---
 
