@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/topics", "/api/v1/topics/**")
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

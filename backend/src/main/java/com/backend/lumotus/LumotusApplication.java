@@ -1,5 +1,6 @@
 package com.backend.lumotus;
 
+import com.backend.lumotus.config.AdminProperties;
 import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.config.GoogleProperties;
 import com.backend.lumotus.config.JwtProperties;
@@ -12,6 +13,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties({
     JwtProperties.class,
     AppProperties.class,
+    AdminProperties.class,
     RedisProperties.class,
     GoogleProperties.class
 })

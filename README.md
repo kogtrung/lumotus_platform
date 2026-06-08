@@ -89,7 +89,7 @@ CLOUDINARY_API_SECRET=<your-api-secret>
 OPENAI_API_KEY=<sk-...>          # nếu dùng AI Generate
 ```
 
-> 💡 Tạo JWT secret: `openssl rand -base64 64`
+> 💡 JWT secret tự sinh khi chạy backend (`./mvnw spring-boot:run`). Thủ công: `node scripts/ensure-jwt-secret.mjs`
 
 ### 2. Khởi động Infrastructure (DB + Redis)
 

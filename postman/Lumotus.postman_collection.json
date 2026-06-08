@@ -1,0 +1,422 @@
+{
+  "info": {
+    "_postman_id": "lumotus-api-v1",
+    "name": "Lumotus API",
+    "description": "Collection test API Lumotus (`/api/v1`).\n\n**Setup:**\n1. Import kèm environment `Lumotus.local.postman_environment.json`\n2. Chọn environment **Lumotus — Local**\n3. Bật **Settings → Cookies** (cần cho refresh token)\n4. Chạy **Auth → Register** rồi **Login** — `accessToken` tự lưu\n5. **ADMIN:** đặt `ADMIN_BOOTSTRAP_EMAIL` trong `.env` = email vừa đăng ký → restart backend → **Login lại** (JWT cần role mới)\n6. **Topics → Create Topic (ADMIN)** trước khi gắn `topicIds` vào deck public\n\n**Thứ tự gợi ý:** Register → Login → Create Deck → Update Deck (không cần topicIds) → Add Card",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "deckId",
+      "value": ""
+    },
+    {
+      "key": "cardId",
+      "value": ""
+    },
+    {
+      "key": "topicId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Đăng ký, đăng nhập, refresh (cookie), logout, profile.",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "    if (body.user) pm.environment.set('userId', body.user.id);",
+                  "    pm.test('Saved accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_user\",\n  \"email\": \"test@lumotus.dev\",\n  \"password\": \"SecretPass123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "    if (body.user) pm.environment.set('userId', body.user.id);",
+                  "    pm.test('Saved accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@lumotus.dev\",\n  \"password\": \"SecretPass123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Google Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "    if (body.user) pm.environment.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{googleIdToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/google",
+            "description": "Dán Google ID token vào biến `googleIdToken` trong environment."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/auth/refresh",
+            "description": "Gửi refresh token qua cookie `refresh_token` (Postman tự gửi sau Login)."
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Topics",
+      "description": "GET public; POST/PUT/DELETE cần role ADMIN.",
+      "item": [
+        {
+          "name": "List Topics",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/topics"
+          }
+        },
+        {
+          "name": "Get Topic by Slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/topics/{{topicSlug}}"
+          }
+        },
+        {
+          "name": "Create Topic (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('topicId', pm.response.json().id);",
+                  "    pm.environment.set('topicSlug', pm.response.json().slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Travel\",\n  \"slug\": \"travel\",\n  \"description\": \"Từ vựng du lịch\",\n  \"icon\": \"plane\",\n  \"colorHex\": \"#4F46E5\",\n  \"sortOrder\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/topics"
+          }
+        },
+        {
+          "name": "Update Topic (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Travel & Tourism\",\n  \"description\": \"Cập nhật mô tả\",\n  \"sortOrder\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/topics/{{topicSlug}}"
+          }
+        },
+        {
+          "name": "Delete Topic (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/topics/{{topicSlug}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Decks",
+      "item": [
+        {
+          "name": "List Decks (explore)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "topicSlug", "value": "{{topicSlug}}", "disabled": true },
+                { "key": "mine", "value": "false", "disabled": true }
+              ]
+            },
+            "description": "Deck công khai + của user hiện tại. Bật `mine=true` để chỉ deck của mình."
+          }
+        },
+        {
+          "name": "List My Decks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks?mine=true&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks"],
+              "query": [
+                { "key": "mine", "value": "true" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Deck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('deckId', pm.response.json().id);",
+                  "    pm.environment.set('deckSlug', pm.response.json().slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Basic English Words\",\n  \"description\": \"100 từ cơ bản\",\n  \"isPublic\": false,\n  \"isCopyable\": true,\n  \"languageFront\": \"en\",\n  \"languageBack\": \"vi\",\n  \"topicIds\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/decks"
+          }
+        },
+        {
+          "name": "Get Deck Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}"
+          }
+        },
+        {
+          "name": "Update Deck",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Basic English Words (updated)\",\n  \"description\": \"Mô tả mới\",\n  \"isPublic\": true,\n  \"topicIds\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}",
+            "description": "Path dùng slug (hoặc UUID). Bỏ `topicIds` nếu chưa tạo topic."
+          }
+        },
+        {
+          "name": "Copy Deck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('deckId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}/copy",
+            "description": "Copy deck công khai về thư viện cá nhân. `deckId` phải là deck public của người khác."
+          }
+        },
+        {
+          "name": "Delete Deck",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cards",
+      "item": [
+        {
+          "name": "List Cards in Deck",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks/{{deckSlug}}/cards?page=0&size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks", "{{deckSlug}}", "cards"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('cardId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"front\": \"hello\",\n  \"back\": \"xin chào\",\n  \"phonetic\": \"/həˈloʊ/\",\n  \"partOfSpeech\": \"interjection\",\n  \"example\": \"Hello, how are you?\",\n  \"difficulty\": \"easy\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}/cards"
+          }
+        },
+        {
+          "name": "Update Card",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"front\": \"hello\",\n  \"back\": \"xin chào (cập nhật)\",\n  \"hint\": \"Chào hỏi thân mật\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}/cards/{{cardId}}"
+          }
+        },
+        {
+          "name": "Delete Card",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/decks/{{deckSlug}}/cards/{{cardId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

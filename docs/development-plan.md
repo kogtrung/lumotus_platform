@@ -53,6 +53,24 @@ Thứ tự sprint ngắn gọn. **Tiến độ thực tế:** cập nhật tại
 
 - BE: Topic, Deck, Card, copy deck, FTS, pagination cards (default 50)
 - FE: `ExplorePage`, `DashboardPage`, `DeckDetailPage`
+- Dev: `ADMIN_BOOTSTRAP_EMAIL` — tự gán ADMIN khi startup (đăng nhập lại sau promote)
+
+---
+
+## Sprint 2b — Slug URLs (2–3 ngày, sau Sprint 2 ổn định)
+
+**Branch:** `feature/deck-quiz-slug`
+
+| Entity | Hiện tại | Mục tiêu |
+|---|---|---|
+| Topic | đã có `slug` | Path/filter: `/topics/{slug}`, `?topicSlug=` |
+| Deck | chỉ UUID | Migration `slug`, unique `(owner_id, slug)`; path `/decks/{slug}` |
+| Quiz | chỉ UUID | `quiz_attempts` hoặc session slug khi triển khai Sprint 4 |
+| Card | giữ UUID | Path nested: `/decks/{deckSlug}/cards/{cardId}` |
+
+- Cập nhật `spec.md` + `flashcard-project-plan.md` §2.2 trước migration
+- API hybrid: nhận slug hoặc UUID; response luôn trả `id` + `slug`
+- FE routing dùng slug; logic nội bộ vẫn có UUID
 
 ---
 

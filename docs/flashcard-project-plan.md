@@ -170,6 +170,7 @@ async_jobs >── users
 | Cột | Kiểu | Ràng buộc | Ghi chú |
 |---|---|---|---|
 | *(id, created_at, updated_at, deleted_at)* | — | *kế thừa SoftDeleteEntity* | |
+| `slug` | VARCHAR(120) | NOT NULL | Unique `(owner_id, slug)` khi `deleted_at IS NULL` |
 | `title` | VARCHAR(200) | NOT NULL | |
 | `description` | TEXT | NULL | |
 | `cover_image_url` | TEXT | NULL | Ảnh bìa deck |
@@ -339,6 +340,8 @@ async_jobs >── users
 ```sql
 -- Deck listing & library
 CREATE INDEX idx_decks_owner ON decks(owner_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_decks_owner_slug ON decks(owner_id, slug) WHERE deleted_at IS NULL;
+CREATE INDEX idx_decks_public_slug ON decks(slug) WHERE deleted_at IS NULL AND is_public = TRUE;
 CREATE INDEX idx_decks_public ON decks(is_public, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_deck_topics_topic ON deck_topics(topic_id, deck_id);
 CREATE INDEX idx_deck_tags_user ON deck_tags(user_id, deck_id);
@@ -482,14 +485,14 @@ CREATE TRIGGER trg_cards_sync_total
 |---|---|---|
 | GET | `/api/v1/decks` | Danh sách deck (phân trang, lọc theo topic/keyword) |
 | POST | `/api/v1/decks` | Tạo deck mới (thủ công) |
-| GET | `/api/v1/decks/{id}` | Chi tiết deck + metadata |
-| PUT | `/api/v1/decks/{id}` | Cập nhật deck |
-| DELETE | `/api/v1/decks/{id}` | Xóa deck (soft delete) |
-| POST | `/api/v1/decks/{id}/copy` | Copy deck về thư viện cá nhân |
-| GET | `/api/v1/decks/{id}/cards` | Danh sách card trong deck |
-| POST | `/api/v1/decks/{id}/cards` | Thêm card thủ công |
-| PUT | `/api/v1/decks/{deckId}/cards/{cardId}` | Sửa card |
-| DELETE | `/api/v1/decks/{deckId}/cards/{cardId}` | Xóa card (soft delete) |
+| GET | `/api/v1/decks/{deckRef}` | Chi tiết deck — UUID hoặc slug |
+| PUT | `/api/v1/decks/{deckRef}` | Cập nhật deck |
+| DELETE | `/api/v1/decks/{deckRef}` | Xóa deck (soft delete) |
+| POST | `/api/v1/decks/{deckRef}/copy` | Copy deck về thư viện cá nhân |
+| GET | `/api/v1/decks/{deckRef}/cards` | Danh sách card trong deck |
+| POST | `/api/v1/decks/{deckRef}/cards` | Thêm card thủ công |
+| PUT | `/api/v1/decks/{deckRef}/cards/{cardId}` | Sửa card |
+| DELETE | `/api/v1/decks/{deckRef}/cards/{cardId}` | Xóa card (soft delete) |
 | POST | `/api/v1/decks/import` | Import deck từ file CSV/Excel/DOCX |
 | POST | `/api/v1/decks/generate` | Generate deck bằng AI (trả jobId) |
 | GET | `/api/v1/jobs/{jobId}` | Poll trạng thái tác vụ nền |

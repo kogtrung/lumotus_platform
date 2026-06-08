@@ -171,6 +171,28 @@
 				</configuration>
 			</plugin>
 
+			<!-- Sinh JWT_SECRET vào .env nếu còn placeholder (trước spring-boot:run) -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>ensure-jwt-secret</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<executable>node</executable>
+							<arguments>
+								<argument>${project.basedir}/../scripts/ensure-jwt-secret.mjs</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<!-- Maven Compiler: Lombok + MapStruct annotation processing -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
