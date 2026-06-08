@@ -76,6 +76,9 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   base-url: ${APP_BASE_URL:http://localhost:8080}
+  # Dev: email user đã đăng ký → tự gán role ADMIN khi startup (để trống trên prod)
+  admin:
+    bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
 
