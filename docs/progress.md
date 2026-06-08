@@ -75,7 +75,9 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 ### Sprint 1b — Google OAuth
 
-- [ ] Google OAuth login (xem `development-plan.md` Sprint 1b)
+- [x] Migration `V2__users_oauth.sql`
+- [x] `POST /api/v1/auth/google` + verify Google ID token
+- [x] FE: nút Google trên Login/Register (`@react-oauth/google`)
 
 ### Sprint 2 — Deck & Card
 
@@ -106,23 +108,25 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 ---
 
-### Session 2026-06-08 — Sprint 1 Auth
+### Session 2026-06-08 — Sprint 1 Auth + Google OAuth
 
 **Đã làm**
 
 - BE: `JwtService`, `RefreshTokenService` (Redis), `AuthService`, `AuthController`
+- BE: Google OAuth — `V2__users_oauth`, `GoogleTokenVerifier`, `POST /auth/google`
 - BE: `JwtAuthenticationFilter`, `SecurityConfig` RBAC, CORS, BCrypt
 - FE: `LoginPage`, `RegisterPage`, `AuthLayout`, `authStore`, axios interceptor
-- FE: `PrivateRoute`, bootstrap silent refresh, logout trong `MainLayout`
+- FE: `PrivateRoute`, bootstrap silent refresh, `UserMenu`, sidebar collapse
+- FE: `GoogleLoginButton` trên Login/Register; fix refresh cookie
 
 **Chưa xong / blocker**
 
-- Chưa có MockMvc test auth; Sprint 1b Google OAuth chưa làm
-- Redis phải chạy (`docker compose up -d`) — refresh token lưu trên Redis
+- Cần `GOOGLE_CLIENT_ID` + `VITE_GOOGLE_CLIENT_ID` trong `.env` (Google Cloud Console)
+- Chưa có MockMvc test auth
 
 **Next**
 
-- Sprint 1b: Google OAuth (`feature/auth-google-oauth`)
+- Merge `feature/auth-login` (gồm Google OAuth)
 - Sprint 2: Deck & Card CRUD
 
 **Nhánh gợi ý**

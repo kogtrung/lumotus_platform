@@ -66,6 +66,8 @@ Lưu trữ thông tin người dùng và số liệu thống kê gamification.
 | `streak` | INT | NOT NULL, DEFAULT 0 | Chuỗi ngày học liên tiếp |
 | `last_study_date` | DATE | NULL | Ngày gần nhất học thẻ để tính streak |
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Trạng thái kích hoạt tài khoản |
+| `oauth_provider` | VARCHAR(20) | NULL | `GOOGLE` khi đăng nhập OAuth |
+| `oauth_subject` | VARCHAR(255) | NULL | Subject ID từ Google (`sub`) |
 | `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Thời gian tạo tài khoản |
 | `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Thời gian cập nhật gần nhất |
 
@@ -412,6 +414,7 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 #### Nhóm 1: Xác thực (`/api/v1/auth`)
 - **`POST /register`**: Đăng ký tài khoản mới.
 - **`POST /login`**: Đăng nhập, nhận token.
+- **`POST /google`**: Đăng nhập bằng Google ID token (body: `{ "idToken": "..." }`); tạo/link user → JWT + refresh cookie.
 - **`POST /refresh`**: Đổi refresh token lấy access token mới.
 - **`POST /logout`**: Vô hiệu hóa refresh token.
 - **`GET /me`**: Lấy thông tin user hiện tại qua access token.
