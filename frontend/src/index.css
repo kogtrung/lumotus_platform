@@ -5,13 +5,18 @@
     --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
     --font-card-front: 'Literata', Georgia, serif;
     --font-card-back: 'Be Vietnam Pro', system-ui, sans-serif;
-    --color-primary: #6366f1;
-    --color-primary-dark: #4f46e5;
-    --color-surface: #1e1e2e;
-    --color-surface-2: #2a2a3e;
-    --color-border: #3b3b52;
-    --color-text: #e2e8f0;
-    --color-text-muted: #94a3b8;
+
+    /* Daylight Study — light-first tokens */
+    --color-bg: #F6F8FB;
+    --color-surface: #FFFFFF;
+    --color-border: #E8EDF4;
+    --color-border-strong: #D1DAE6;
+    --color-primary: #5B8DEF;
+    --color-primary-hover: #4A7FE0;
+    --color-primary-subtle: #EBF3FE;
+    --color-text: #1A2332;
+    --color-text-secondary: #5A6B82;
+    --color-text-muted: #8B9BB4;
   }
 
   * {
@@ -20,7 +25,7 @@
 
   html {
     font-family: var(--font-sans);
-    background-color: #13131f;
+    background-color: var(--color-bg);
     color: var(--color-text);
     scroll-behavior: smooth;
   }
