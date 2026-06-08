@@ -4,7 +4,10 @@ import { Outlet } from 'react-router-dom'
 export default function AuthLayout() {
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-1/2 flex-col justify-between bg-gradient-to-br from-[#EBF3FE] via-[#F0EDFE] to-[#FEF3D6] p-12 lg:flex">
+      <aside
+        className="hidden w-1/2 flex-col justify-between p-12 lg:flex"
+        style={{ background: 'var(--gradient-hero)' }}
+      >
         <div className="flex items-center gap-3">
           <BookOpen className="h-8 w-8 text-[var(--color-primary)]" strokeWidth={2.25} />
           <span className="text-2xl font-bold text-[var(--color-text)]">Lumotus</span>
@@ -25,7 +28,7 @@ export default function AuthLayout() {
           <BookOpen className="h-7 w-7 text-[var(--color-primary)]" />
           <span className="text-xl font-bold text-[var(--color-text)]">Lumotus</span>
         </div>
-        <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
           <Outlet />
         </div>
       </main>
