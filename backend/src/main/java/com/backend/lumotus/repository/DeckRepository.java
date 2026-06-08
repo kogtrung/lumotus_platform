@@ -15,7 +15,7 @@ public interface DeckRepository extends JpaRepository<Deck, UUID> {
     @Query(
             """
             SELECT d FROM Deck d
-            WHERE (d.isPublic = true OR d.ownerId = :userId)
+            WHERE d.isPublic = true
             AND (:topicId IS NULL OR EXISTS (
                 SELECT 1 FROM DeckTopic dt
                 WHERE dt.id.deckId = d.id AND dt.id.topicId = :topicId
@@ -25,10 +25,9 @@ public interface DeckRepository extends JpaRepository<Deck, UUID> {
                 OR LOWER(d.title) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(COALESCE(d.description, '')) LIKE LOWER(CONCAT('%', :q, '%'))
             )
-            ORDER BY d.createdAt DESC
+            ORDER BY d.viewCount DESC, d.createdAt DESC
             """)
-    Page<Deck> findVisible(
-            @Param("userId") UUID userId,
+    Page<Deck> findPublicDecks(
             @Param("topicId") UUID topicId,
             @Param("q") String q,
             Pageable pageable);

@@ -12,6 +12,7 @@ public record DeckSummaryResponse(
         String description,
         String coverImageUrl,
         UUID ownerId,
+        String ownerUsername,
         String ownerType,
         boolean isPublic,
         boolean isCopyable,
@@ -24,7 +25,8 @@ public record DeckSummaryResponse(
         Instant createdAt,
         Instant updatedAt) {
 
-    public static DeckSummaryResponse from(Deck deck, long cardCount, List<TopicResponse> topics) {
+    public static DeckSummaryResponse from(
+            Deck deck, long cardCount, List<TopicResponse> topics, String ownerUsername) {
         return new DeckSummaryResponse(
                 deck.getId(),
                 deck.getSlug(),
@@ -32,6 +34,7 @@ public record DeckSummaryResponse(
                 deck.getDescription(),
                 deck.getCoverImageUrl(),
                 deck.getOwnerId(),
+                ownerUsername,
                 deck.getOwnerType().name(),
                 deck.isPublic(),
                 deck.isCopyable(),

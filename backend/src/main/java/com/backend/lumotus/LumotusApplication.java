@@ -2,6 +2,7 @@ package com.backend.lumotus;
 
 import com.backend.lumotus.config.AdminProperties;
 import com.backend.lumotus.config.AppProperties;
+import com.backend.lumotus.config.CloudinaryProperties;
 import com.backend.lumotus.config.GoogleProperties;
 import com.backend.lumotus.config.JwtProperties;
 import com.backend.lumotus.config.RedisProperties;
@@ -15,7 +16,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
     AppProperties.class,
     AdminProperties.class,
     RedisProperties.class,
-    GoogleProperties.class
+    GoogleProperties.class,
+    CloudinaryProperties.class
 })
 public class LumotusApplication {
 
