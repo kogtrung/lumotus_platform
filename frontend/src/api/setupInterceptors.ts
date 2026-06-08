@@ -24,7 +24,8 @@ export function setupAxiosInterceptors() {
       const isAuthEndpoint =
         original.url?.includes('/auth/login') ||
         original.url?.includes('/auth/register') ||
-        original.url?.includes('/auth/refresh')
+        original.url?.includes('/auth/refresh') ||
+        original.url?.includes('/auth/google')
 
       if (error.response?.status !== 401 || isAuthEndpoint) {
         return Promise.reject(error)

@@ -7,6 +7,9 @@ export const authApi = {
 
   login: (payload: LoginPayload) => axiosClient.post<AuthResponse>('/auth/login', payload),
 
+  googleLogin: (payload: { idToken: string }) =>
+    axiosClient.post<AuthResponse>('/auth/google', payload),
+
   refresh: () => axiosClient.post<AuthResponse>('/auth/refresh'),
 
   logout: () => axiosClient.post('/auth/logout'),

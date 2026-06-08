@@ -2,12 +2,15 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'react-hot-toast'
 import { initializeAuth, setupAxiosInterceptors } from '@/api/setupInterceptors'
 import App from './App'
 import './index.css'
 
 setupAxiosInterceptors()
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,8 +39,8 @@ function Bootstrap() {
   return <App />
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+function AppTree() {
+  const tree = (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <Bootstrap />
@@ -53,5 +56,17 @@ createRoot(document.getElementById('root')!).render(
         />
       </QueryClientProvider>
     </BrowserRouter>
+  )
+
+  if (!googleClientId) {
+    return tree
+  }
+
+  return <GoogleOAuthProvider clientId={googleClientId}>{tree}</GoogleOAuthProvider>
+}
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <AppTree />
   </StrictMode>,
 )

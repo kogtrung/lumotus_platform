@@ -6,6 +6,8 @@ import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import AuthDivider from '@/components/auth/AuthDivider'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 import { cn } from '@/utils/cn'
 
 const schema = z.object({
@@ -47,7 +49,13 @@ export default function LoginPage() {
       <h2 className="text-xl font-bold text-[var(--color-text)]">Đăng nhập</h2>
       <p className="mt-1 text-sm text-[var(--color-text-muted)]">Chào mừng trở lại Lumotus</p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+      <div className="mt-6">
+        <GoogleLoginButton />
+      </div>
+
+      <AuthDivider />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">
             Email
