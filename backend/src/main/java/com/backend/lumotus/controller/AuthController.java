@@ -1,8 +1,10 @@
 package com.backend.lumotus.controller;
 
+import com.backend.lumotus.dto.request.ChangePasswordRequest;
 import com.backend.lumotus.dto.request.GoogleLoginRequest;
 import com.backend.lumotus.dto.request.LoginRequest;
 import com.backend.lumotus.dto.request.RegisterRequest;
+import com.backend.lumotus.dto.request.UpdateProfileRequest;
 import com.backend.lumotus.dto.response.AuthResponse;
 import com.backend.lumotus.dto.response.UserResponse;
 import com.backend.lumotus.security.RefreshTokenService;
@@ -20,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,6 +86,19 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(authService.getMe(principal));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(authService.updateProfile(principal, request));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(principal, request);
+        return ResponseEntity.noContent().build();
     }
 
     private void setRefreshCookie(HttpServletResponse response, String token) {

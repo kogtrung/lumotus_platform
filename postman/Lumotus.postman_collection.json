@@ -165,6 +165,32 @@
           }
         },
         {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_user\",\n  \"avatarUrl\": \"https://res.cloudinary.com/demo/image/upload/sample.jpg\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/me",
+            "description": "Cập nhật username và/hoặc avatarUrl. Gửi `\"avatarUrl\": \"\"` hoặc null để xóa ảnh."
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"SecretPass123\",\n  \"newPassword\": \"NewSecret456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/me/password",
+            "description": "Chỉ tài khoản đăng ký email/password. Thu hồi refresh token — cần Login lại."
+          }
+        },
+        {
           "name": "Logout",
           "request": {
             "method": "POST",
@@ -233,9 +259,17 @@
         },
         {
           "name": "Delete Topic (ADMIN)",
+          "description": "Path nhận slug (`travel`) hoặc UUID (`{{topicId}}`). Tự gỡ liên kết deck trước khi xóa.",
           "request": {
             "method": "DELETE",
             "url": "{{baseUrl}}/api/v1/topics/{{topicSlug}}"
+          }
+        },
+        {
+          "name": "Delete Topic by ID (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/topics/{{topicId}}"
           }
         }
       ]
