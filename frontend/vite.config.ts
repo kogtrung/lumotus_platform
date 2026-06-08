@@ -5,6 +5,8 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Đọc .env ở thư mục gốc monorepo (cùng backend / docker-compose)
+  envDir: path.resolve(__dirname, '..'),
   plugins: [
     react(),
     tailwindcss(),
@@ -20,6 +22,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
     },
   },

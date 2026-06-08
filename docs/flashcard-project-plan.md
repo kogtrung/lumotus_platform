@@ -139,6 +139,8 @@ async_jobs >── users
 | `streak` | INT | NOT NULL, DEFAULT 0 | Chuỗi ngày học liên tiếp |
 | `last_study_date` | DATE | NULL | Để tính streak |
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Khoá/mở tài khoản |
+| `oauth_provider` | VARCHAR(20) | NULL | `GOOGLE` khi OAuth |
+| `oauth_subject` | VARCHAR(255) | NULL | Google `sub`; unique với `oauth_provider` |
 
 ---
 

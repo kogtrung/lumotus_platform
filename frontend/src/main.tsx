@@ -1,25 +1,49 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'react-hot-toast'
+import { initializeAuth, setupAxiosInterceptors } from '@/api/setupInterceptors'
 import App from './App'
 import './index.css'
+
+setupAxiosInterceptors()
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 phút
+      staleTime: 1000 * 60 * 5,
       retry: 1,
     },
   },
 })
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+function Bootstrap() {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    initializeAuth().finally(() => setReady(true))
+  }, [])
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)]">
+        Đang tải...
+      </div>
+    )
+  }
+
+  return <App />
+}
+
+function AppTree() {
+  const tree = (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <Bootstrap />
         <Toaster
           position="top-right"
           toastOptions={{
@@ -32,5 +56,17 @@ createRoot(document.getElementById('root')!).render(
         />
       </QueryClientProvider>
     </BrowserRouter>
+  )
+
+  if (!googleClientId) {
+    return tree
+  }
+
+  return <GoogleOAuthProvider clientId={googleClientId}>{tree}</GoogleOAuthProvider>
+}
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <AppTree />
   </StrictMode>,
 )
