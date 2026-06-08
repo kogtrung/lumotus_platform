@@ -23,10 +23,27 @@ Thứ tự sprint ngắn gọn. **Tiến độ thực tế:** cập nhật tại
 
 ## Sprint 1 — Auth (3–4 ngày)
 
-**Branch:** `feature/auth-jwt-login`
+**Branch:** `feature/auth-login`
 
 - BE: Register/Login, JWT 15m, Redis refresh 7d, `GET /me`, RBAC skeleton
 - FE: `LoginPage`, `RegisterPage`, interceptor silent refresh, `PrivateRoute`
+
+---
+
+## Sprint 1b — Google OAuth (2–3 ngày, sau Sprint 1)
+
+**Branch:** `feature/auth-google-oauth`
+
+| # | Task |
+|---|---|
+| 1 | Google Cloud Console: OAuth client (Web), redirect URI `http://localhost:3000` + prod |
+| 2 | Migration `V2`: `users.oauth_provider`, `users.oauth_subject` (nullable); unique `(oauth_provider, oauth_subject)` |
+| 3 | BE: `spring-boot-starter-oauth2-client` hoặc verify Google ID token; `POST /api/v1/auth/google` |
+| 4 | Luồng: FE Google button → credential → BE verify email → tạo/link `users` → JWT + refresh cookie (giống login) |
+| 5 | FE: nút "Đăng nhập với Google" trên Login/Register (`@react-oauth/google` hoặc GIS) |
+| 6 | `.env`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+
+**Done khi:** Đăng nhập Google lần đầu tạo user; lần sau vào đúng tài khoản; logout vẫn xóa Redis refresh.
 
 ---
 

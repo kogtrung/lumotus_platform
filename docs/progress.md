@@ -33,27 +33,27 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 0 hoàn tất — chờ merge PR |
-| **Branch** | `feature/init-database-and-layout` (đề xuất) |
-| **Sprint đang focus** | Sprint 1 — Auth |
-| **Việc tiếp theo** | JWT + Redis refresh + Login/Register FE |
+| **Giai đoạn** | Sprint 1 — Auth (implementation xong, chờ merge PR) |
+| **Branch** | `feature/auth-login` |
+| **Sprint đang focus** | Sprint 2 — Deck & Card |
+| **Việc tiếp theo** | Topic / Deck / Card CRUD + Explore FE |
 | **Cập nhật lần cuối** | 2026-06-08 |
 
 ### Tóm tắt nhanh
 
 - **Docs / thiết kế:** spec, plan, UI design, Figma spec, reorganize `docs/`
 - **Figma wireframe:** một phần (Login, Register, Dashboard, Explore desktop)
-- **Backend:** `V1__init.sql`, JPA base, `User`, exception handler, Flyway SB4, đọc `.env`
-- **Frontend:** light theme, `axiosClient`, `MainLayout`, routes placeholder
-- **Infra:** pgAdmin email hợp lệ, Docker volume reset đồng bộ mật khẩu `.env`
+- **Backend:** Auth JWT + Redis refresh, `AuthController`, RBAC skeleton
+- **Frontend:** Login/Register, `AuthLayout`, silent refresh, `PrivateRoute`
+- **Infra:** pgAdmin, `.env` sync (Sprint 0)
 
-### Nhánh gợi ý (Sprint 1 — chưa bắt đầu)
+### Nhánh gợi ý (Sprint 2 — chưa bắt đầu)
 
 | Phạm vi | Nhánh |
 |---|---|
-| Gộp | `feature/auth-login` |
-| Chỉ backend | `feature/auth-jwt` |
-| Chỉ frontend | `style/auth-pages` |
+| Gộp | `feature/deck-card-crud` |
+| Chỉ backend | `feature/deck-crud-api` |
+| Chỉ frontend | `style/deck-explore-pages` |
 
 ---
 
@@ -69,8 +69,13 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 ### Sprint 1 — Auth
 
-- [ ] JWT + Redis refresh + Auth API
-- [ ] Login / Register FE + silent refresh
+- [x] JWT + Redis refresh + Auth API (`register`, `login`, `refresh`, `logout`, `me`)
+- [x] Login / Register FE + silent refresh + `PrivateRoute`
+- [x] Fix refresh cookie (path `/`, Vite proxy) + sessionStorage accessToken
+
+### Sprint 1b — Google OAuth
+
+- [ ] Google OAuth login (xem `development-plan.md` Sprint 1b)
 
 ### Sprint 2 — Deck & Card
 
@@ -101,6 +106,35 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 ---
 
+### Session 2026-06-08 — Sprint 1 Auth
+
+**Đã làm**
+
+- BE: `JwtService`, `RefreshTokenService` (Redis), `AuthService`, `AuthController`
+- BE: `JwtAuthenticationFilter`, `SecurityConfig` RBAC, CORS, BCrypt
+- FE: `LoginPage`, `RegisterPage`, `AuthLayout`, `authStore`, axios interceptor
+- FE: `PrivateRoute`, bootstrap silent refresh, logout trong `MainLayout`
+
+**Chưa xong / blocker**
+
+- Chưa có MockMvc test auth; Sprint 1b Google OAuth chưa làm
+- Redis phải chạy (`docker compose up -d`) — refresh token lưu trên Redis
+
+**Next**
+
+- Sprint 1b: Google OAuth (`feature/auth-google-oauth`)
+- Sprint 2: Deck & Card CRUD
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp (khuyến nghị) | `feature/auth-login` |
+| Tách backend | `feature/auth-jwt` |
+| Tách frontend | `style/auth-pages` |
+
+---
+
 ### Session 2026-06-08 — Sprint 0 hoàn tất & infra
 
 **Đã làm**
@@ -112,12 +146,11 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 **Chưa xong / blocker**
 
-- Chưa merge PR Sprint 0
+- —
 
 **Next**
 
-- Merge Sprint 0 → `develop`
-- Bắt đầu Sprint 1: Auth JWT
+- Sprint 1 Auth *(đã làm session trên)*
 
 **Nhánh gợi ý**
 
