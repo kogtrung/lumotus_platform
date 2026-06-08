@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import ImageUploadField from '@/components/ui/ImageUploadField'
 import { inputClass } from '@/components/ui/inputClass'
 import { cn } from '@/utils/cn'
 import type { Card } from '@/types/deck'
@@ -14,7 +15,9 @@ const schema = z.object({
   hint: z.string().optional(),
 })
 
-export type CardFormData = z.infer<typeof schema>
+type FormFields = z.infer<typeof schema>
+
+export type CardFormData = FormFields & { imageUrl?: string | null }
 
 interface CardFormDialogProps {
   open: boolean
@@ -33,12 +36,14 @@ export default function CardFormDialog({
   onClose,
   onSubmit,
 }: CardFormDialogProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CardFormData>({
+  } = useForm<FormFields>({
     resolver: zodResolver(schema),
     defaultValues: { front: '', back: '', phonetic: '', example: '', hint: '' },
   })
@@ -52,6 +57,7 @@ export default function CardFormDialog({
         example: initial?.example ?? '',
         hint: initial?.hint ?? '',
       })
+      setImageUrl(initial?.imageUrl ?? null)
     }
   }, [open, initial, reset])
 
@@ -60,10 +66,20 @@ export default function CardFormDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Đóng" />
-      <div className="relative z-10 w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-lg">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)]">
         <h2 className="text-lg font-bold text-[var(--color-text)]">{title}</h2>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
+        <form
+          onSubmit={handleSubmit((data) => onSubmit({ ...data, imageUrl }))}
+          className="mt-4 space-y-4"
+        >
+          <ImageUploadField
+            label="Ảnh minh họa"
+            folder="cards"
+            value={imageUrl}
+            onChange={setImageUrl}
+          />
+
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">
               Mặt trước (EN)

@@ -10,6 +10,14 @@ import type {
   UpdateDeckPayload,
 } from '@/types/deck'
 
+export interface ImportDeckResponse {
+  deck: DeckSummary
+  addedCount: number
+  updatedCount: number
+  skippedCount: number
+  errors: string[]
+}
+
 export const decksApi = {
   list: (params: DeckListParams = {}) =>
     axiosClient.get<PageResponse<DeckSummary>>('/decks', { params }),
@@ -36,4 +44,16 @@ export const decksApi = {
 
   deleteCard: (deckRef: string, cardId: string) =>
     axiosClient.delete(`/decks/${deckRef}/cards/${cardId}`),
+
+  importCsv: (file: File, options?: { title?: string; deckRef?: string }) => {
+    const form = new FormData()
+    form.append('file', file)
+    return axiosClient.post<ImportDeckResponse>('/decks/import', form, {
+      params: {
+        title: options?.title,
+        deckRef: options?.deckRef,
+      },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
 }

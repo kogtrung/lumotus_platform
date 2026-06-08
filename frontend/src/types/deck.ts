@@ -15,6 +15,7 @@ export interface DeckSummary {
   description: string | null
   coverImageUrl: string | null
   ownerId: string
+  ownerUsername: string
   ownerType: string
   isPublic: boolean
   isCopyable: boolean

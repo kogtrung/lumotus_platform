@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Copy, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Copy, FileUp, Plus, Settings, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { decksApi } from '@/api/decks'
 import CardFormDialog, { type CardFormData } from '@/components/deck/CardFormDialog'
+import EditDeckDialog from '@/components/deck/EditDeckDialog'
+import ImportCsvDialog from '@/components/deck/ImportCsvDialog'
 import CardGridItem from '@/components/deck/CardGridItem'
 import CardGridSkeleton from '@/components/deck/CardGridSkeleton'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
@@ -18,6 +20,8 @@ export default function DeckDetailPage() {
   const user = useAuthStore((s) => s.user)
 
   const [cardDialogOpen, setCardDialogOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [editDeckOpen, setEditDeckOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<Card | null>(null)
 
   const deckQuery = useQuery({
@@ -67,6 +71,7 @@ export default function DeckDetailPage() {
         phonetic: data.phonetic || undefined,
         example: data.example || undefined,
         hint: data.hint || undefined,
+        imageUrl: data.imageUrl || undefined,
       }
       return editingCard
         ? decksApi.updateCard(deckRef, editingCard.id, payload)
@@ -135,11 +140,15 @@ export default function DeckDetailPage() {
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
-            {deck.isPublic && (
+            {deck.isPublic ? (
               <span className="rounded-full bg-[var(--color-primary-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary)]">
-                Công khai
+                Công khai · Khám phá
               </span>
-            )}
+            ) : isOwner ? (
+              <span className="rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-muted)]">
+                Riêng tư
+              </span>
+            ) : null}
             {deck.topics.map((t) => (
               <span
                 key={t.id}
@@ -156,7 +165,21 @@ export default function DeckDetailPage() {
           )}
           <p className="mt-2 text-sm text-[var(--color-text-muted)]">
             {deck.cardCount} thẻ · {deck.languageFront.toUpperCase()} → {deck.languageBack.toUpperCase()}
+            {!isOwner && deck.ownerUsername && <> · bởi {deck.ownerUsername}</>}
           </p>
+          {isOwner && !deck.isPublic && (
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              Deck riêng tư — chỉ bạn thấy. Mở{' '}
+              <button
+                type="button"
+                onClick={() => setEditDeckOpen(true)}
+                className="font-medium text-[var(--color-primary)] hover:underline"
+              >
+                Cài đặt deck
+              </button>{' '}
+              để công khai lên Khám phá.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -173,6 +196,22 @@ export default function DeckDetailPage() {
           )}
           {isOwner && (
             <>
+              <button
+                type="button"
+                onClick={() => setEditDeckOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]"
+              >
+                <Settings className="h-4 w-4" />
+                Cài đặt
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]"
+              >
+                <FileUp className="h-4 w-4" />
+                Import CSV
+              </button>
               <button
                 type="button"
                 onClick={openAddCard}
@@ -229,7 +268,7 @@ export default function DeckDetailPage() {
         )}
 
         {cards.length > 0 && (
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {cards.map((card) => (
               <CardGridItem
                 key={card.id}
@@ -244,6 +283,21 @@ export default function DeckDetailPage() {
           </div>
         )}
       </div>
+
+      <EditDeckDialog
+        open={editDeckOpen}
+        deck={deck}
+        deckRef={deckRef}
+        onClose={() => setEditDeckOpen(false)}
+        onUpdated={() => invalidate()}
+      />
+
+      <ImportCsvDialog
+        open={importOpen}
+        deckRef={deckRef}
+        onClose={() => setImportOpen(false)}
+        onImported={() => invalidate()}
+      />
 
       <CardFormDialog
         open={cardDialogOpen}
