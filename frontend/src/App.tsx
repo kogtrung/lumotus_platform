@@ -4,12 +4,17 @@ import AuthLayout from '@/components/layout/AuthLayout'
 import MainLayout from '@/components/layout/MainLayout'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
+import LandingPage from '@/pages/LandingPage'
 import HomePage from '@/pages/HomePage'
+import ExplorePage from '@/pages/ExplorePage'
+import DeckDetailPage from '@/pages/DeckDetailPage'
 import PlaceholderPage from '@/pages/PlaceholderPage'
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
+
       <Route element={<AuthLayout />}>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
@@ -17,8 +22,9 @@ export default function App() {
 
       <Route element={<PrivateRoute />}>
         <Route element={<MainLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="explore" element={<PlaceholderPage title="Khám phá" />} />
+          <Route path="home" element={<HomePage />} />
+          <Route path="explore" element={<ExplorePage />} />
+          <Route path="decks/:deckRef" element={<DeckDetailPage />} />
           <Route path="progress" element={<PlaceholderPage title="Tiến độ" />} />
         </Route>
       </Route>

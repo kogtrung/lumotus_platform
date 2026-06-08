@@ -6,7 +6,7 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 > Chỉ ghi **công việc chính** (code, schema, docs, thiết kế). Không ghi thao tác chạy app (`docker compose`, `mvn`, `npm run dev`…).  
 > Khi session xong: thêm **Nhánh gợi ý** ngay bên dưới.
 
-**Sprint chi tiết:** [`development-plan.md`](development-plan.md) · **Roadmap dài:** [`flashcard-project-plan.md`](flashcard-project-plan.md) §9
+**Sprint chi tiết:** [`development-plan.md`](development-plan.md) (căn theo [`flashcard-project-plan.md`](flashcard-project-plan.md) §9)
 
 ### Quy ước tên nhánh
 
@@ -33,21 +33,20 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 2b — Slug URLs (backend xong) |
+| **Giai đoạn** | Sprint 2 — Deck FE (Explore/Dashboard/DeckDetail xong) |
 | **Branch** | `feature/deck-card-crud` |
-| **Sprint đang focus** | Sprint 2 — FE Explore (chưa làm) |
-| **Việc tiếp theo** | FE Explore/Dashboard/DeckDetail; quiz slug khi Sprint 4 |
+| **Sprint đang focus** | Sprint 3 Import + Media |
+| **Việc tiếp theo** | CSV import + Cloudinary upload; FTS `search_vector` (tùy chọn) |
 | **Cập nhật lần cuối** | 2026-06-08 |
 
 ### Tóm tắt nhanh
 
-- **Docs / thiết kế:** spec, plan, UI design, Figma spec, reorganize `docs/`
-- **Figma wireframe:** một phần (Login, Register, Dashboard, Explore desktop)
-- **Backend:** Auth JWT + Redis refresh, `AuthController`, RBAC skeleton
-- **Frontend:** Login/Register, `AuthLayout`, silent refresh, `PrivateRoute`
-- **Infra:** pgAdmin, `.env` sync (Sprint 0)
+- **Docs:** `spec.md`, `flashcard-project-plan.md` (roadmap §9), `development-plan.md` (sprint), đồng bộ Import/Media trước SRS
+- **Backend:** Auth + Google + profile PUT; Deck/Card/Topic CRUD; slug `V3`; ADMIN bootstrap
+- **Frontend:** Login/Register/Google; Explore, Dashboard (Home), DeckDetail + slug routes
+- **Infra:** JWT auto-gen script, Postman collection, monorepo `.env` cho Vite
 
-### Nhánh gợi ý (Sprint 2 — chưa bắt đầu)
+### Nhánh gợi ý (Sprint 2 FE)
 
 | Phạm vi | Nhánh |
 |---|---|
@@ -70,6 +69,7 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ### Sprint 1 — Auth
 
 - [x] JWT + Redis refresh + Auth API (`register`, `login`, `refresh`, `logout`, `me`)
+- [x] `PUT /me` (username, avatarUrl), `PUT /me/password`
 - [x] Login / Register FE + silent refresh + `PrivateRoute`
 - [x] Fix refresh cookie (path `/`, Vite proxy) + sessionStorage accessToken
 
@@ -86,7 +86,8 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] Fix update deck `topicIds` + `deleteAllByDeckId` query
 - [x] `ADMIN_BOOTSTRAP_EMAIL` — promote user thành ADMIN (dev)
 - [ ] FTS search (`q`) nâng cao qua `search_vector`
-- [ ] Explore, Dashboard, DeckDetail FE
+- [x] Explore, Dashboard (Home), DeckDetail FE
+- [x] API client deck/card/topic + React Query
 
 ### Sprint 2b — Slug URLs
 
@@ -94,23 +95,27 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] Migration `V3__decks_slug.sql` + index `idx_decks_owner_slug`
 - [x] `SlugUtils`, deck path `{deckRef}` hybrid UUID/slug
 - [x] Topic `GET/PUT/DELETE /topics/{slug}`; filter `?topicSlug=`
-- [ ] Quiz `attemptRef` slug — Sprint 4
-- [ ] FE routes dùng slug
+- [ ] Quiz `attemptRef` slug — Sprint 5
+- [x] FE routes dùng slug (`/decks/:deckRef`)
 
-### Sprint 3 — SRS Review
+### Sprint 3 — Import & Media *(trước SRS — theo flashcard §9)*
 
-- [ ] SM-2 + `ReviewService` + Review UI
+- [ ] `POST /media/upload` (Cloudinary)
+- [ ] `POST /decks/import` CSV
+- [ ] FE: upload avatar, ảnh card
 
-### Sprint 4 — Quiz & Progress
+### Sprint 4 — SRS Review
 
-- [ ] Quiz session + heatmap + leaderboard
+- [ ] SM-2 + `ReviewService` + Review UI + starred
 
-### Sprint 5 — Async & Media
+### Sprint 5 — Quiz & Progress
 
-- [ ] CSV import + AI generate + Cloudinary
+- [ ] Quiz session + `attemptRef` slug
+- [ ] Heatmap, streak, stats, leaderboard Redis
 
-### Sprint 6 — Admin & Polish
+### Sprint 6 — AI, Admin & Polish
 
+- [ ] AI generate + `async_jobs` polling
 - [ ] Admin UI + MockMvc tests + responsive
 
 ---
@@ -118,6 +123,63 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-06-08 — Sprint 2 FE (Explore, Dashboard, DeckDetail)
+
+**Đã làm**
+
+- FE types + API: `types/deck.ts`, `api/decks.ts`, `api/topics.ts`
+- `ExplorePage` — lọc topic, tìm kiếm, grid deck công khai
+- `HomePage` — dashboard deck của tôi + tạo deck
+- `DeckDetailPage` — `/decks/:deckRef` (slug); xem/copy deck; owner CRUD thẻ
+- Components: `DeckCard`, `TopicFilter`, `CreateDeckDialog`, `CardFormDialog`
+- `npm run build` pass
+
+**Chưa xong / blocker**
+
+- Sửa deck metadata (title/public) trên UI — chỉ CRUD thẻ hiện tại
+- Ảnh card/avatar cần Sprint 3 Media
+
+**Next**
+
+- Sprint 3: `POST /media/upload` + CSV import
+- FTS `search_vector` (backend, tùy chọn)
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp | `feature/deck-card-crud` |
+| Import + media | `feature/async-import-media` |
+
+---
+
+### Session 2026-06-08 — Đồng bộ docs + profile API
+
+**Đã làm**
+
+- `PUT /api/v1/auth/me`, `PUT /api/v1/auth/me/password` — profile & đổi mật khẩu
+- Đồng bộ lộ trình: `development-plan.md` căn theo `flashcard-project-plan.md` §9 (Import + Media **Sprint 3**, trước SRS)
+- Cập nhật checkbox §9, cột TT API §4, env Google/ADMIN/JWT script
+- `docs/README.md` — quy tắc phân cấp tài liệu
+
+**Chưa xong / blocker**
+
+- FE profile settings; avatar URL thực cần Sprint 3 Media
+
+**Next**
+
+- Sprint 2 FE (Explore/Dashboard/DeckDetail + slug routes)
+- Sprint 3: CSV import + Cloudinary
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| FE deck pages | `style/deck-explore-pages` |
+| Import + media | `feature/async-import-media` |
 
 ---
 

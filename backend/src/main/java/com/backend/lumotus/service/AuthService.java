@@ -1,8 +1,11 @@
 package com.backend.lumotus.service;
 
+import com.backend.lumotus.dto.request.ChangePasswordRequest;
 import com.backend.lumotus.dto.request.GoogleLoginRequest;
 import com.backend.lumotus.dto.request.LoginRequest;
 import com.backend.lumotus.dto.request.RegisterRequest;
+import com.backend.lumotus.dto.request.UpdateProfileRequest;
+import com.backend.lumotus.exception.BadRequestException;
 import com.backend.lumotus.dto.response.AuthResponse;
 import com.backend.lumotus.dto.response.UserResponse;
 import com.backend.lumotus.entity.User;
@@ -102,10 +105,51 @@ public class AuthService {
     }
 
     public UserResponse getMe(UserPrincipal principal) {
-        User user = userRepository
-                .findById(principal.getId())
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
-        return UserResponse.from(user);
+        return UserResponse.from(findUserOrThrow(principal.getId()));
+    }
+
+    @Transactional
+    public UserResponse updateProfile(UserPrincipal principal, UpdateProfileRequest request) {
+        if (request.username() == null && request.avatarUrl() == null) {
+            throw new BadRequestException("At least one field must be provided");
+        }
+        User user = findUserOrThrow(principal.getId());
+        if (request.username() != null) {
+            String username = request.username().trim();
+            if (!username.equals(user.getUsername()) && userRepository.existsByUsername(username)) {
+                throw new ConflictException("Username already taken");
+            }
+            user.setUsername(username);
+        }
+        if (request.avatarUrl() != null) {
+            user.setAvatarUrl(blankToNull(request.avatarUrl()));
+        }
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public void changePassword(UserPrincipal principal, ChangePasswordRequest request) {
+        User user = findUserOrThrow(principal.getId());
+        if (user.getOauthProvider() != null) {
+            throw new BadRequestException("Password change is not available for OAuth accounts");
+        }
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new UnauthorizedException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("New password must be different from current password");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        refreshTokenService.revoke(user.getId());
+    }
+
+    private User findUserOrThrow(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("User not found"));
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private User resolveOrCreateGoogleUser(GoogleUserInfo googleUser) {

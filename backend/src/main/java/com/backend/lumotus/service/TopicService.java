@@ -6,7 +6,9 @@ import com.backend.lumotus.dto.response.TopicResponse;
 import com.backend.lumotus.entity.Topic;
 import com.backend.lumotus.exception.ConflictException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
+import com.backend.lumotus.repository.DeckTopicRepository;
 import com.backend.lumotus.repository.TopicRepository;
+import com.backend.lumotus.util.SlugUtils;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TopicService {
 
     private final TopicRepository topicRepository;
+    private final DeckTopicRepository deckTopicRepository;
 
     @Transactional(readOnly = true)
     public List<TopicResponse> listAll() {
@@ -26,8 +29,8 @@ public class TopicService {
     }
 
     @Transactional(readOnly = true)
-    public TopicResponse getBySlug(String slug) {
-        return TopicResponse.from(findBySlugOrThrow(slug));
+    public TopicResponse getByRef(String topicRef) {
+        return TopicResponse.from(resolveTopic(topicRef));
     }
 
     @Transactional
@@ -48,8 +51,8 @@ public class TopicService {
     }
 
     @Transactional
-    public TopicResponse updateBySlug(String slug, UpdateTopicRequest request) {
-        Topic topic = findBySlugOrThrow(slug);
+    public TopicResponse updateByRef(String topicRef, UpdateTopicRequest request) {
+        Topic topic = resolveTopic(topicRef);
         if (request.name() != null) {
             topic.setName(request.name());
         }
@@ -69,14 +72,25 @@ public class TopicService {
     }
 
     @Transactional
-    public void deleteBySlug(String slug) {
-        Topic topic = findBySlugOrThrow(slug);
+    public void deleteByRef(String topicRef) {
+        Topic topic = resolveTopic(topicRef);
+        deckTopicRepository.deleteAllByTopicId(topic.getId());
         topicRepository.delete(topic);
     }
 
-    private Topic findBySlugOrThrow(String slug) {
+    /** Path `{topicRef}` — slug hoặc UUID (giống `{deckRef}`). */
+    private Topic resolveTopic(String topicRef) {
+        if (topicRef == null || topicRef.isBlank()) {
+            throw new ResourceNotFoundException("Topic not found");
+        }
+        String ref = topicRef.trim();
+        if (SlugUtils.isUuid(ref)) {
+            return topicRepository
+                    .findById(SlugUtils.parseUuid(ref))
+                    .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + ref));
+        }
         return topicRepository
-                .findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + slug));
+                .findBySlug(ref)
+                .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + ref));
     }
 }

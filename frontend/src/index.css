@@ -6,18 +6,35 @@
     --font-card-front: 'Literata', Georgia, serif;
     --font-card-back: 'Be Vietnam Pro', system-ui, sans-serif;
 
-    /* Daylight Study — light-first tokens */
-    --color-bg: #F6F8FB;
+    /* Daylight Study — tăng contrast nhẹ */
+    --color-bg: #EEF2F8;
     --color-surface: #FFFFFF;
-    --color-border: #E8EDF4;
-    --color-border-strong: #D1DAE6;
-    --color-primary: #5B8DEF;
-    --color-primary-hover: #4A7FE0;
-    --color-primary-subtle: #EBF3FE;
-    --color-text: #1A2332;
-    --color-text-secondary: #5A6B82;
-    --color-text-muted: #8B9BB4;
-    --color-danger: #F07167;
+    --color-border: #D8E0EC;
+    --color-border-strong: #B8C5D9;
+    --color-primary: #4A7FE0;
+    --color-primary-hover: #3A6FCE;
+    --color-primary-subtle: #DCE9FC;
+    --color-secondary: #7C6AE8;
+    --color-secondary-subtle: #EDE9FE;
+    --color-accent-warm: #FEF0C7;
+    --color-text: #0F1728;
+    --color-text-secondary: #3D4F66;
+    --color-text-muted: #5C6F88;
+    --color-danger: #E85D52;
+    --color-success: #2FAF7A;
+    --color-warning: #E5A820;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --shadow-card: 0 1px 2px rgba(15, 23, 40, 0.06), 0 4px 16px rgba(15, 23, 40, 0.08);
+    --shadow-card-hover: 0 4px 8px rgba(15, 23, 40, 0.08), 0 12px 32px rgba(15, 23, 40, 0.1);
+    --shadow-nav: 0 1px 0 rgba(15, 23, 40, 0.06), 0 4px 12px rgba(15, 23, 40, 0.04);
+
+    --gradient-hero: linear-gradient(135deg, #DCE9FC 0%, #EDE9FE 45%, #FEF0C7 100%);
+    --gradient-brand: linear-gradient(135deg, #4A7FE0 0%, #7C6AE8 100%);
   }
 
   * {
@@ -43,5 +60,31 @@
 
   .flashcard-back {
     font-family: var(--font-card-back);
+  }
+}
+
+@layer components {
+  .lumo-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  .lumo-card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lumo-card-hover:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .lumo-gradient-text {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }

@@ -4,6 +4,31 @@ Mục lục tài liệu dự án. **Quick start** vẫn ở [`README.md`](../REA
 
 ---
 
+## Phân cấp & nguồn sự thật
+
+```mermaid
+flowchart TD
+  spec["spec.md — schema, API, SM-2"]
+  flash["flashcard-project-plan.md — roadmap §9, Redis, deploy"]
+  dev["development-plan.md — sprint code"]
+  prog["progress.md — session log, checkbox"]
+  spec --- flash
+  flash --> dev
+  dev --> prog
+```
+
+| Vai trò | File | Khi nào sửa |
+|---|---|---|
+| **Đặc tả kỹ thuật** | [`spec.md`](spec.md) | Schema, endpoint, business rule — luôn đồng bộ với code |
+| **Roadmap & thứ tự nghiệp vụ** | [`flashcard-project-plan.md`](flashcard-project-plan.md) §9 | Đổi ưu tiên tính năng (vd. Import trước SRS) — **sửa file này trước** |
+| **Chia sprint / branch** | [`development-plan.md`](development-plan.md) | Sau khi §9 ổn → map sang Sprint 0–6 |
+| **Tiến độ thực tế** | [`progress.md`](progress.md) | Cuối mỗi buổi: checkbox + session log |
+| **UI / Figma** | [`ui-design-plan.md`](ui-design-plan.md), [`figma-wireframe-spec.md`](figma-wireframe-spec.md) | Thiết kế màn hình |
+
+**Thứ tự đồng bộ khi có thay đổi lớn:** `spec.md` + `flashcard-project-plan.md` → migration/API code → `development-plan.md` → `progress.md`.
+
+---
+
 ## Bắt đầu từ đâu?
 
 | Mục đích | File |
@@ -20,6 +45,7 @@ Mục lục tài liệu dự án. **Quick start** vẫn ở [`README.md`](../REA
 ## Quy ước
 
 - Đổi **schema / index** → cập nhật **cả** `spec.md` §2.2–2.3 **và** `flashcard-project-plan.md` §2.2–2.3 trước migration.
+- Đổi **thứ tự sprint** → `flashcard-project-plan.md` §9 trước, rồi `development-plan.md`, rồi checklist `progress.md`.
 - Sau mỗi buổi làm việc → cập nhật [`progress.md`](progress.md) (session log + checkbox).
 - Không sửa file Flyway đã chạy — chỉ thêm `V{n}__*.sql`.
 

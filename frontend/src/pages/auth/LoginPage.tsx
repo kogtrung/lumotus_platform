@@ -34,7 +34,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(data)
       setAuth(res.data.accessToken, res.data.user)
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/home'
       navigate(from, { replace: true })
       toast.success('Đăng nhập thành công')
     } catch {

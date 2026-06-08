@@ -43,7 +43,7 @@ export default function RegisterPage() {
     try {
       const res = await authApi.register({ username, email, password })
       setAuth(res.data.accessToken, res.data.user)
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
       toast.success('Đăng ký thành công')
     } catch (err: unknown) {
       const msg =

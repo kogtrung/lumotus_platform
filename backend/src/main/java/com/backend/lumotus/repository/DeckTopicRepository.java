@@ -16,4 +16,8 @@ public interface DeckTopicRepository extends JpaRepository<DeckTopic, DeckTopicI
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM DeckTopic dt WHERE dt.id.deckId = :deckId")
     void deleteAllByDeckId(@Param("deckId") UUID deckId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM DeckTopic dt WHERE dt.id.topicId = :topicId")
+    void deleteAllByTopicId(@Param("topicId") UUID topicId);
 }

@@ -31,9 +31,9 @@ public class TopicController {
         return ResponseEntity.ok(topicService.listAll());
     }
 
-    @GetMapping("/{slug}")
-    public ResponseEntity<TopicResponse> get(@PathVariable String slug) {
-        return ResponseEntity.ok(topicService.getBySlug(slug));
+    @GetMapping("/{topicRef}")
+    public ResponseEntity<TopicResponse> get(@PathVariable String topicRef) {
+        return ResponseEntity.ok(topicService.getByRef(topicRef));
     }
 
     @PostMapping
@@ -42,17 +42,17 @@ public class TopicController {
         return ResponseEntity.status(HttpStatus.CREATED).body(topicService.create(request));
     }
 
-    @PutMapping("/{slug}")
+    @PutMapping("/{topicRef}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TopicResponse> update(
-            @PathVariable String slug, @Valid @RequestBody UpdateTopicRequest request) {
-        return ResponseEntity.ok(topicService.updateBySlug(slug, request));
+            @PathVariable String topicRef, @Valid @RequestBody UpdateTopicRequest request) {
+        return ResponseEntity.ok(topicService.updateByRef(topicRef, request));
     }
 
-    @DeleteMapping("/{slug}")
+    @DeleteMapping("/{topicRef}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable String slug) {
-        topicService.deleteBySlug(slug);
+    public ResponseEntity<Void> delete(@PathVariable String topicRef) {
+        topicService.deleteByRef(topicRef);
         return ResponseEntity.noContent().build();
     }
 }

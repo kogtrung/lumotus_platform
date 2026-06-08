@@ -48,7 +48,7 @@ lumotus/
 | `docs/progress.md` | Session log, checklist, việc tiếp theo |
 | `README.md` | Chạy local, env, branching |
 
-**Đồng bộ docs:** `docs/spec.md` và `docs/flashcard-project-plan.md` phải khớp §2.2–2.3. Sửa schema → cập nhật **cả hai** trước migration. Cuối session → `docs/progress.md`.
+**Đồng bộ docs:** `docs/spec.md` và `docs/flashcard-project-plan.md` phải khớp §2.2–2.3. Thứ tự ưu tiên tính năng → `flashcard-project-plan.md` §9 trước, rồi `development-plan.md`, rồi `progress.md`. Sửa schema → cập nhật **cả hai** spec + plan trước migration. Cuối session → `docs/progress.md`.
 
 **Không sửa** file migration Flyway đã chạy — chỉ thêm `V{n}__*.sql`.
 

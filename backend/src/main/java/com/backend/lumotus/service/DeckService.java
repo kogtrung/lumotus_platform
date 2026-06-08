@@ -372,7 +372,8 @@ public class DeckService {
     private void replaceTopics(Deck deck, List<UUID> topicIds) {
         List<UUID> normalized = normalizeTopicIds(topicIds);
         if (!deck.isPublic() && !normalized.isEmpty()) {
-            throw new BadRequestException("Only public decks can have system topics");
+            throw new BadRequestException(
+                    "Chủ đề hệ thống chỉ gắn được với deck công khai — bật Công khai hoặc bỏ chọn chủ đề");
         }
         deckTopicRepository.deleteAllByDeckId(deck.getId());
         for (UUID topicId : normalized) {

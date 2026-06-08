@@ -5,7 +5,7 @@ import { useUiStore } from '@/store/uiStore'
 import { cn } from '@/utils/cn'
 
 const navItems = [
-  { to: '/', label: 'Trang chủ', icon: Home, end: true },
+  { to: '/home', label: 'Trang chủ', icon: Home, end: true },
   { to: '/explore', label: 'Khám phá', icon: Compass },
   { to: '/progress', label: 'Tiến độ', icon: Trophy },
 ] as const
@@ -86,7 +86,7 @@ export default function MainLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar — desktop + mobile */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 shadow-[var(--shadow-nav)]">
           <div className="flex items-center gap-2">
             <button
               type="button"
