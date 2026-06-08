@@ -464,45 +464,49 @@ CREATE TRIGGER trg_cards_sync_total
 ## 4. API Backend — Nhóm endpoint
 
 ### Auth
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| POST | `/api/v1/auth/register` | Đăng ký tài khoản |
-| POST | `/api/v1/auth/login` | Đăng nhập, nhận access + refresh token |
-| POST | `/api/v1/auth/refresh` | Đổi refresh token lấy access token mới |
-| POST | `/api/v1/auth/logout` | Xóa refresh token khỏi Redis |
-| GET | `/api/v1/auth/me` | Thông tin user hiện tại |
+| Method | Endpoint | Mô tả | TT |
+|---|---|---|---|
+| POST | `/api/v1/auth/register` | Đăng ký tài khoản | ✅ |
+| POST | `/api/v1/auth/login` | Đăng nhập, nhận access + refresh token | ✅ |
+| POST | `/api/v1/auth/google` | Đăng nhập Google ID token | ✅ |
+| POST | `/api/v1/auth/refresh` | Đổi refresh token lấy access token mới | ✅ |
+| POST | `/api/v1/auth/logout` | Xóa refresh token khỏi Redis | ✅ |
+| GET | `/api/v1/auth/me` | Thông tin user hiện tại | ✅ |
+| PUT | `/api/v1/auth/me` | Cập nhật `username`, `avatarUrl` | ✅ |
+| PUT | `/api/v1/auth/me/password` | Đổi mật khẩu (email/password; không OAuth) | ✅ |
 
-### Topics (Chủ đề) ⭐ MỚI
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/v1/topics` | Danh sách tất cả topics (public) |
-| POST | `/api/v1/topics` | Tạo topic mới (ADMIN only) |
-| PUT | `/api/v1/topics/{id}` | Cập nhật topic (ADMIN only) |
-| DELETE | `/api/v1/topics/{id}` | Xóa topic (ADMIN only) |
+### Topics (Chủ đề hệ thống)
+| Method | Endpoint | Mô tả | TT |
+|---|---|---|---|
+| GET | `/api/v1/topics` | Danh sách topics (public) | ✅ |
+| GET | `/api/v1/topics/{topicRef}` | Chi tiết — slug hoặc UUID | ✅ |
+| POST | `/api/v1/topics` | Tạo topic (ADMIN) | ✅ |
+| PUT | `/api/v1/topics/{topicRef}` | Cập nhật topic (ADMIN) | ✅ |
+| DELETE | `/api/v1/topics/{topicRef}` | Xóa topic; gỡ `deck_topics` trước (ADMIN) | ✅ |
 
 ### Deck & Card
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/v1/decks` | Danh sách deck (phân trang, lọc theo topic/keyword) |
-| POST | `/api/v1/decks` | Tạo deck mới (thủ công) |
-| GET | `/api/v1/decks/{deckRef}` | Chi tiết deck — UUID hoặc slug |
-| PUT | `/api/v1/decks/{deckRef}` | Cập nhật deck |
-| DELETE | `/api/v1/decks/{deckRef}` | Xóa deck (soft delete) |
-| POST | `/api/v1/decks/{deckRef}/copy` | Copy deck về thư viện cá nhân |
-| GET | `/api/v1/decks/{deckRef}/cards` | Danh sách card trong deck |
-| POST | `/api/v1/decks/{deckRef}/cards` | Thêm card thủ công |
-| PUT | `/api/v1/decks/{deckRef}/cards/{cardId}` | Sửa card |
-| DELETE | `/api/v1/decks/{deckRef}/cards/{cardId}` | Xóa card (soft delete) |
-| POST | `/api/v1/decks/import` | Import deck từ file CSV/Excel/DOCX |
-| POST | `/api/v1/decks/generate` | Generate deck bằng AI (trả jobId) |
-| GET | `/api/v1/jobs/{jobId}` | Poll trạng thái tác vụ nền |
+| Method | Endpoint | Mô tả | TT |
+|---|---|---|---|
+| GET | `/api/v1/decks` | List (`page`, `size`, `q`, `topicId`/`topicSlug`, `mine`) | ✅ |
+| POST | `/api/v1/decks` | Tạo deck (auto `slug`) | ✅ |
+| GET | `/api/v1/decks/{deckRef}` | Chi tiết — UUID hoặc slug | ✅ |
+| PUT | `/api/v1/decks/{deckRef}` | Cập nhật deck | ✅ |
+| DELETE | `/api/v1/decks/{deckRef}` | Xóa mềm | ✅ |
+| POST | `/api/v1/decks/{deckRef}/copy` | Copy deck công khai | ✅ |
+| GET | `/api/v1/decks/{deckRef}/cards` | List cards (default `size=50`) | ✅ |
+| POST | `/api/v1/decks/{deckRef}/cards` | Thêm card | ✅ |
+| PUT | `/api/v1/decks/{deckRef}/cards/{cardId}` | Sửa card | ✅ |
+| DELETE | `/api/v1/decks/{deckRef}/cards/{cardId}` | Xóa mềm card | ✅ |
+| POST | `/api/v1/decks/import` | Import CSV/Excel/DOCX | ⏳ Sprint 3 |
+| POST | `/api/v1/decks/generate` | AI generate → `jobId` | ⏳ Sprint 6 |
+| GET | `/api/v1/jobs/{jobId}` | Poll job | ⏳ Sprint 6 |
 
 ### Deck Tags (Nhãn cá nhân)
-| Method | Endpoint | Mô tả |
+| Method | Endpoint | Mô tả | TT |
 |---|---|---|
-| GET | `/api/v1/decks/{id}/tags` | Lấy tất cả tag của deck (của user hiện tại) |
-| PUT | `/api/v1/decks/{id}/tags` | Cập nhật tags (truyền array tag_name mới) |
-| DELETE | `/api/v1/decks/{id}/tags/{tagName}` | Xóa 1 tag cụ thể |
+| GET | `/api/v1/decks/{deckRef}/tags` | Tags của user trên deck | ⏳ |
+| PUT | `/api/v1/decks/{deckRef}/tags` | Cập nhật mảng tag | ⏳ |
+| DELETE | `/api/v1/decks/{deckRef}/tags/{tagName}` | Xóa một tag | ⏳ |
 
 ### SRS Review
 | Method | Endpoint | Mô tả |
@@ -676,30 +680,36 @@ lumotus/
 
 ## 9. Lộ trình phát triển 6 giai đoạn
 
+> **Tiến độ sprint chi tiết:** [`development-plan.md`](development-plan.md) · **Session log:** [`progress.md`](progress.md)  
+> Khi đổi thứ tự ưu tiên → sửa **mục này trước**, rồi đồng bộ `development-plan.md`.
+
 ### Giai đoạn 1 — Môi trường dev chuẩn
-- [ ] Docker Compose local: PostgreSQL + Redis + pgAdmin
-- [ ] Cấu trúc biến môi trường `.env` + `.env.example`
-- [ ] Git branching: `main` / `develop` / `feature/*`
-- [ ] Khởi tạo project Spring Boot 3.x + React 18 + Vite
-- [ ] Cấu trúc thư mục theo sơ đồ trên
+- [x] Docker Compose local: PostgreSQL + Redis + pgAdmin
+- [x] Cấu trúc biến môi trường `.env` + `.env.example` (monorepo, `envDir` Vite)
+- [x] Git branching: `main` / `develop` / `feature/*`
+- [x] Khởi tạo project Spring Boot **4** + React 18 + Vite
+- [x] Cấu trúc thư mục theo sơ đồ §8
+- [x] `scripts/ensure-jwt-secret.mjs` — tự sinh `JWT_SECRET` khi chạy backend
 
 ### Giai đoạn 2 — Xây dựng Backend
-- [ ] Schema DB đầy đủ (bao gồm `topics`, fields mới cho `cards`, `deck_id` trên `user_card_review`, `search_vector`, triggers) + Flyway migration
-- [ ] Auth: đăng ký, đăng nhập, JWT, refresh token Redis
-- [ ] RBAC: USER / ADMIN
-- [ ] CRUD Topics (Admin)
-- [ ] CRUD Deck & Card (bao gồm phonetic, image_url, icon, audio_url)
-- [ ] Copy Deck về thư viện cá nhân
-- [ ] Import file: CSV → Excel → DOCX (header mới có phonetic, image_url)
-- [ ] Media upload: nhận file ảnh → lưu storage → trả URL
-- [ ] SRS Review: lấy thẻ đến hạn, gửi rating, tính SM-2 interval
-- [ ] Starred card
-- [ ] Quiz: tạo session, nộp bài, tính điểm, award XP
-- [ ] AI Generate: gọi AI API (sinh phonetic + example), lưu job status
-- [ ] Progress: heatmap, streak, stats tổng quan, `@Scheduled` reset 00:00
-- [ ] Leaderboard với Redis cache
-- [ ] Xử lý lỗi tập trung `@ControllerAdvice`
-- [ ] Swagger/OpenAPI docs
+- [x] Schema `V1` + OAuth `V2` + slug deck `V3`; FTS `search_vector`; trigger `total_cards`
+- [x] Auth: register, login, JWT, refresh Redis, logout
+- [x] Google OAuth: `POST /auth/google`
+- [x] Hồ sơ: `GET/PUT /me`, `PUT /me/password`
+- [x] RBAC: USER / ADMIN (`@PreAuthorize`, `ADMIN_BOOTSTRAP_EMAIL` dev)
+- [x] CRUD Topics (Admin); path/filter theo `slug`
+- [x] CRUD Deck & Card; copy deck; `{deckRef}` slug/UUID; pagination cards
+- [ ] Import file: **CSV trước** → Excel → DOCX *(Sprint 3 — trước SRS)*
+- [ ] Media upload Cloudinary → URL *(Sprint 3 — avatar, card image, deck cover)*
+- [ ] Deck tags cá nhân (`deck_tags`)
+- [ ] SRS Review: due cards, rating SM-2 *(Sprint 4)*
+- [ ] Starred card *(Sprint 4)*
+- [ ] Quiz: session, submit, XP *(Sprint 5)*
+- [ ] AI Generate + `async_jobs` polling *(Sprint 6)*
+- [ ] Progress: heatmap, streak, stats, scheduler 00:01 *(Sprint 5)*
+- [ ] Leaderboard Redis ZSET *(Sprint 5)*
+- [x] Xử lý lỗi tập trung `@ControllerAdvice`
+- [ ] Swagger/OpenAPI docs đầy đủ
 
 **Ghi chú hiệu năng (Giai đoạn 2):**
 
@@ -713,12 +723,12 @@ lumotus/
 | Card list API | Projection DTO — không SELECT `generation_prompt`, full TEXT khi chỉ cần preview |
 
 ### Giai đoạn 3 — Xây dựng Frontend
-- [ ] Cấu hình Axios interceptor: gắn JWT, silent refresh
-- [ ] React Router: route bảo vệ theo role
-- [ ] Trang Auth: Login, Register
-- [ ] Trang Khám phá: browse deck công khai theo topic, tìm kiếm full-text
-- [ ] Trang chi tiết Deck: danh sách card có ảnh + phiên âm + icon
-- [ ] Thư viện cá nhân: deck của tôi, deck đã copy, tiến độ từng deck
+- [x] Axios interceptor: JWT, silent refresh
+- [x] React Router: `PrivateRoute`, `AuthLayout`, `MainLayout`
+- [x] Trang Auth: Login, Register, Google OAuth
+- [x] Trang Khám phá: browse deck theo `topicSlug`, tìm kiếm
+- [x] Trang chi tiết Deck: danh sách card, phiên âm (ảnh chờ Sprint 3 Media)
+- [x] Thư viện cá nhân: deck của tôi trên Home (tiến độ từng deck — Sprint 5)
 - [ ] Flashcard Review: flip 3D animation (Framer Motion), nút Again/Hard/Good/Easy, hiển thị phonetic + ảnh + audio
 - [ ] Starred review mode: chỉ ôn thẻ đã đánh dấu
 - [ ] Quiz: timer đếm ngược, MCQ / True-False, nộp bài, xem điểm
@@ -843,9 +853,18 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 # ── JWT ──────────────────────────────────────────
+# Tự sinh: node scripts/ensure-jwt-secret.mjs (hoặc khi mvn spring-boot:run)
 JWT_SECRET=change-this-to-a-256-bit-random-string
 JWT_ACCESS_EXPIRY_MS=900000      # 15 phút
 JWT_REFRESH_EXPIRY_DAYS=7
+
+# ── Google OAuth ─────────────────────────────────
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+VITE_GOOGLE_CLIENT_ID=           # cùng GOOGLE_CLIENT_ID (Vite envDir = monorepo root)
+
+# ── Admin bootstrap (dev) ────────────────────────
+ADMIN_BOOTSTRAP_EMAIL=           # email đã đăng ký → role ADMIN khi startup
 
 # ── Cloudinary (Media Storage) ───────────────────
 # Đăng ký miễn phí tại: https://cloudinary.com
@@ -915,4 +934,4 @@ lumotus/
 
 ---
 
-*Tài liệu được cập nhật lần cuối: 2026-06-06 · Lumotus — Fullstack FlashCard English · Spring Boot 4 + React 18*
+*Cập nhật: 2026-06-08 · Lumotus — Spring Boot 4 + React 18 · Đồng bộ với `development-plan.md` / `progress.md`*

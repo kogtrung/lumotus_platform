@@ -421,13 +421,15 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - **`POST /refresh`**: Đổi refresh token lấy access token mới.
 - **`POST /logout`**: Vô hiệu hóa refresh token.
 - **`GET /me`**: Lấy thông tin user hiện tại qua access token.
+- **`PUT /me`**: Cập nhật hồ sơ (`username`, `avatarUrl`). `avatarUrl` là URL ảnh (sau khi upload qua `/media/upload` hoặc link ngoài).
+- **`PUT /me/password`**: Đổi mật khẩu (body: `currentPassword`, `newPassword`). Không áp dụng tài khoản OAuth; sau đổi mật khẩu refresh token bị thu hồi — cần đăng nhập lại.
 
 #### Nhóm 2: Chủ đề hệ thống (`/api/v1/topics`)
 - **`GET /`**: Danh sách tất cả topic để phân loại (public).
 - **`POST /`**: Tạo topic mới (ADMIN).
-- **`GET /{slug}`**: Chi tiết topic theo slug.
-- **`PUT /{slug}`**: Cập nhật topic (ADMIN).
-- **`DELETE /{slug}`**: Xóa topic (ADMIN).
+- **`GET /{topicRef}`**: Chi tiết topic — `topicRef` = slug hoặc UUID.
+- **`PUT /{topicRef}`**: Cập nhật topic (ADMIN).
+- **`DELETE /{topicRef}`**: Xóa topic; gỡ liên kết `deck_topics` trước (ADMIN).
 
 #### Nhóm 3: Bộ thẻ & Thẻ từ vựng (`/api/v1/decks`)
 - **`GET /`**: Danh sách deck (`page`, `size`, `q`, `topicId` hoặc `topicSlug`, `mine`).
