@@ -15,10 +15,10 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 0 | 1 | Docker, Flyway V1, FE shell | ✅ Xong |
 | 1 | 2 | Auth JWT, refresh, RBAC, `GET/PUT /me`, đổi mật khẩu | ✅ Xong |
 | 1b | 2 | Google OAuth (`V2`), FE nút Google | ✅ Xong |
-| 2 | 2 + 3 | Deck/Card/Topic CRUD, copy deck; FE Explore/Dashboard/DeckDetail | 🔄 BE xong, FE chưa |
-| 2b | 2 | Slug URLs (`V3`), `{deckRef}`, `topicSlug` | ✅ BE xong |
-| 3 | 2 | **Import CSV** + **Media upload** (Cloudinary) — *trước SRS, theo §9* | ⏳ Chưa |
-| 4 | 2 + 3 | SRS SM-2, Review UI, starred | ⏳ Chưa |
+| 2 | 2 + 3 | Deck/Card/Topic CRUD, copy deck; FE Explore/Dashboard/DeckDetail | ✅ Xong |
+| 2b | 2 | Slug URLs (`V3`), `{deckRef}`, `topicSlug` | ✅ Xong |
+| 3 | 2 | **Import CSV** + **Media upload** (Cloudinary) — *trước SRS, theo §9* | ✅ Xong |
+| 4 | 2 + 3 | SRS SM-2, Review UI, starred | ⏳ Tiếp theo |
 | 5 | 2 + 3 | Quiz, heatmap, streak, stats, leaderboard | ⏳ Chưa |
 | 6 | 2 + 3 + 4 | AI generate (async jobs), Admin UI, MockMvc, polish | ⏳ Chưa |
 
@@ -69,9 +69,9 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 
 ---
 
-## Sprint 2 — Deck & Card 🔄
+## Sprint 2 — Deck & Card ✅
 
-**Branch:** `feature/deck-card-crud`
+**Branch:** `feature/deck-card-crud` (đã merge phần lớn)
 
 ### Backend ✅
 
@@ -79,13 +79,14 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 - `ADMIN_BOOTSTRAP_EMAIL` — promote ADMIN khi startup (dev)
 - FTS `q`: LIKE title/description (nâng cấp `search_vector` — tùy chọn)
 
-### Frontend ⏳ → ✅ (MVP Sprint 2)
+### Frontend ✅
 
-- `ExplorePage`, `DashboardPage` (Home), `DeckDetailPage` — slug URL
+- `ExplorePage`, `HomePage`, `DeckDetailPage` — slug URL
 - API client deck/card/topic + React Query
 - Tạo deck, CRUD thẻ (owner), copy deck công khai
+- `EditDeckDialog`, phân tách Home vs Khám phá
 
-**Done khi:** ~~CRUD deck/card end-to-end trên UI~~ ✅ · list explore lọc `topicSlug` ✅
+**Done khi:** CRUD deck/card end-to-end trên UI ✅ · list explore lọc `topicSlug` ✅ · chỉ deck public trên Khám phá ✅
 
 ---
 
@@ -99,30 +100,31 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 2 | `SlugUtils`; path `{deckRef}` = UUID hoặc slug | ✅ |
 | 3 | Topic `GET/PUT/DELETE /topics/{slug}`; `?topicSlug=` | ✅ |
 | 4 | Response deck có `id` + `slug` | ✅ |
-| 5 | FE routes dùng slug | ⏳ Sprint 2 FE |
+| 5 | FE routes dùng slug | ✅ |
 
 **Quiz slug (`attemptRef`):** thiết kế trong `spec.md` — implement Sprint 5.
 
 ---
 
-## Sprint 3 — Import & Media ⏳
+## Sprint 3 — Import & Media ✅
 
-**Branch:** `feature/async-import-media` (hoặc tách `feature/media-upload`)
+**Branch:** `feature/async-import-media`
 
 > Theo **flashcard §9 Giai đoạn 2**: Import CSV và Media upload **trước** SRS — phục vụ ảnh card, avatar (`PUT /me`), cover deck.
 
-| # | Task |
-|---|---|
-| 1 | `POST /api/v1/media/upload` → Cloudinary (`avatars/`, `cards/`, `decks/`) |
-| 2 | `POST /api/v1/decks/import` — CSV (OpenCSV), sync hoặc job nhẹ |
-| 3 | Header CSV: `front, back, phonetic, example, hint, image_url, icon` |
-| 4 | FE: upload avatar trong profile; ảnh card trên DeckDetail |
+| # | Task | |
+|---|---|---|
+| 1 | `POST /api/v1/media/upload` → Cloudinary (`avatars/`, `cards/`, `decks/`) | ✅ |
+| 2 | `POST /api/v1/decks/import` — CSV sync, max 500 thẻ | ✅ |
+| 3 | Upsert trùng `front` trong deck (ưu tiên lần import sau) | ✅ |
+| 4 | Header CSV: `front, back, phonetic, example, hint, image_url, icon` | ✅ |
+| 5 | FE: upload avatar profile; ảnh card; import Home + DeckDetail | ✅ |
 
 *Excel/DOCX, AI generate → Sprint 6.*
 
 ---
 
-## Sprint 4 — SRS Review ⏳
+## Sprint 4 — SRS Review ⏳ *(focus hiện tại)*
 
 **Branch:** `feature/review-srs`
 
@@ -175,4 +177,4 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | Xong task trong buổi | `progress.md` checkbox + session log |
 | Env / tooling mới | `.env.example`, `README.md` (nếu quick start đổi) |
 
-*Cập nhật lần cuối: 2026-06-08*
+*Cập nhật lần cuối: 2026-06-07*

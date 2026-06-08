@@ -46,6 +46,12 @@ spring:
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
 
+  # ── Multipart upload ─────────────────────────────────────
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   # ── Async (ThreadPool) ───────────────────────────────────
   task:
     execution:

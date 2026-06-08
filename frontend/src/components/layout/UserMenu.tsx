@@ -76,9 +76,9 @@ export default function UserMenu() {
             <MenuLink to="/progress" icon={Trophy} onClick={() => setOpen(false)}>
               Tiến độ & thành tựu
             </MenuLink>
-            <MenuButton icon={Settings} onClick={() => setOpen(false)} disabled>
+            <MenuLink to="/settings" icon={Settings} onClick={() => setOpen(false)}>
               Cài đặt
-            </MenuButton>
+            </MenuLink>
           </div>
 
           <div className="border-t border-[var(--color-border)] py-1">

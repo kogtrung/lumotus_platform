@@ -33,26 +33,26 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 2 — Deck FE (Explore/Dashboard/DeckDetail xong) |
-| **Branch** | `feature/deck-card-crud` |
-| **Sprint đang focus** | Sprint 3 Import + Media |
-| **Việc tiếp theo** | CSV import + Cloudinary upload; FTS `search_vector` (tùy chọn) |
-| **Cập nhật lần cuối** | 2026-06-08 |
+| **Giai đoạn** | Sprint 3 xong — chuẩn bị Sprint 4 SRS |
+| **Branch** | `develop` (chưa commit session này) |
+| **Sprint đang focus** | Sprint 4 SRS Review |
+| **Việc tiếp theo** | SM-2 backend + Review UI |
+| **Cập nhật lần cuối** | 2026-06-07 |
 
 ### Tóm tắt nhanh
 
-- **Docs:** `spec.md`, `flashcard-project-plan.md` (roadmap §9), `development-plan.md` (sprint), đồng bộ Import/Media trước SRS
-- **Backend:** Auth + Google + profile PUT; Deck/Card/Topic CRUD; slug `V3`; ADMIN bootstrap
-- **Frontend:** Login/Register/Google; Explore, Dashboard (Home), DeckDetail + slug routes
-- **Infra:** JWT auto-gen script, Postman collection, monorepo `.env` cho Vite
+- **Docs:** `spec.md`, `flashcard-project-plan.md`, `development-plan.md`, `progress.md`
+- **Backend:** Auth + Deck/Card/Topic; Cloudinary upload; CSV import **upsert** theo `front`; Khám phá `findPublicDecks`; `ownerUsername` trên deck
+- **Frontend:** Landing + Home/Explore tách rõ; `EditDeckDialog` (công khai/topic); import dồn deck; lưới thẻ 5 cột gọn
+- **Infra:** JWT script, `.env` monorepo, `CLOUDINARY_*` cho upload ảnh
 
-### Nhánh gợi ý (Sprint 2 FE)
+### Nhánh gợi ý (session hiện tại)
 
 | Phạm vi | Nhánh |
 |---|---|
-| Gộp | `feature/deck-card-crud` |
-| Chỉ backend | `feature/deck-crud-api` |
-| Chỉ frontend | `style/deck-explore-pages` |
+| Gộp Sprint 3 + deck UX | `feature/async-import-media` |
+| Chỉ import upsert | `feature/deck-import-upsert` |
+| Chỉ SRS tiếp | `feature/review-srs` |
 
 ---
 
@@ -100,9 +100,13 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 ### Sprint 3 — Import & Media *(trước SRS — theo flashcard §9)*
 
-- [ ] `POST /media/upload` (Cloudinary)
-- [ ] `POST /decks/import` CSV
-- [ ] FE: upload avatar, ảnh card
+- [x] `POST /media/upload` (Cloudinary, `MediaFolder`)
+- [x] `POST /decks/import` CSV (sync, max 500 thẻ)
+- [x] Import **upsert** trùng `front` trong deck (ưu tiên lần import sau; `addedCount` / `updatedCount`)
+- [x] FE: upload avatar (`/settings`), ảnh card, import CSV Home + DeckDetail
+- [x] `EditDeckDialog` — sửa deck, bật công khai, gắn topic
+- [x] Khám phá chỉ deck public; Home = thư viện cá nhân; hiển thị `ownerUsername`
+- [x] Lưới thẻ compact (5 cột desktop)
 
 ### Sprint 4 — SRS Review
 
@@ -123,6 +127,63 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-06-07 — Deck UX, Khám phá & Import upsert
+
+**Đã làm**
+
+- BE: `findPublicDecks` — Khám phá chỉ deck `isPublic`; `ownerUsername` trên `DeckSummaryResponse`
+- BE: Import CSV upsert theo `front` (dedupe trong file + cập nhật thẻ cũ); response `addedCount` / `updatedCount`
+- FE: `EditDeckDialog` (Cài đặt deck — title, mô tả, công khai, topic)
+- FE: `DeckCard` variant `library` vs `explore` (badge riêng tư / tên người tạo)
+- FE: `CardGridItem` + skeleton — lưới 5 cột, thẻ nhỏ gọn
+- FE: `ImportCsvDialog` — ghi chú trùng `front`; toast thêm mới / cập nhật
+
+**Chưa xong / blocker**
+
+- `CLOUDINARY_*` thật trong `.env` mới upload ảnh được
+- Nguồn gốc deck copy (`source_deck_id`) — chưa có schema
+- Code session chưa commit trên `develop`
+
+**Next**
+
+- Commit/PR gộp Sprint 3 + deck UX
+- Sprint 4: SRS SM-2 + Review UI
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp | `feature/async-import-media` |
+| Chỉ SRS | `feature/review-srs` |
+
+---
+
+### Session 2026-06-08 — Sprint 3 Import & Media
+
+**Đã làm**
+
+- BE: Cloudinary (`MediaService`, `POST /media/upload`), CSV import (`POST /decks/import`)
+- `CsvDeckImporter` — OpenCSV, header `front,back,...`, skip invalid rows
+- FE: `ImageUploadField`, `ImportCsvDialog`, `ProfilePage` (`/settings`)
+- Card form upload ảnh; Home + DeckDetail import CSV
+
+**Chưa xong / blocker**
+
+- Cần `CLOUDINARY_*` trong `.env` để upload ảnh (dev không có → toast lỗi rõ)
+
+**Next**
+
+- Sprint 4: SRS SM-2 + Review UI
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp | `feature/async-import-media` |
+| Chỉ SRS | `feature/review-srs` |
 
 ---
 

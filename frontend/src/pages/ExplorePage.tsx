@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Compass, Search } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { topicsApi } from '@/api/topics'
+import { useAuthStore } from '@/store/authStore'
 import DeckCard from '@/components/deck/DeckCard'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
 import TopicFilter from '@/components/deck/TopicFilter'
 import { inputClass } from '@/components/ui/inputClass'
 
 export default function ExplorePage() {
+  const user = useAuthStore((s) => s.user)
   const [q, setQ] = useState('')
   const [search, setSearch] = useState('')
   const [topicSlug, setTopicSlug] = useState<string | null>(null)
@@ -37,7 +39,9 @@ export default function ExplorePage() {
         <Compass className="h-7 w-7 text-[var(--color-primary)]" />
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Khám phá</h1>
-          <p className="text-sm text-[var(--color-text-muted)]">Duyệt deck công khai từ cộng đồng</p>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Chỉ deck công khai — có tên người tạo và thống kê lượt xem
+          </p>
         </div>
       </div>
 
@@ -75,7 +79,12 @@ export default function ExplorePage() {
         {data && data.content.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.content.map((deck) => (
-              <DeckCard key={deck.id} deck={deck} />
+              <DeckCard
+                key={deck.id}
+                deck={deck}
+                variant="explore"
+                currentUserId={user?.id}
+              />
             ))}
           </div>
         )}

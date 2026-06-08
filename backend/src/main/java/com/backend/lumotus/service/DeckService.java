@@ -6,8 +6,11 @@ import com.backend.lumotus.dto.request.UpdateCardRequest;
 import com.backend.lumotus.dto.request.UpdateDeckRequest;
 import com.backend.lumotus.dto.response.CardResponse;
 import com.backend.lumotus.dto.response.DeckSummaryResponse;
+import com.backend.lumotus.dto.response.ImportDeckResponse;
 import com.backend.lumotus.dto.response.PageResponse;
 import com.backend.lumotus.dto.response.TopicResponse;
+import com.backend.lumotus.service.CsvDeckImporter.ImportRow;
+import com.backend.lumotus.service.CsvDeckImporter.ParseResult;
 import com.backend.lumotus.entity.Card;
 import com.backend.lumotus.entity.Deck;
 import com.backend.lumotus.entity.DeckTopic;
@@ -22,11 +25,17 @@ import com.backend.lumotus.repository.CardRepository;
 import com.backend.lumotus.repository.DeckRepository;
 import com.backend.lumotus.repository.DeckTopicRepository;
 import com.backend.lumotus.repository.TopicRepository;
+import com.backend.lumotus.repository.UserRepository;
 import com.backend.lumotus.security.UserPrincipal;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +52,7 @@ public class DeckService {
     private final CardRepository cardRepository;
     private final DeckTopicRepository deckTopicRepository;
     private final TopicRepository topicRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<DeckSummaryResponse> listDecks(
@@ -57,7 +67,7 @@ public class DeckService {
         Pageable pageable = PageRequest.of(page, size);
         Page<Deck> decks = mineOnly
                 ? deckRepository.findOwnedByUser(principal.getId(), blankToNull(q), pageable)
-                : deckRepository.findVisible(principal.getId(), resolvedTopicId, blankToNull(q), pageable);
+                : deckRepository.findPublicDecks(resolvedTopicId, blankToNull(q), pageable);
         return PageResponse.from(decks.map(this::toSummary));
     }
 
@@ -268,6 +278,85 @@ public class DeckService {
     }
 
     @Transactional
+    public ImportDeckResponse importCsv(
+            MultipartFile file, String title, String deckRef, UserPrincipal principal) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("CSV file is required");
+        }
+        String filename = file.getOriginalFilename();
+        if (filename != null && !filename.toLowerCase().endsWith(".csv")) {
+            throw new BadRequestException("Only CSV files are supported");
+        }
+
+        ParseResult parsed;
+        try {
+            parsed = CsvDeckImporter.parse(file.getInputStream());
+        } catch (IOException ex) {
+            throw new BadRequestException("Failed to read CSV file");
+        }
+
+        Deck deck;
+        String deckTitle = blankToNull(title);
+        if (deckRef != null && !deckRef.isBlank()) {
+            deck = findOwnedDeck(deckRef, principal);
+        } else {
+            if (deckTitle == null) {
+                deckTitle = deriveTitleFromFilename(filename);
+            }
+            deck = new Deck();
+            deck.setSlug(uniqueSlugForOwner(principal.getId(), null, deckTitle));
+            deck.setTitle(deckTitle);
+            deck.setOwnerId(principal.getId());
+            deck.setOwnerType(Deck.OwnerType.USER);
+            deck = deckRepository.save(deck);
+        }
+
+        int sortBase = cardRepository.findMaxSortOrder(deck.getId()) + 1;
+        List<ImportRow> rows = CsvDeckImporter.dedupeByFront(parsed.rows());
+
+        Map<String, Card> existingByFront = new HashMap<>();
+        for (Card existing : cardRepository.findByDeckIdOrderBySortOrderAsc(deck.getId())) {
+            existingByFront.putIfAbsent(CsvDeckImporter.normalizeFrontKey(existing.getFront()), existing);
+        }
+
+        int added = 0;
+        int updated = 0;
+        List<Card> toSave = new ArrayList<>();
+        for (ImportRow row : rows) {
+            String key = CsvDeckImporter.normalizeFrontKey(row.front());
+            Card existing = existingByFront.get(key);
+            if (existing != null) {
+                applyImportRow(existing, row);
+                toSave.add(existing);
+                updated++;
+            } else {
+                Card card = new Card();
+                card.setDeckId(deck.getId());
+                applyImportRow(card, row);
+                card.setSortOrder(sortBase + added);
+                toSave.add(card);
+                existingByFront.put(key, card);
+                added++;
+            }
+        }
+        cardRepository.saveAll(toSave);
+
+        return new ImportDeckResponse(
+                toSummary(deck), added, updated, parsed.errors().size(), List.copyOf(parsed.errors()));
+    }
+
+    private static void applyImportRow(Card card, ImportRow row) {
+        card.setFront(row.front());
+        card.setBack(row.back());
+        card.setPhonetic(row.phonetic());
+        card.setPartOfSpeech(row.partOfSpeech());
+        card.setExample(row.example());
+        card.setHint(row.hint());
+        card.setImageUrl(row.imageUrl());
+        card.setIcon(row.icon());
+    }
+
+    @Transactional
     public void deleteCard(String deckRef, UUID cardId, UserPrincipal principal) {
         Deck deck = findOwnedDeck(deckRef, principal);
         Card card = cardRepository
@@ -366,7 +455,11 @@ public class DeckService {
                 .flatMap(java.util.Optional::stream)
                 .map(TopicResponse::from)
                 .toList();
-        return DeckSummaryResponse.from(deck, cardCount, topics);
+        String ownerUsername = userRepository
+                .findById(deck.getOwnerId())
+                .map(u -> u.getUsername())
+                .orElse("unknown");
+        return DeckSummaryResponse.from(deck, cardCount, topics, ownerUsername);
     }
 
     private void replaceTopics(Deck deck, List<UUID> topicIds) {
@@ -394,5 +487,20 @@ public class DeckService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String deriveTitleFromFilename(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "Imported deck";
+        }
+        String name = filename;
+        int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        if (slash >= 0) {
+            name = name.substring(slash + 1);
+        }
+        if (name.toLowerCase().endsWith(".csv")) {
+            name = name.substring(0, name.length() - 4);
+        }
+        return name.isBlank() ? "Imported deck" : name.trim();
     }
 }

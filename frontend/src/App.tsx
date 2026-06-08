@@ -9,6 +9,7 @@ import HomePage from '@/pages/HomePage'
 import ExplorePage from '@/pages/ExplorePage'
 import DeckDetailPage from '@/pages/DeckDetailPage'
 import PlaceholderPage from '@/pages/PlaceholderPage'
+import ProfilePage from '@/pages/ProfilePage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="explore" element={<ExplorePage />} />
           <Route path="decks/:deckRef" element={<DeckDetailPage />} />
           <Route path="progress" element={<PlaceholderPage title="Tiến độ" />} />
+          <Route path="settings" element={<ProfilePage />} />
         </Route>
       </Route>
 

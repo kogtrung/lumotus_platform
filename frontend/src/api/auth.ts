@@ -15,4 +15,7 @@ export const authApi = {
   logout: () => axiosClient.post('/auth/logout'),
 
   me: () => axiosClient.get<User>('/auth/me'),
+
+  updateProfile: (payload: { username?: string; avatarUrl?: string }) =>
+    axiosClient.put<User>('/auth/me', payload),
 }

@@ -1,14 +1,23 @@
 import { Link } from 'react-router-dom'
-import { Copy, Eye, Layers } from 'lucide-react'
+import { Copy, Eye, Globe, Layers, Lock, User } from 'lucide-react'
 import type { DeckSummary } from '@/types/deck'
 import { cn } from '@/utils/cn'
 
 interface DeckCardProps {
   deck: DeckSummary
+  variant?: 'library' | 'explore'
+  currentUserId?: string
   className?: string
 }
 
-export default function DeckCard({ deck, className }: DeckCardProps) {
+export default function DeckCard({
+  deck,
+  variant = 'library',
+  currentUserId,
+  className,
+}: DeckCardProps) {
+  const isOwn = currentUserId === deck.ownerId
+
   return (
     <Link
       to={`/decks/${deck.slug}`}
@@ -27,9 +36,24 @@ export default function DeckCard({ deck, className }: DeckCardProps) {
       )}
 
       <div className="flex flex-wrap gap-1.5">
-        {deck.isPublic && (
-          <span className="rounded-full bg-[var(--color-primary-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary)]">
-            Công khai
+        {variant === 'library' && (
+          <>
+            {deck.isPublic ? (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-primary-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary)]">
+                <Globe className="h-3 w-3" />
+                Công khai
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-muted)]">
+                <Lock className="h-3 w-3" />
+                Riêng tư
+              </span>
+            )}
+          </>
+        )}
+        {variant === 'explore' && isOwn && (
+          <span className="rounded-full bg-[var(--color-warning)]/15 px-2 py-0.5 text-xs font-medium text-[var(--color-warning)]">
+            Của bạn
           </span>
         )}
         {deck.topics.slice(0, 2).map((t) => (
@@ -47,13 +71,20 @@ export default function DeckCard({ deck, className }: DeckCardProps) {
         {deck.title}
       </h3>
 
+      {variant === 'explore' && (
+        <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
+          <User className="h-3 w-3" />
+          {deck.ownerUsername}
+        </p>
+      )}
+
       {deck.description && (
         <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-muted)]">{deck.description}</p>
       )}
 
       <div className="mt-auto flex items-center gap-3 pt-3 text-xs text-[var(--color-text-muted)]">
         <span>{deck.cardCount} thẻ</span>
-        {deck.isPublic && (
+        {variant === 'explore' && (
           <>
             <span className="inline-flex items-center gap-0.5">
               <Eye className="h-3.5 w-3.5" />
@@ -64,6 +95,9 @@ export default function DeckCard({ deck, className }: DeckCardProps) {
               {deck.copyCount}
             </span>
           </>
+        )}
+        {variant === 'library' && deck.isPublic && (
+          <span className="text-[var(--color-text-muted)]">Đang hiển thị trên Khám phá</span>
         )}
       </div>
     </Link>
