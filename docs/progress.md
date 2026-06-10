@@ -35,15 +35,15 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 |---|---|
 | **Giai đoạn** | Sprint 3 xong — chuẩn bị Sprint 4 SRS |
 | **Branch** | `develop` (chưa commit session này) |
-| **Sprint đang focus** | Sprint 4 SRS Review |
-| **Việc tiếp theo** | SM-2 backend + Review UI |
+| **Sprint đang focus** | Sprint 4 SRS Review (+ roadmap audio 4a–4b) |
+| **Việc tiếp theo** | SM-2 backend + Review UI; upload/phát `audio_url` |
 | **Cập nhật lần cuối** | 2026-06-07 |
 
 ### Tóm tắt nhanh
 
-- **Docs:** `spec.md`, `flashcard-project-plan.md`, `development-plan.md`, `progress.md`
-- **Backend:** Auth + Deck/Card/Topic; Cloudinary upload; CSV import **upsert** theo `front`; Khám phá `findPublicDecks`; `ownerUsername` trên deck
-- **Frontend:** Landing + Home/Explore tách rõ; `EditDeckDialog` (công khai/topic); import dồn deck; lưới thẻ 5 cột gọn
+- **Docs:** `spec.md`, `flashcard-project-plan.md`, `development-plan.md` (kèm roadmap audio), `progress.md`
+- **Backend:** Auth + Deck/Card/Topic; Cloudinary upload; CSV import **upsert**; `V5` `source_deck_id` khi copy; phân trang + search thẻ
+- **Frontend:** Landing; `/home` Dashboard Quizlet-style (gợi ý deck công khai); `/library` quản lý deck; nguồn gốc copy trên thẻ + chi tiết deck
 - **Infra:** JWT script, `.env` monorepo, `CLOUDINARY_*` cho upload ảnh
 
 ### Nhánh gợi ý (session hiện tại)
@@ -86,8 +86,10 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] Fix update deck `topicIds` + `deleteAllByDeckId` query
 - [x] `ADMIN_BOOTSTRAP_EMAIL` — promote user thành ADMIN (dev)
 - [ ] FTS search (`q`) nâng cao qua `search_vector`
-- [x] Explore, Dashboard (Home), DeckDetail FE
+- [x] Explore, Dashboard (`/home`), Library (`/library`), DeckDetail FE
 - [x] API client deck/card/topic + React Query
+- [x] `V5__decks_source_deck.sql` — lineage khi copy deck
+- [x] Trang chủ Quizlet-style: gợi ý deck công khai, strip «Gần đây»
 
 ### Sprint 2b — Slug URLs
 
@@ -103,10 +105,11 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] `POST /media/upload` (Cloudinary, `MediaFolder`)
 - [x] `POST /decks/import` CSV (sync, max 500 thẻ)
 - [x] Import **upsert** trùng `front` trong deck (ưu tiên lần import sau; `addedCount` / `updatedCount`)
-- [x] FE: upload avatar (`/settings`), ảnh card, import CSV Home + DeckDetail
+- [x] FE: upload avatar (`/settings`), ảnh card, import CSV Library + DeckDetail
 - [x] `EditDeckDialog` — sửa deck, bật công khai, gắn topic
-- [x] Khám phá chỉ deck public; Home = thư viện cá nhân; hiển thị `ownerUsername`
-- [x] Lưới thẻ compact (5 cột desktop)
+- [x] Khám phá chỉ deck public; Thư viện = deck của tôi; hiển thị `ownerUsername`
+- [x] Lưới thẻ compact (5 cột desktop); phân trang 50/trang + tìm thẻ
+- [ ] Roadmap audio: upload `audio/` + phát trong Review (xem `development-plan.md`)
 
 ### Sprint 4 — SRS Review
 
@@ -127,6 +130,37 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-06-07 — Trang chủ Quizlet, thư viện & nguồn gốc deck
+
+**Đã làm**
+
+- BE: `V5__decks_source_deck.sql` — `decks.source_deck_id`; `copyDeck` gán nguồn; metadata trên `DeckSummaryResponse`
+- BE: phân trang + search thẻ (`GET /decks/{deckRef}/cards?q=`)
+- FE: tách `/home` (Dashboard Quizlet-style) vs `/library` (quản lý deck); nav Trang chủ / Thư viện / Khám phá
+- FE: strip «Gần đây» + «Gợi ý tham khảo»; hero «Tiếp tục học»; `DeckCard` badge «Copy từ …»; banner nguồn trên `DeckDetailPage`
+- Docs: `development-plan.md` — Sprint 2c, roadmap âm thanh từ vựng (pha 4a–6)
+
+**Chưa xong / blocker**
+
+- Restart backend để Flyway chạy V5 (copy cũ trước migration không có lineage)
+- SRS / Quiz / nghe từ — Sprint 4–5
+- Activity «Gần đây» vẫn theo `updatedAt` deck, chưa theo lịch sử học thật
+
+**Next**
+
+- Sprint 4: SM-2 + Review UI + nút phát `audio_url` (pha 4a–4b)
+- Commit/PR gộp session trên `develop`
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp home + lineage | `feature/deck-home-library` |
+| Chỉ SRS | `feature/review-srs` |
+| Chỉ audio upload | `feature/media-audio-upload` |
 
 ---
 

@@ -108,6 +108,7 @@ Một bộ thẻ (Deck) chứa danh sách các thẻ từ vựng.
 | `generation_prompt`| TEXT | NULL | Prompt dùng để gen bộ thẻ (nếu có) |
 | `view_count` | INT | NOT NULL, DEFAULT 0 | Số lượt xem bộ thẻ |
 | `copy_count` | INT | NOT NULL, DEFAULT 0 | Số lượt được copy |
+| `source_deck_id` | UUID | FK -> `decks.id`, NULL | Deck gốc nếu bản này copy từ Khám phá |
 | `search_vector` | TSVECTOR | GENERATED ALWAYS AS STORED | Cột sinh tự động phục vụ full-text search (xem §2.3) |
 | `deleted_at` | TIMESTAMPTZ | NULL | Thời gian xóa mềm (nếu NULL = chưa xóa) |
 
@@ -438,7 +439,7 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - **`PUT /{deckRef}`**: Cập nhật deck (owner).
 - **`DELETE /{deckRef}`**: Xóa mềm deck.
 - **`POST /{deckRef}/copy`**: Copy deck công khai.
-- **`GET /{deckRef}/cards`**: Danh sách thẻ (phân trang, default 50).
+- **`GET /{deckRef}/cards`**: Danh sách thẻ (phân trang, default 50; `q` tìm front/back/phonetic).
 - **`POST /{deckRef}/cards`**: Thêm thẻ.
 - **`PUT /{deckRef}/cards/{cardId}`**: Sửa thẻ (`cardId` vẫn UUID).
 - **`DELETE /{deckRef}/cards/{cardId}`**: Xóa mềm thẻ.
