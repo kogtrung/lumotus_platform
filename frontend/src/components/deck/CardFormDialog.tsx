@@ -66,7 +66,7 @@ export default function CardFormDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Đóng" />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)]">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto lumo-modal p-6">
         <h2 className="text-lg font-bold text-[var(--color-text)]">{title}</h2>
 
         <form

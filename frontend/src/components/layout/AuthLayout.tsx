@@ -1,5 +1,5 @@
-import { BookOpen } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
+import LumotusLogo from '@/components/brand/LumotusLogo'
 
 export default function AuthLayout() {
   return (
@@ -8,15 +8,12 @@ export default function AuthLayout() {
         className="hidden w-1/2 flex-col justify-between p-12 lg:flex"
         style={{ background: 'var(--gradient-hero)' }}
       >
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-8 w-8 text-[var(--color-primary)]" strokeWidth={2.25} />
-          <span className="text-2xl font-bold text-[var(--color-text)]">Lumotus</span>
-        </div>
-        <div>
+        <LumotusLogo to="/" size="lg" />
+        <div className="lumo-card max-w-md p-8">
           <h1 className="text-3xl font-bold leading-tight text-[var(--color-text)]">
             Học từ vựng thông minh với SRS
           </h1>
-          <p className="mt-4 max-w-md text-[var(--color-text-secondary)]">
+          <p className="mt-4 text-[var(--color-text-secondary)]">
             Ôn tập đúng lúc, theo dõi tiến độ và leo bảng xếp hạng cùng cộng đồng.
           </p>
         </div>
@@ -24,11 +21,10 @@ export default function AuthLayout() {
       </aside>
 
       <main className="flex w-full flex-col items-center justify-center bg-[var(--color-bg)] px-4 py-12 lg:w-1/2">
-        <div className="mb-8 flex items-center gap-2 lg:hidden">
-          <BookOpen className="h-7 w-7 text-[var(--color-primary)]" />
-          <span className="text-xl font-bold text-[var(--color-text)]">Lumotus</span>
+        <div className="mb-8 lg:hidden">
+          <LumotusLogo to="/" size="md" />
         </div>
-        <div className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-card)]">
+        <div className="lumo-modal w-full max-w-md p-8">
           <Outlet />
         </div>
       </main>

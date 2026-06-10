@@ -64,7 +64,7 @@ export default function ImportCsvDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Đóng" />
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)]">
+      <div className="relative z-10 w-full max-w-md lumo-modal p-6">
         <h2 className="text-lg font-bold text-[var(--color-text)]">Import CSV</h2>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           Header: <code className="text-xs">front, back, phonetic, example, hint, image_url, icon</code>

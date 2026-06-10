@@ -26,6 +26,8 @@ interface EditDeckDialogProps {
   deckRef: string
   onClose: () => void
   onUpdated?: () => void
+  onDelete?: () => void
+  deleting?: boolean
 }
 
 export default function EditDeckDialog({
@@ -34,6 +36,8 @@ export default function EditDeckDialog({
   deckRef,
   onClose,
   onUpdated,
+  onDelete,
+  deleting,
 }: EditDeckDialogProps) {
   const queryClient = useQueryClient()
   const { data: topics = [] } = useQuery({
@@ -82,9 +86,11 @@ export default function EditDeckDialog({
         isCopyable: data.isPublic,
         topicIds: data.isPublic ? data.topicIds : [],
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['decks'] })
-      queryClient.invalidateQueries({ queryKey: ['deck', deckRef] })
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['decks'] }),
+        queryClient.refetchQueries({ queryKey: ['deck', deckRef] }),
+      ])
       toast.success('Đã cập nhật deck')
       onClose()
       onUpdated?.()
@@ -115,7 +121,7 @@ export default function EditDeckDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Đóng" />
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-lg">
+      <div className="relative z-10 w-full max-w-md lumo-modal p-6">
         <h2 className="text-lg font-bold text-[var(--color-text)]">Cài đặt deck</h2>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           Bật công khai để deck xuất hiện trên Khám phá.
@@ -204,6 +210,19 @@ export default function EditDeckDialog({
             </button>
           </div>
         </form>
+
+        {onDelete && (
+          <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={onDelete}
+              className="text-sm font-medium text-[var(--color-danger)] hover:underline disabled:opacity-60"
+            >
+              {deleting ? 'Đang xóa...' : 'Xóa deck vĩnh viễn'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

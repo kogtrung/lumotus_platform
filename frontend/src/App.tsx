@@ -5,7 +5,8 @@ import MainLayout from '@/components/layout/MainLayout'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import LandingPage from '@/pages/LandingPage'
-import HomePage from '@/pages/HomePage'
+import DashboardPage from '@/pages/DashboardPage'
+import LibraryPage from '@/pages/LibraryPage'
 import ExplorePage from '@/pages/ExplorePage'
 import DeckDetailPage from '@/pages/DeckDetailPage'
 import PlaceholderPage from '@/pages/PlaceholderPage'
@@ -23,7 +24,8 @@ export default function App() {
 
       <Route element={<PrivateRoute />}>
         <Route element={<MainLayout />}>
-          <Route path="home" element={<HomePage />} />
+          <Route path="home" element={<DashboardPage />} />
+          <Route path="library" element={<LibraryPage />} />
           <Route path="explore" element={<ExplorePage />} />
           <Route path="decks/:deckRef" element={<DeckDetailPage />} />
           <Route path="progress" element={<PlaceholderPage title="Tiến độ" />} />

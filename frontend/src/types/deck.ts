@@ -25,6 +25,10 @@ export interface DeckSummary {
   copyCount: number
   cardCount: number
   topics: Topic[]
+  sourceDeckId: string | null
+  sourceDeckSlug: string | null
+  sourceDeckTitle: string | null
+  sourceOwnerUsername: string | null
   createdAt: string
   updatedAt: string
 }
