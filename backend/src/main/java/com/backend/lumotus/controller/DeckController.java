@@ -94,9 +94,10 @@ public class DeckController {
     public ResponseEntity<PageResponse<CardResponse>> listCards(
             @PathVariable String deckRef,
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return ResponseEntity.ok(deckService.listCards(deckRef, principal, page, size));
+        return ResponseEntity.ok(deckService.listCards(deckRef, principal, page, size, q));
     }
 
     @PostMapping("/{deckRef}/cards")

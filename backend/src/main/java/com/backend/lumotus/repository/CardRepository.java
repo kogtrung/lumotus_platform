@@ -14,6 +14,21 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
 
     Page<Card> findByDeckIdOrderBySortOrderAsc(UUID deckId, Pageable pageable);
 
+    @Query(
+            """
+            SELECT c FROM Card c
+            WHERE c.deckId = :deckId
+            AND (
+                :q IS NULL OR :q = ''
+                OR LOWER(c.front) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.back) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(COALESCE(c.phonetic, '')) LIKE LOWER(CONCAT('%', :q, '%'))
+            )
+            ORDER BY c.sortOrder ASC
+            """)
+    Page<Card> searchByDeckId(
+            @Param("deckId") UUID deckId, @Param("q") String q, Pageable pageable);
+
     List<Card> findByDeckIdOrderBySortOrderAsc(UUID deckId);
 
     Optional<Card> findByIdAndDeckId(UUID id, UUID deckId);

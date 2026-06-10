@@ -22,11 +22,21 @@ public record DeckSummaryResponse(
         int copyCount,
         long cardCount,
         List<TopicResponse> topics,
+        UUID sourceDeckId,
+        String sourceDeckSlug,
+        String sourceDeckTitle,
+        String sourceOwnerUsername,
         Instant createdAt,
         Instant updatedAt) {
 
+    public record SourceMeta(UUID id, String slug, String title, String ownerUsername) {}
+
     public static DeckSummaryResponse from(
-            Deck deck, long cardCount, List<TopicResponse> topics, String ownerUsername) {
+            Deck deck,
+            long cardCount,
+            List<TopicResponse> topics,
+            String ownerUsername,
+            SourceMeta source) {
         return new DeckSummaryResponse(
                 deck.getId(),
                 deck.getSlug(),
@@ -44,6 +54,10 @@ public record DeckSummaryResponse(
                 deck.getCopyCount(),
                 cardCount,
                 topics,
+                source != null ? source.id() : null,
+                source != null ? source.slug() : null,
+                source != null ? source.title() : null,
+                source != null ? source.ownerUsername() : null,
                 deck.getCreatedAt(),
                 deck.getUpdatedAt());
     }
