@@ -65,4 +65,7 @@ public class Deck extends SoftDeleteEntity {
 
     @Column(name = "copy_count", nullable = false)
     private int copyCount = 0;
+
+    @Column(name = "source_deck_id")
+    private UUID sourceDeckId;
 }

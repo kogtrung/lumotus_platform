@@ -45,7 +45,7 @@ export default function UserMenu() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-primary-subtle)] text-sm font-semibold text-[var(--color-primary)] transition-colors hover:border-[var(--color-primary)]"
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[var(--color-primary-subtle)] text-sm font-bold text-[var(--color-primary)] ring-2 ring-transparent transition hover:ring-[var(--color-primary-subtle)]"
         aria-label="Menu tài khoản"
         aria-expanded={open}
       >
@@ -57,9 +57,9 @@ export default function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+        <div className="lumo-modal absolute right-0 z-50 mt-2 w-60 overflow-hidden">
           <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] text-sm font-semibold text-[var(--color-primary)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] text-sm font-bold text-[var(--color-primary)]">
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
               ) : (
@@ -74,7 +74,7 @@ export default function UserMenu() {
 
           <div className="py-1">
             <MenuLink to="/progress" icon={Trophy} onClick={() => setOpen(false)}>
-              Tiến độ & thành tựu
+              Tiến độ
             </MenuLink>
             <MenuLink to="/settings" icon={Settings} onClick={() => setOpen(false)}>
               Cài đặt
@@ -107,9 +107,9 @@ function MenuLink({
     <Link
       to={to}
       onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
+      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4" strokeWidth={2} />
       {children}
     </Link>
   )
@@ -134,13 +134,13 @@ function MenuButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50',
+        'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50',
         variant === 'danger'
           ? 'text-[var(--color-danger)] hover:bg-[var(--color-bg)]'
           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]',
       )}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4" strokeWidth={2} />
       {children}
     </button>
   )

@@ -7,17 +7,18 @@ type ButtonSize = 'sm' | 'md' | 'lg'
 
 const variantClass: Record<ButtonVariant, string> = {
   primary:
-    'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] shadow-sm hover:shadow-md',
+    'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] shadow-[var(--shadow-btn)] hover:shadow-[var(--shadow-btn-hover)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[var(--shadow-btn)]',
   secondary:
-    'bg-[var(--color-secondary)] text-white hover:opacity-90 shadow-sm hover:shadow-md',
+    'bg-[var(--color-secondary)] text-white hover:opacity-90 shadow-[var(--shadow-btn)] hover:-translate-y-0.5 active:translate-y-0',
   outline:
-    'border border-[var(--color-border-strong)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]',
-  ghost: 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)]',
+    'border border-[var(--color-border-strong)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-[var(--shadow-sm)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-0.5 active:translate-y-0',
+  ghost:
+    'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-sm)]',
 }
 
 const sizeClass: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2.5 text-sm',
+  sm: 'px-4 py-1.5 text-sm',
+  md: 'px-5 py-2.5 text-sm',
   lg: 'px-6 py-3 text-base',
 }
 
@@ -42,7 +43,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const classes = cn(
-    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none',
+    'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none',
     variantClass[variant],
     sizeClass[size],
     className,

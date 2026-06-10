@@ -184,6 +184,7 @@ async_jobs >── users
 | `generation_prompt` | TEXT | NULL | |
 | `view_count` | INT | NOT NULL, DEFAULT 0 | Lượt xem |
 | `copy_count` | INT | NOT NULL, DEFAULT 0 | Lượt copy |
+| `source_deck_id` | UUID | NULL, FK → `decks.id` | Deck gốc khi user copy từ Khám phá |
 | `search_vector` | TSVECTOR | GENERATED ALWAYS AS STORED | Full-text search (xem §2.3) |
 
 ---

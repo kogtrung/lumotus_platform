@@ -4,7 +4,9 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 **Liên quan:** [`spec.md`](spec.md) (API & nghiệp vụ) · [`flashcard-project-plan.md`](flashcard-project-plan.md) (roadmap) · [`figma-wireframe-spec.md`](figma-wireframe-spec.md) (input vẽ wireframe Figma)
 
-**Theme:** Light-first · Concept **"Daylight Study"** — sáng, linh hoạt, không chóa mắt.
+**Theme:** Light-first · Concept **"Clean Study"** (Quizlet-inspired) — nền sáng, chrome tối giản, thao tác nhanh.
+
+**Tham chiếu UX:** Quizlet home — sidebar trái, header search + nút tạo, «Quay lại học ngay», «Gần đây», gợi ý ngang.
 
 ---
 
@@ -12,9 +14,10 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 | Nguyên tắc | Mô tả |
 |---|---|
-| **Luminous & Calm** | Nền off-white ấm; tránh pure white toàn viewport và đen tuyệt đối |
+| **Clean & scannable** | Ít shadow, viền mỏng; nội dung chính nổi bật hơn chrome |
+| **Quizlet-familiar** | Sidebar + search header + pill button — quen với người dùng flashcard |
 | **Focus-first** | Review/Quiz tối giản chrome; CTA rõ, không distraction |
-| **Gamification nhẹ** | XP, streak dùng accent vàng-cam pastel — không neon |
+| **Gamification nhẹ** | XP, streak hiển thị gọn — không chiếm hero |
 | **Accessible** | Contrast ≥ 4.5:1 (WCAG AA); SRS buttons có icon + label + màu |
 | **Mobile-first** | Bottom nav mobile; sidebar desktop từ `md` (768px) |
 
@@ -26,15 +29,15 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 | Token | Hex | Dùng cho |
 |---|---|---|
-| `bg` | `#F6F8FB` | Nền trang (mist) |
-| `surface` | `#FFFFFF` | Card, modal, input |
-| `border-subtle` | `#E8EDF4` | Viền nhẹ, divider |
-| `border-strong` | `#D1DAE6` | Viền input focus-off |
-| `primary` | `#5B8DEF` | CTA chính, link active |
-| `primary-hover` | `#4A7FE0` | Hover CTA |
-| `primary-subtle` | `#EBF3FE` | Badge, highlight row, CTA card bg |
-| `secondary` | `#8B7CF6` | Accent phụ |
-| `secondary-subtle` | `#F0EDFE` | Chip accent |
+| `bg` | `#F6F7F9` | Nền vùng nội dung chính |
+| `surface` | `#FFFFFF` | Sidebar, header, card, modal |
+| `border-subtle` | `#E4E6EB` | Viền card, divider |
+| `border-strong` | `#D0D4DC` | Viền input/outline button |
+| `primary` | `#4255FF` | CTA, link active, logo mark (Quizlet blue) |
+| `primary-hover` | `#3245EE` | Hover CTA |
+| `primary-subtle` | `#EDEFFD` | Nav active, chip selected, icon tile |
+| `secondary` | `#586380` | Text phụ, secondary button |
+| `secondary-subtle` | `#F0F2F5` | Nền tile nhẹ |
 
 ### 2.2 Semantic
 
@@ -49,9 +52,9 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 | Token | Hex | Dùng cho |
 |---|---|---|
-| `text-primary` | `#1A2332` | Tiêu đề, nội dung chính |
-| `text-secondary` | `#5A6B82` | Mô tả phụ |
-| `text-muted` | `#8B9BB4` | Caption, placeholder |
+| `text-primary` | `#282E3D` | Tiêu đề, nội dung chính |
+| `text-secondary` | `#586380` | Mô tả phụ |
+| `text-muted` | `#939BB4` | Caption, placeholder |
 | `text-inverse` | `#FFFFFF` | Text trên nút primary |
 
 ### 2.4 Gamification
@@ -92,38 +95,36 @@ background: linear-gradient(135deg, #EBF3FE 0%, #F0EDFE 50%, #FEF3D6 100%);
 
 ```css
 :root {
-  --color-bg: #F6F8FB;
+  --color-bg: #F6F7F9;
   --color-surface: #FFFFFF;
-  --color-primary: #5B8DEF;
-  --color-primary-hover: #4A7FE0;
-  --color-primary-subtle: #EBF3FE;
-  --color-secondary: #8B7CF6;
-  --color-text: #1A2332;
-  --color-text-secondary: #5A6B82;
-  --color-text-muted: #8B9BB4;
-  --color-border: #E8EDF4;
-  --color-success: #3CBF8A;
-  --color-warning: #F0B429;
-  --color-danger: #F07167;
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  --color-primary: #4255FF;
+  --color-primary-hover: #3245EE;
+  --color-primary-subtle: #EDEFFD;
+  --color-text: #282E3D;
+  --color-text-secondary: #586380;
+  --color-text-muted: #939BB4;
+  --color-border: #E4E6EB;
+  --radius-md: 10px;
   --radius-lg: 16px;
-  --radius-xl: 24px;
-  --shadow-card: 0 1px 3px rgba(26,35,50,0.06), 0 4px 12px rgba(26,35,50,0.04);
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 2px rgba(40, 46, 61, 0.06);
+  --shadow-card: 0 1px 3px rgba(40, 46, 61, 0.08);
 }
 ```
+
+**Shadow:** chỉ dùng nhẹ trên card/modal — **không** lift 3D, không `translateY` trên hover.
 
 ### 2.9 Tailwind v4 `@theme` (khi implement)
 
 ```css
 @theme {
-  --color-lumo-bg: #F6F8FB;
+  --color-lumo-bg: #F6F7F9;
   --color-lumo-surface: #FFFFFF;
-  --color-lumo-primary: #5B8DEF;
-  --color-lumo-primary-subtle: #EBF3FE;
-  --color-lumo-text: #1A2332;
-  --color-lumo-muted: #8B9BB4;
-  --color-lumo-border: #E8EDF4;
+  --color-lumo-primary: #4255FF;
+  --color-lumo-primary-subtle: #EDEFFD;
+  --color-lumo-text: #282E3D;
+  --color-lumo-muted: #939BB4;
+  --color-lumo-border: #E4E6EB;
 }
 ```
 
@@ -190,8 +191,8 @@ html { font-family: var(--font-sans); }
 ### 3.4 Icons
 
 - **Library:** Lucide React
-- **Stroke:** 1.5px
-- **Size:** 20px (nav), 24px (action), 16px (inline)
+- **Stroke:** 2px (nav, action) · 1.75px (inline nhỏ)
+- **Size:** 20px (nav), 24px (header action), 16px (meta)
 
 ---
 
@@ -221,35 +222,40 @@ html { font-family: var(--font-sans); }
 | `lg` | ≥ 1024px | 3 col grid, auth split |
 | `xl` | ≥ 1280px | `max-w-6xl` centered |
 
-### 4.2 MainLayout (desktop `md+`)
+### 4.2 MainLayout (desktop `md+`) — Quizlet-style
 
 ```
-┌──────────┬────────────────────────────────────┐
-│ Sidebar  │  Topbar (optional breadcrumb)      │
-│ 240px    │  ─────────────────────────────────  │
-│          │  Main content (max-w-6xl)          │
-│ Logo     │                                    │
-│ Nav      │                                    │
-│          │                                    │
-│ ──────── │                                    │
-│ Avatar   │                                    │
-│ XP badge │                                    │
-└──────────┴────────────────────────────────────┘
+┌────────────┬──────────────────────────────────────────┐
+│ Sidebar    │  Header: [Search pill····]  [+] [Avatar] │
+│ 248px      │  ──────────────────────────────────────── │
+│            │  Main (bg #F6F7F9, max-w-5xl)             │
+│ Logo       │                                          │
+│ Nav links  │                                          │
+│ ─────────  │                                          │
+│ Bắt đầu    │                                          │
+│ tại đây    │                                          │
+└────────────┴──────────────────────────────────────────┘
 ```
 
-**Sidebar nav items:** Trang chủ · Khám phá · Ôn tập · Tiến độ · Xếp hạng · (Admin nếu role)
+**Sidebar nav:** Trang chủ · Thư viện của bạn · Khám phá · Tiến độ
+
+**Nav active:** nền `#EDEFFD`, chữ `#4255FF`, bo góc 10px — không shadow nặng.
+
+**Header search:** pill full-width (max ~640px), nền `#F6F7F9`, submit → `/explore?q=`.
+
+**Nút + (tạo):** circle 40px, primary blue → `/library`.
 
 ### 4.3 MainLayout (mobile)
 
 ```
 ┌────────────────────────────────────┐
-│ Logo                    [Avatar]   │
+│ Logo              [+]    [Avatar]  │
 ├────────────────────────────────────┤
-│                                    │
+│ [Search pill full width]           │
+├────────────────────────────────────┤
 │         Main content               │
-│                                    │
 ├────────────────────────────────────┤
-│ Home │ Explore │ Review │ Pro │ Me │  ← 56px bottom nav
+│ Trang chủ │ Thư viện │ Khám phá │ … │  ← bottom nav
 └────────────────────────────────────┘
 ```
 
@@ -266,12 +272,15 @@ html { font-family: var(--font-sans); }
 |---|---|---|
 | `/login` | Login | AuthLayout |
 | `/register` | Register | AuthLayout |
-| `/` | Dashboard | MainLayout |
-| `/explore` | Explore | MainLayout |
-| `/decks/:id` | Deck Detail | MainLayout |
-| `/decks/:id/review` | Review | MinimalLayout |
-| `/decks/:id/quiz` | Quiz | MinimalLayout |
+| `/` | Landing (marketing) | Standalone |
+| `/home` | Dashboard (Trang chủ) | MainLayout |
+| `/library` | Thư viện deck | MainLayout |
+| `/explore` | Khám phá | MainLayout |
+| `/decks/:deckRef` | Deck Detail | MainLayout |
+| `/decks/:deckRef/review` | Review | MinimalLayout |
+| `/decks/:deckRef/quiz` | Quiz | MinimalLayout |
 | `/progress` | Progress | MainLayout |
+| `/settings` | Profile / cài đặt | MainLayout |
 | `/leaderboard` | Leaderboard | MainLayout |
 | `/admin` | Admin overview | MainLayout |
 
@@ -284,13 +293,18 @@ Path: `frontend/src/components/ui/`
 ### 5.1 Atoms
 
 **Button**
-- Variants: `primary` | `secondary` | `ghost` | `danger`
-- Sizes: `sm` (32px) | `md` (40px) | `lg` (48px)
-- Radius: `12px`
-- Primary: bg `#5B8DEF`, text white; hover `#4A7FE0`
-- Secondary: bg white, border `#E8EDF4`, text `#1A2332`
-- Ghost: transparent, hover `#EBF3FE`
+- Variants: `primary` | `secondary` | `outline` | `ghost`
+- Sizes: `sm` | `md` | `lg`
+- **Radius: pill (`rounded-full`)** — giống Quizlet Continue / CTA
+- Primary: bg `#4255FF`, text white; hover `#3245EE`
+- Outline: border `#D0D4DC`, hover border/text primary
+- Ghost: transparent, hover `#EDEFFD`
 - Disabled: opacity 50%, no pointer
+- **Không** dùng shadow nặng hay `translateY` trên hover
+
+**Search (`AppSearchBar`)**
+- Class `.lumo-search`: pill, nền `#F6F7F9`, icon trái
+- Focus: border primary + ring `#EDEFFD`
 
 **Input / Textarea**
 - Height 40px, radius 12px, border `#E8EDF4`
@@ -391,25 +405,32 @@ Tương tự Login; thêm Username, Confirm password.
 
 Validation inline: email format, password ≥ 8 ký tự, match confirm.
 
-### 6.3 Dashboard (`/`)
+### 6.3 Dashboard (`/home`) — Trang chủ Quizlet-style
 
 **Sections (top → bottom):**
 
-1. Greeting: "Xin chào, {username}" + streak badge + XP chip
-2. **Due CTA card** (primary-subtle): "12 thẻ đến hạn hôm nay" + button "Bắt đầu ôn"
-3. **Stats row:** 3× StatCard — Đã học | Đã thuộc | Quiz tuần này
-4. **Deck gần đây:** horizontal scroll (mobile) / grid 3 col (desktop)
-5. **Shortcuts:** 3 tile — Import file · AI Generate · Khám phá
+1. **Quay lại học ngay** — horizontal scroll 2–4 thẻ lớn; mỗi thẻ: title, `{n} thẻ`, nút pill **Tiếp tục** (primary full-width trong card)
+2. **Gần đây** — list row (icon tile + title + meta `{n} thẻ · bởi {user}`); link «Thư viện →»
+3. **Gợi ý tham khảo** — scroll ngang deck công khai; meta có `ownerUsername`; link «Xem thêm →» `/explore`
 
-**Empty state:** illustration nhẹ + CTA "Tạo deck đầu tiên"
+**Empty state (chưa có deck):** card giữa trang + CTA «Tạo deck» / «Khám phá»
+
+**Không** dùng grid feature roadmap trên trang chủ — giữ gọn như Quizlet.
+
+**Sprint 4+:** thêm Due CTA khi có SRS (`12 thẻ đến hạn`).
 
 ### 6.4 Explore (`/explore`)
 
-- Search input full-width, icon kính lúp, placeholder "Tìm deck..."
-- Topic chips scroll ngang: "Tất cả" (selected) + topics từ API
-- Deck grid 1/2/3/4 columns
-- Mỗi DeckCard: public badge, view/copy count
-- Empty search: "Không tìm thấy deck phù hợp"
+- Search **ở header** (`AppSearchBar`) — query `?q=` trên URL
+- Trang explore: topic chips + grid deck
+- Mỗi DeckCard: owner, view/copy count
+- Empty: dashed border, copy gợi ý bật công khai
+
+### 6.4b Library (`/library`)
+
+- Title «Thư viện của bạn» + count deck
+- Actions: Import CSV (outline) · Tạo deck (primary pill)
+- Grid DeckCard variant `library` — badge riêng tư/công khai, footer «Copy từ …» nếu có `source_deck_id`
 
 ### 6.5 Deck Detail (`/decks/:id`)
 

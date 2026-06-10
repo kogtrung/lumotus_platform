@@ -15,7 +15,8 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 0 | 1 | Docker, Flyway V1, FE shell | ✅ Xong |
 | 1 | 2 | Auth JWT, refresh, RBAC, `GET/PUT /me`, đổi mật khẩu | ✅ Xong |
 | 1b | 2 | Google OAuth (`V2`), FE nút Google | ✅ Xong |
-| 2 | 2 + 3 | Deck/Card/Topic CRUD, copy deck; FE Explore/Dashboard/DeckDetail | ✅ Xong |
+| 2 | 2 + 3 | Deck/Card/Topic CRUD, copy deck; FE Explore/Dashboard/Thư viện/DeckDetail | ✅ Xong |
+| 2c | 2 | Trang chủ Quizlet-style, `source_deck_id` (V5), phân trang + tìm thẻ | ✅ Xong |
 | 2b | 2 | Slug URLs (`V3`), `{deckRef}`, `topicSlug` | ✅ Xong |
 | 3 | 2 | **Import CSV** + **Media upload** (Cloudinary) — *trước SRS, theo §9* | ✅ Xong |
 | 4 | 2 + 3 | SRS SM-2, Review UI, starred | ⏳ Tiếp theo |
@@ -81,10 +82,12 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 
 ### Frontend ✅
 
-- `ExplorePage`, `HomePage`, `DeckDetailPage` — slug URL
+- `ExplorePage`, `DashboardPage` (`/home`), `LibraryPage` (`/library`), `DeckDetailPage` — slug URL
+- Trang chủ kiểu Quizlet: chào + XP/streak, hero «Tiếp tục học», strip «Gần đây» + «Gợi ý tham khảo»
+- Thư viện = quản lý deck (CRUD, import); Khám phá = deck công khai cộng đồng
 - API client deck/card/topic + React Query
 - Tạo deck, CRUD thẻ (owner), copy deck công khai
-- `EditDeckDialog`, phân tách Home vs Khám phá
+- `EditDeckDialog`, badge «Copy từ …» khi deck có `source_deck_id`
 
 **Done khi:** CRUD deck/card end-to-end trên UI ✅ · list explore lọc `topicSlug` ✅ · chỉ deck public trên Khám phá ✅
 
@@ -103,6 +106,22 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 5 | FE routes dùng slug | ✅ |
 
 **Quiz slug (`attemptRef`):** thiết kế trong `spec.md` — implement Sprint 5.
+
+---
+
+## Sprint 2c — Home UX & nguồn gốc deck ✅
+
+**Branch:** gộp trên `develop`
+
+| # | Task | |
+|---|---|---|
+| 1 | `V5__decks_source_deck.sql` — `decks.source_deck_id`; gán khi `copyDeck` | ✅ |
+| 2 | `DeckSummaryResponse`: `sourceDeckId`, `sourceDeckSlug`, `sourceDeckTitle`, `sourceOwnerUsername` | ✅ |
+| 3 | FE `/home` Dashboard Quizlet-style; `/library` quản lý deck | ✅ |
+| 4 | `DeckCard` + `DeckDetailPage` hiển thị nguồn gốc copy | ✅ |
+| 5 | Phân trang thẻ 50/trang + tìm `front`/`back`/`phonetic` | ✅ |
+
+*Copy trước V5 không có lineage — cần copy lại sau migration.*
 
 ---
 
@@ -130,6 +149,23 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 
 - BE: `Sm2Algorithm`, `ReviewService` (`@Transactional` khi rate), `deck_id` trên review
 - FE: `ReviewPage`, flip card, `RatingButtonGroup`, starred
+- FE: nút phát `cards.audio_url` trên mặt thẻ (nếu có URL)
+
+---
+
+## Roadmap âm thanh từ vựng *(song song Sprint 4–5)*
+
+Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — **không chặn SRS**.
+
+| Pha | Phạm vi | Ghi chú |
+|---|---|---|
+| **4a** | Upload audio qua `POST /media/upload` — folder Cloudinary `audio/`; gán `audio_url` khi tạo/sửa thẻ | Mở rộng `MediaFolder`; giới hạn MIME mp3/wav/ogg |
+| **4b** | Review UI: nút 🔊 trên flashcard; preload khi lật thẻ | Dùng `<audio>` + fallback toast nếu URL lỗi |
+| **5a** | CSV import cột `audio_url` (optional) | Cùng upsert theo `front` |
+| **5b** | TTS async (optional): job tạo audio từ `front` — Google Cloud TTS hoặc provider tương đương | `async_jobs`; không block request sync |
+| **6** | Chế độ «Nghe & đánh vần» trong quiz — phonetic + audio | Phụ thuộc quiz session Sprint 5 |
+
+**Ưu tiên MVP:** 4a + 4b (upload + phát trong Review). TTS và quiz nghe để Sprint 5–6.
 
 ---
 

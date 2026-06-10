@@ -33,8 +33,17 @@ export const decksApi = {
 
   copy: (deckRef: string) => axiosClient.post<DeckSummary>(`/decks/${deckRef}/copy`),
 
-  listCards: (deckRef: string, page = 0, size = 50) =>
-    axiosClient.get<PageResponse<Card>>(`/decks/${deckRef}/cards`, { params: { page, size } }),
+  listCards: (
+    deckRef: string,
+    params: { page?: number; size?: number; q?: string } = {},
+  ) =>
+    axiosClient.get<PageResponse<Card>>(`/decks/${deckRef}/cards`, {
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 50,
+        q: params.q || undefined,
+      },
+    }),
 
   addCard: (deckRef: string, payload: CreateCardPayload) =>
     axiosClient.post<Card>(`/decks/${deckRef}/cards`, payload),

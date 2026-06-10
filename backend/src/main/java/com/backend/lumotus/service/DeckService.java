@@ -174,6 +174,7 @@ public class DeckService {
         copy.setCopyable(true);
         copy.setLanguageFront(source.getLanguageFront());
         copy.setLanguageBack(source.getLanguageBack());
+        copy.setSourceDeckId(source.getId());
         Deck savedCopy = deckRepository.save(copy);
 
         for (Card sourceCard : cardRepository.findByDeckIdOrderBySortOrderAsc(source.getId())) {
@@ -204,11 +205,12 @@ public class DeckService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<CardResponse> listCards(String deckRef, UserPrincipal principal, int page, int size) {
+    public PageResponse<CardResponse> listCards(
+            String deckRef, UserPrincipal principal, int page, int size, String q) {
         Deck deck = resolveViewableDeck(deckRef, principal);
         int pageSize = size > 0 ? size : DEFAULT_CARD_PAGE_SIZE;
-        Page<Card> cards =
-                cardRepository.findByDeckIdOrderBySortOrderAsc(deck.getId(), PageRequest.of(page, pageSize));
+        Page<Card> cards = cardRepository.searchByDeckId(
+                deck.getId(), blankToNull(q), PageRequest.of(page, pageSize));
         return PageResponse.from(cards.map(CardResponse::from));
     }
 
@@ -459,7 +461,25 @@ public class DeckService {
                 .findById(deck.getOwnerId())
                 .map(u -> u.getUsername())
                 .orElse("unknown");
-        return DeckSummaryResponse.from(deck, cardCount, topics, ownerUsername);
+        DeckSummaryResponse.SourceMeta source = resolveSourceMeta(deck.getSourceDeckId());
+        return DeckSummaryResponse.from(deck, cardCount, topics, ownerUsername, source);
+    }
+
+    private DeckSummaryResponse.SourceMeta resolveSourceMeta(UUID sourceDeckId) {
+        if (sourceDeckId == null) {
+            return null;
+        }
+        return deckRepository
+                .findById(sourceDeckId)
+                .map(source -> {
+                    String sourceOwner = userRepository
+                            .findById(source.getOwnerId())
+                            .map(u -> u.getUsername())
+                            .orElse("unknown");
+                    return new DeckSummaryResponse.SourceMeta(
+                            source.getId(), source.getSlug(), source.getTitle(), sourceOwner);
+                })
+                .orElse(null);
     }
 
     private void replaceTopics(Deck deck, List<UUID> topicIds) {

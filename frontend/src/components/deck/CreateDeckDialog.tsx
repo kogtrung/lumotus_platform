@@ -89,7 +89,7 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Đóng" />
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-lg">
+      <div className="relative z-10 w-full max-w-md lumo-modal p-6">
         <h2 className="text-lg font-bold text-[var(--color-text)]">Tạo deck mới</h2>
 
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="mt-4 space-y-4">
