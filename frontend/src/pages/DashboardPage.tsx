@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { decksApi } from '@/api/decks'
+import { reviewApi } from '@/api/review'
 import {
   JumpBackStrip,
   RecentList,
@@ -31,6 +32,20 @@ export default function DashboardPage() {
 
   const recentDecks = mineQuery.data ? pickRecent(mineQuery.data.content) : []
   const suggestedDecks = suggestedQuery.data?.content ?? []
+  const jumpBackDecks = recentDecks.slice(0, 4)
+
+  const dueQueries = useQueries({
+    queries: jumpBackDecks.map((deck) => ({
+      queryKey: ['review', 'due', deck.slug, 'summary'],
+      queryFn: () => reviewApi.getDue({ deckRef: deck.slug, limit: 1 }).then((r) => r.data.dueCount),
+      staleTime: 60_000,
+    })),
+  })
+
+  const dueCounts = Object.fromEntries(
+    jumpBackDecks.map((deck, i) => [deck.slug, dueQueries[i]?.data ?? 0]),
+  )
+  const dueLoading = dueQueries.some((q) => q.isLoading)
 
   return (
     <div className="space-y-10">
@@ -52,7 +67,12 @@ export default function DashboardPage() {
       {(mineQuery.isLoading || recentDecks.length > 0) && (
         <section>
           <h2 className="lumo-section-title">Quay lại học ngay</h2>
-          <JumpBackStrip decks={recentDecks} loading={mineQuery.isLoading} />
+          <JumpBackStrip
+            decks={recentDecks}
+            dueCounts={dueCounts}
+            dueLoading={dueLoading}
+            loading={mineQuery.isLoading}
+          />
         </section>
       )}
 

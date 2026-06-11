@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import ImageUploadField from '@/components/ui/ImageUploadField'
+import AudioUploadField from '@/components/ui/AudioUploadField'
 import { inputClass } from '@/components/ui/inputClass'
 import { cn } from '@/utils/cn'
 import type { Card } from '@/types/deck'
@@ -17,7 +18,7 @@ const schema = z.object({
 
 type FormFields = z.infer<typeof schema>
 
-export type CardFormData = FormFields & { imageUrl?: string | null }
+export type CardFormData = FormFields & { imageUrl?: string | null; audioUrl?: string | null }
 
 interface CardFormDialogProps {
   open: boolean
@@ -37,6 +38,7 @@ export default function CardFormDialog({
   onSubmit,
 }: CardFormDialogProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
 
   const {
     register,
@@ -58,6 +60,7 @@ export default function CardFormDialog({
         hint: initial?.hint ?? '',
       })
       setImageUrl(initial?.imageUrl ?? null)
+      setAudioUrl(initial?.audioUrl ?? null)
     }
   }, [open, initial, reset])
 
@@ -70,7 +73,7 @@ export default function CardFormDialog({
         <h2 className="text-lg font-bold text-[var(--color-text)]">{title}</h2>
 
         <form
-          onSubmit={handleSubmit((data) => onSubmit({ ...data, imageUrl }))}
+          onSubmit={handleSubmit((data) => onSubmit({ ...data, imageUrl, audioUrl }))}
           className="mt-4 space-y-4"
         >
           <ImageUploadField
@@ -79,6 +82,8 @@ export default function CardFormDialog({
             value={imageUrl}
             onChange={setImageUrl}
           />
+
+          <AudioUploadField label="Phát âm (audio)" value={audioUrl} onChange={setAudioUrl} />
 
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">
