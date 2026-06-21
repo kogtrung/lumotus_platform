@@ -6,10 +6,14 @@ import { cn } from '@/utils/cn'
 
 interface JumpBackCardProps {
   deck: DeckSummary
+  dueCount?: number
+  dueLoading?: boolean
   className?: string
 }
 
-export function JumpBackCard({ deck, className }: JumpBackCardProps) {
+export function JumpBackCard({ deck, dueCount = 0, dueLoading, className }: JumpBackCardProps) {
+  const hasDue = dueCount > 0
+
   return (
     <article
       className={cn(
@@ -32,14 +36,23 @@ export function JumpBackCard({ deck, className }: JumpBackCardProps) {
         </h3>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           {deck.cardCount} thẻ
+          {dueLoading ? (
+            <> · đang tải…</>
+          ) : hasDue ? (
+            <> · <span className="font-semibold text-[var(--color-primary)]">{dueCount} đến hạn</span></>
+          ) : null}
           {deck.sourceDeckTitle && (
             <> · copy từ {deck.sourceOwnerUsername ?? 'cộng đồng'}</>
           )}
         </p>
       </div>
 
-      <Button to={`/decks/${deck.slug}`} size="md" className="relative mt-4 w-full">
-        Tiếp tục
+      <Button
+        to={hasDue ? `/decks/${deck.slug}/review` : `/decks/${deck.slug}`}
+        size="md"
+        className="relative mt-4 w-full"
+      >
+        {hasDue ? `Ôn ${dueCount} thẻ` : 'Tiếp tục'}
       </Button>
     </article>
   )
@@ -47,10 +60,12 @@ export function JumpBackCard({ deck, className }: JumpBackCardProps) {
 
 interface JumpBackStripProps {
   decks: DeckSummary[]
+  dueCounts?: Record<string, number>
+  dueLoading?: boolean
   loading?: boolean
 }
 
-export function JumpBackStrip({ decks, loading }: JumpBackStripProps) {
+export function JumpBackStrip({ decks, dueCounts, dueLoading, loading }: JumpBackStripProps) {
   if (loading) {
     return (
       <div className="flex gap-4 overflow-hidden">
@@ -69,7 +84,12 @@ export function JumpBackStrip({ decks, loading }: JumpBackStripProps) {
   return (
     <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1">
       {decks.slice(0, 4).map((deck) => (
-        <JumpBackCard key={deck.id} deck={deck} />
+        <JumpBackCard
+          key={deck.id}
+          deck={deck}
+          dueCount={dueCounts?.[deck.slug] ?? 0}
+          dueLoading={dueLoading}
+        />
       ))}
     </div>
   )

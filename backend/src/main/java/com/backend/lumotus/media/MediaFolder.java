@@ -5,7 +5,8 @@ import com.backend.lumotus.exception.BadRequestException;
 public enum MediaFolder {
     AVATARS("avatars"),
     CARDS("cards"),
-    DECKS("decks");
+    DECKS("decks"),
+    AUDIO("audio");
 
     private final String path;
 
@@ -27,6 +28,6 @@ public enum MediaFolder {
                 return folder;
             }
         }
-        throw new BadRequestException("Invalid folder — use avatars, cards, or decks");
+        throw new BadRequestException("Invalid folder — use avatars, cards, decks, or audio");
     }
 }

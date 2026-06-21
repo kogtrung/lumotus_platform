@@ -38,4 +38,53 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
 
     @Query("SELECT COALESCE(MAX(c.sortOrder), -1) FROM Card c WHERE c.deckId = :deckId")
     int findMaxSortOrder(@Param("deckId") UUID deckId);
+
+    @Query(
+            """
+            SELECT c FROM Card c
+            WHERE c.deckId = :deckId
+            AND NOT EXISTS (
+                SELECT 1 FROM UserCardReview r
+                WHERE r.id.userId = :userId AND r.id.cardId = c.id
+            )
+            ORDER BY c.sortOrder ASC
+            """)
+    List<Card> findNewCardsForUser(
+            @Param("deckId") UUID deckId, @Param("userId") UUID userId, Pageable pageable);
+
+    @Query(
+            """
+            SELECT c FROM Card c
+            JOIN Deck d ON d.id = c.deckId
+            WHERE d.ownerId = :userId
+            AND NOT EXISTS (
+                SELECT 1 FROM UserCardReview r
+                WHERE r.id.userId = :userId AND r.id.cardId = c.id
+            )
+            ORDER BY c.sortOrder ASC
+            """)
+    List<Card> findNewCardsForUserAcrossDecks(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query(
+            """
+            SELECT COUNT(c) FROM Card c
+            WHERE c.deckId = :deckId
+            AND NOT EXISTS (
+                SELECT 1 FROM UserCardReview r
+                WHERE r.id.userId = :userId AND r.id.cardId = c.id
+            )
+            """)
+    long countNewCardsForUser(@Param("deckId") UUID deckId, @Param("userId") UUID userId);
+
+    @Query(
+            """
+            SELECT COUNT(c) FROM Card c
+            JOIN Deck d ON d.id = c.deckId
+            WHERE d.ownerId = :userId
+            AND NOT EXISTS (
+                SELECT 1 FROM UserCardReview r
+                WHERE r.id.userId = :userId AND r.id.cardId = c.id
+            )
+            """)
+    long countNewCardsForUserAcrossDecks(@Param("userId") UUID userId);
 }

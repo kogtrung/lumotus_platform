@@ -17,8 +17,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class MediaService {
 
-    private static final Set<String> ALLOWED_CONTENT_TYPES =
+    private static final Set<String> ALLOWED_IMAGE_TYPES =
             Set.of("image/jpeg", "image/png", "image/webp", "image/gif");
+
+    private static final Set<String> ALLOWED_AUDIO_TYPES =
+            Set.of("audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/ogg", "audio/webm");
 
     private final Cloudinary cloudinary;
     private final CloudinaryProperties cloudinaryProperties;
@@ -38,11 +41,21 @@ public class MediaService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+        if (contentType == null) {
+            throw new BadRequestException("Unknown file type");
+        }
+        String normalizedType = contentType.toLowerCase();
+        boolean isAudioFolder = folder == MediaFolder.AUDIO;
+        if (isAudioFolder) {
+            if (!ALLOWED_AUDIO_TYPES.contains(normalizedType)) {
+                throw new BadRequestException("Only MP3, WAV, OGG, WebM audio files are allowed");
+            }
+        } else if (!ALLOWED_IMAGE_TYPES.contains(normalizedType)) {
             throw new BadRequestException("Only JPEG, PNG, WebP, GIF images are allowed");
         }
 
         String uploadFolder = cloudinaryProperties.baseFolder() + "/" + folder.path();
+        String resourceType = isAudioFolder ? "video" : "image";
 
         try {
             @SuppressWarnings("unchecked")
@@ -50,7 +63,7 @@ public class MediaService {
                     .uploader()
                     .upload(
                             file.getBytes(),
-                            ObjectUtils.asMap("folder", uploadFolder, "resource_type", "image"));
+                            ObjectUtils.asMap("folder", uploadFolder, "resource_type", resourceType));
 
             String url = (String) result.get("secure_url");
             String publicId = (String) result.get("public_id");

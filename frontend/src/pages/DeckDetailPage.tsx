@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Copy, FileUp, GitBranch, Plus, Search, Settings, X } from 'lucide-react'
+import { ArrowLeft, Copy, FileUp, GitBranch, Play, Plus, Search, Settings, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { decksApi } from '@/api/decks'
 import CardFormDialog, { type CardFormData } from '@/components/deck/CardFormDialog'
@@ -11,6 +11,7 @@ import CardListPagination from '@/components/deck/CardListPagination'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
 import EditDeckDialog from '@/components/deck/EditDeckDialog'
 import ImportCsvDialog from '@/components/deck/ImportCsvDialog'
+import Button from '@/components/ui/Button'
 import { inputClass } from '@/components/ui/inputClass'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useAuthStore } from '@/store/authStore'
@@ -97,6 +98,7 @@ export default function DeckDetailPage() {
         example: data.example || undefined,
         hint: data.hint || undefined,
         imageUrl: data.imageUrl || undefined,
+        audioUrl: data.audioUrl || undefined,
       }
       return editingCard
         ? decksApi.updateCard(deckRef, editingCard.id, payload)
@@ -225,6 +227,10 @@ export default function DeckDetailPage() {
             )}
             {isOwner && (
               <>
+                <Button to={`/decks/${deckRef}/review`} className={btnPrimary}>
+                  <Play className="h-4 w-4" />
+                  Ôn tập
+                </Button>
                 <button type="button" onClick={() => setEditDeckOpen(true)} className={btnSecondary}>
                   <Settings className="h-4 w-4" />
                   Cài đặt

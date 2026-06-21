@@ -1,6 +1,6 @@
 import axiosClient from '@/api/axiosClient'
 
-export type MediaFolder = 'avatars' | 'cards' | 'decks'
+export type MediaFolder = 'avatars' | 'cards' | 'decks' | 'audio'
 
 export interface MediaUploadResponse {
   url: string
