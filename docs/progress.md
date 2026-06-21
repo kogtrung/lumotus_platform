@@ -33,18 +33,18 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 4 xong — Đang chuyển sang đợt refactor UI học tiếng Anh |
+| **Giai đoạn** | Sprint 4b gần xong — Đang chuyển sang Sprint 5 Quiz & Progress |
 | **Branch** | `develop` |
-| **Sprint đang focus** | UI Refactor Sprint (LandingPage redesign, scroll-aware header) |
-| **Việc tiếp theo** | Refactor Dashboard / Library / Review pages; Figma sync |
+| **Sprint đang focus** | UI Dark Theme Sprint (LandingPage, MainLayout, Explore, Library, Review) |
+| **Việc tiếp theo** | Commit Sprint 4b UI changes → Sprint 5 Quiz session |
 | **Đối chiếu đề tài** | [`spec.md`](spec.md) §8 |
 | **Cập nhật lần cuối** | 2026-06-22 |
 
 ### Tóm tắt nhanh
 
-- **Đã ổn định:** Auth, Deck/Card, Import CSV, Media upload, SRS Review + audio
-- **Đang tập trung:** UI refactor Landing Page (hero, about, features, CTA); scroll-aware header
-- **Chưa triển khai:** Quiz, Progress, Leaderboard, Admin — giữ nguyên Sprint 5–6
+- **Đã ổn định:** Auth, Deck/Card, Import CSV, Media upload, SRS Review + audio, Landing Page UI
+- **Đang tập trung:** Dark theme + full-width layout (LandingPage, MainLayout, Explore, Library, Review, DeckDetail)
+- **Chưa triển khai:** Quiz, Progress/Heatmap/Streak, Leaderboard Redis, Admin — Sprint 5–6
 
 ### Nhánh gợi ý (đợt này)
 
@@ -120,7 +120,17 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] FE: `ReviewPage` — flip thẻ, `RatingButtonGroup`, star, `/decks/:deckRef/review`
 - [x] FE: nút phát `audio_url` (pha 4b) + upload audio (pha 4a)
 - [x] FE: filter ôn chỉ thẻ starred (`?starredOnly=true`)
+- [x] FE: dark theme + full-width layout
 - [ ] Streak scheduler
+
+### Sprint 4b — Dark Theme UI ✅
+
+- [x] `MainLayout.tsx` — background ảnh hero mờ, gradient overlay, full-width
+- [x] `LibraryPage`, `ExplorePage`, `DeckDetailPage` — dark theme
+- [x] `ReviewPage`, `ReviewFlashcard`, `CardGridItem` — dark theme
+- [x] `DeckCard`, `DeckGridSkeleton` — dark glass
+- [x] `LandingPage` — Section 2 & 3 dark, header scroll links
+- [x] `index.css` — `.review-card-inner` dark glass
 
 ### Sprint 5 — Quiz & Progress ⏳
 
@@ -140,37 +150,43 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 ---
 
-### Session 2026-06-22 — Landing Page UI Polish & Header Contrast
+### Session 2026-06-22 — Dark Theme UI + Sprint 4b Hoàn thiện
 
 **Đã làm**
 
-- `LandingPage.tsx` — complete redesign:
-  - **Hero (Section 1):** Video background, gradient overlay, botanical falling cards (6 cards, 25-50s duration, botanical SVG on front face), content repositioned to `justify-end pb-20` to show center of video
-  - **About (Section 2):** Clean white, botanical gentle falling (6 items, 18-30s), removed SRS/SM-2 references from body text, heading leading increased to `1.25/1.15`
-  - **Features (Section 3):** Stats strip (50K+, 500K+, 95% AI, 4.9★) + card grid redesign (AI create, Community, Progress tracking), botanical gentle falling, removed SRS/SM-2 from header
-  - **CTA (Section 4):** Dark purple-black gradient matching hero overlay (`#0a0614`), botanical falling, pink CTA button
-- **Header:** Always transparent, `pointer-events-none` trick, scroll-aware text color (white over dark sections via `getBoundingClientRect`, black over light sections), section IDs for detection
-- **Falling cards:** Reduced from 16 to 6, botanical SVG on front face (stem + leaves + petal), `repeatDelay` increased to 8-20s
-- **Vocab dataset:** 16 words, 1 meaning each, no examples
+- **Dark theme toàn hệ thống:**
+  - `MainLayout.tsx` — background ảnh hero mờ 6%, gradient overlay `#1A1520`, radial glow pink
+  - `LibraryPage.tsx` — full-width (`-mx-4`), grid 4 cột, dark surface `rgba(37,32,48,0.7)`
+  - `ExplorePage.tsx` — search bar, cards, empty state dark; grid 4 cột
+  - `DeckDetailPage.tsx` — header, card list panel, pagination dark
+  - `ReviewPage.tsx` — background gradient, footer glass
+  - `DeckCard.tsx` — dark glass card với border `#3D3348`
+  - `CardGridItem.tsx` — dark card với hover pink accent
+  - `ReviewFlashcard.tsx` — card face dark với shadow glow pink/green
+  - `index.css` — `.review-card-inner` dark glass, `.review-card-inner--back` dark green tint
+  - `DeckGridSkeleton.tsx` — dark placeholder
+- **LandingPage.tsx:**
+  - Section 2 (About): nền `#1A1520`, gradient pink nhạt, text `#F5F0FA`/`#C4B8D9`, hiệu ứng giữ nguyên
+  - Section 3 (Features): nền `#1A1520`, cards dark glass, StatCard dark, hiệu ứng giữ nguyên
+  - Header nav: links scroll thật (`#about-section`, `#features-section`, `#cta-section`)
+  - Page wrapper: nền `#1A1520`
 - Build: `npm run build` ✅
 
 **Chưa xong / blocker**
 
 - Code chưa commit
-- Header `getBoundingClientRect` có thể cần debounce khi resize
 
 **Next**
 
-- Commit landing page UI changes
-- Refactor Dashboard / Library pages
-- Figma wireframe sync
-- Review page polish
+- Commit Sprint 4b UI changes
+- Sprint 5: Quiz session + `attemptRef` slug
+- Sprint 5: Heatmap, streak, stats, leaderboard Redis
 
 **Nhánh gợi ý**
 
 || Phạm vi | Nhánh |
 |---|---|
-| Landing page UI | `style/english-learning-ui` |
+| Dark theme UI | `style/english-learning-ui` |
 | Docs sync only | `docs/ui-refactor-plan` |
 
 ---

@@ -13,6 +13,10 @@ import Button from '@/components/ui/Button'
 import { useAuthStore } from '@/store/authStore'
 import type { DeckSummary } from '@/types/deck'
 
+import heroImage from '@/assets/hero.png'
+
+const HERO_IMAGE = heroImage
+
 function pickRecent(decks: DeckSummary[], limit = 8) {
   return [...decks]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -102,20 +106,20 @@ function StatCard({
   return (
     <div
       ref={ref}
-      className="group bg-white rounded-2xl p-4 shadow-lg border border-[#E2E5EC] hover:border-[#EC4899]/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+      className="group bg-[#252030]/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-[#3D3348] hover:border-[#EC4899]/40 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
     >
       <div className="flex items-center gap-3">
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-          style={{ backgroundColor: `${color}15` }}
+          style={{ backgroundColor: `${color}20` }}
         >
           <Icon className="w-6 h-6" style={{ color }} />
         </div>
         <div>
-          <p className="text-xl font-extrabold text-[#0F172A]">
+          <p className="text-xl font-extrabold text-[#F5F0FA]">
             {count.toLocaleString()}
           </p>
-          <p className="text-xs text-[#94A3B8]">{label}</p>
+          <p className="text-xs text-[#8B7A9E]">{label}</p>
         </div>
       </div>
     </div>
@@ -220,13 +224,13 @@ function DailyGoalCard({ current, goal }: { current: number; goal: number }) {
   }, [progress])
 
   return (
-    <div className="relative bg-white rounded-2xl p-5 shadow-lg border border-[#E2E5EC] hover:border-[#EC4899]/30 transition-all">
+    <div className="relative bg-[#252030]/80 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-[#3D3348] hover:border-[#EC4899]/40 transition-all">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Target className="w-5 h-5 text-[#EC4899]" />
-          <span className="font-semibold text-[#0F172A]">Mục tiêu hôm nay</span>
+          <span className="font-semibold text-[#F5F0FA]">Mục tiêu hôm nay</span>
         </div>
-        <span className="text-sm text-[#64748B]">
+        <span className="text-sm text-[#8B7A9E]">
           <span className="font-bold text-[#EC4899]">{current}</span>/{goal} XP
         </span>
       </div>
@@ -234,7 +238,7 @@ function DailyGoalCard({ current, goal }: { current: number; goal: number }) {
       {/* Progress ring */}
       <div className="relative w-32 h-32 mx-auto">
         <svg className="w-32 h-32 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E5EC" strokeWidth="8" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#3D3348" strokeWidth="8" />
           <circle
             cx="50"
             cy="50"
@@ -255,19 +259,19 @@ function DailyGoalCard({ current, goal }: { current: number; goal: number }) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <TrendingUp className="w-6 h-6 text-[#EC4899] mb-1" />
-          <span className="text-xl font-extrabold text-[#0F172A]">{Math.round(animatedProgress)}%</span>
+          <span className="text-xl font-extrabold text-[#F5F0FA]">{Math.round(animatedProgress)}%</span>
         </div>
       </div>
 
       {progress >= 100 ? (
         <div className="mt-4 text-center">
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#10B981] text-sm font-semibold">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#10B981]/15 text-[#10B981] text-sm font-semibold">
             <Sparkles className="w-4 h-4" />
             Hoàn thành!
           </span>
         </div>
       ) : (
-        <p className="mt-4 text-center text-sm text-[#64748B]">
+        <p className="mt-4 text-center text-sm text-[#8B7A9E]">
           Còn <span className="font-bold text-[#EC4899]">{goal - current}</span> XP nữa để hoàn thành
         </p>
       )}
@@ -320,7 +324,23 @@ export default function DashboardPage() {
   const totalDueCards = Object.values(dueCounts).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: '#1A1520' }}>
+      {/* Hero image as subtle background */}
+      <div 
+        className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage: `url(${HERO_IMAGE})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(8px) saturate(1.2)',
+        }}
+      />
+      {/* Soft gradient overlay for warmth */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1A1520] via-[#252030]/95 to-[#1A1520] opacity-90" />
+      {/* Subtle radial glow from center */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(236,72,153,0.08)_0%,transparent_60%)]" />
+      
+      <div className="relative z-10 space-y-8">
       {/* Streak Banner */}
       <StreakBanner
         streak={MOCK_USER_PROGRESS.streak}
@@ -332,17 +352,17 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Due cards alert */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FEE2E2] to-[#FECACA] p-5 shadow-lg border border-[#FECACA]">
-          <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-[#EF4444]/10 blur-2xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-[#252030]/80 backdrop-blur-sm p-5 shadow-lg border border-[#3D3348]">
+          <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-[#EC4899]/8 blur-2xl" />
           <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md">
+            <div className="w-14 h-14 rounded-xl bg-[#2D2538] flex items-center justify-center shadow-md">
               <span className="text-2xl">📚</span>
             </div>
             <div className="flex-1">
-              <p className="text-lg font-bold text-[#B91C1C]">
+              <p className="text-lg font-bold text-[#F5F0FA]">
                 {totalDueCards || MOCK_USER_PROGRESS.totalCardsLearned / 10} thẻ đến hạn
               </p>
-              <p className="text-sm text-[#DC2626]/80">Cần ôn lại ngay</p>
+              <p className="text-sm text-[#8B7A9E]">Cần ôn lại ngay</p>
             </div>
             <Button to="/library" size="sm" className="shrink-0">
               Ôn ngay
@@ -354,21 +374,21 @@ export default function DashboardPage() {
         <DailyGoalCard current={MOCK_USER_PROGRESS.dailyXp} goal={MOCK_USER_PROGRESS.dailyGoal} />
 
         {/* Weekly XP */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FDF2F8] to-[#FBCFE8] p-5 shadow-lg border border-[#F9A8D4]">
-          <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-[#EC4899]/10 blur-2xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-[#252030]/80 backdrop-blur-sm p-5 shadow-lg border border-[#3D3348]">
+          <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-[#F97316]/8 blur-2xl" />
           <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md">
-              <TrendingUp className="w-7 h-7 text-[#EC4899]" />
+            <div className="w-14 h-14 rounded-xl bg-[#2D2538] flex items-center justify-center shadow-md">
+              <TrendingUp className="w-7 h-7 text-[#F97316]" />
             </div>
             <div className="flex-1">
-              <p className="text-lg font-bold text-[#4338CA]">
+              <p className="text-lg font-bold text-[#F5F0FA]">
                 +{MOCK_USER_PROGRESS.weeklyXp} XP
               </p>
-              <p className="text-sm text-[#EC4899]/80">Tuần này</p>
+              <p className="text-sm text-[#8B7A9E]">Tuần này</p>
             </div>
             <div className="flex -space-x-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-[#EC4899] to-[#FBCFE8] border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-[#EC4899] to-[#F97316] border-2 border-[#252030] flex items-center justify-center text-white text-xs font-bold">
                   {i}
                 </div>
               ))}
@@ -386,12 +406,12 @@ export default function DashboardPage() {
 
       {/* Empty State */}
       {!mineQuery.isLoading && recentDecks.length === 0 && (
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FDF2F8] via-white to-[#FFF7ED] p-8 text-center border border-[#E2E5EC] shadow-lg">
+        <section className="relative overflow-hidden rounded-3xl bg-[#252030]/60 backdrop-blur-sm p-8 text-center border border-[#3D3348] shadow-lg">
           <div className="absolute -top-1/2 -right-1/2 w-64 h-64 rounded-full bg-[#EC4899]/5 blur-3xl" />
           <div className="relative">
             <span className="text-6xl mb-4 block">🌱</span>
-            <p className="text-xl font-bold text-[#0F172A] mb-2">Bắt đầu hành trình học tập</p>
-            <p className="text-[#64748B] mb-6 max-w-md mx-auto">
+            <p className="text-xl font-bold text-[#F5F0FA] mb-2">Bắt đầu hành trình học tập</p>
+            <p className="text-[#8B7A9E] mb-6 max-w-md mx-auto">
               Tạo deck đầu tiên hoặc khám phá kho deck công khai từ cộng đồng
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -412,13 +432,13 @@ export default function DashboardPage() {
       {(mineQuery.isLoading || recentDecks.length > 0) && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-[#0F172A] flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span className="text-2xl">🎯</span>
               Quay lại học ngay
             </h2>
             <Link
               to="/library"
-              className="text-sm font-semibold text-[#EC4899] hover:text-[#4F46E5] flex items-center gap-1 transition-colors"
+              className="text-sm font-semibold text-[#EC4899] hover:text-[#F97316] flex items-center gap-1 transition-colors"
             >
               Xem tất cả
               <ChevronRight className="w-4 h-4" />
@@ -436,13 +456,13 @@ export default function DashboardPage() {
       {/* Recent Section */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-[#0F172A] flex items-center gap-2">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <span className="text-2xl">📋</span>
             Gần đây
           </h2>
           <Link
             to="/library"
-            className="text-sm font-semibold text-[#EC4899] hover:text-[#4F46E5] flex items-center gap-1 transition-colors"
+            className="text-sm font-semibold text-[#EC4899] hover:text-[#F97316] flex items-center gap-1 transition-colors"
           >
             Thư viện
             <ChevronRight className="w-4 h-4" />
@@ -460,17 +480,17 @@ export default function DashboardPage() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-bold text-[#0F172A] flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span className="text-2xl">✨</span>
               Gợi ý cho bạn
             </h2>
-            <p className="text-sm text-[#64748B] mt-0.5">
+            <p className="text-sm text-[#A78BFA] mt-0.5">
               Deck công khai từ cộng đồng
             </p>
           </div>
           <Link
             to="/explore"
-            className="text-sm font-semibold text-[#EC4899] hover:text-[#4F46E5] flex items-center gap-1 transition-colors"
+            className="text-sm font-semibold text-[#EC4899] hover:text-[#F97316] flex items-center gap-1 transition-colors"
           >
             Khám phá
             <ChevronRight className="w-4 h-4" />
@@ -482,6 +502,7 @@ export default function DashboardPage() {
           emptyMessage="Chưa có deck công khai — hãy tạo deck và bật Công khai."
         />
       </section>
+      </div>
     </div>
   )
 }

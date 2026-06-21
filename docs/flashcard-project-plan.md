@@ -705,7 +705,7 @@ lumotus/
 - [ ] Deck tags cá nhân (`deck_tags`)
 - [x] SRS Review: due cards, rating SM-2 *(Sprint 4)*
 - [x] Starred card + filter `starredOnly` *(Sprint 4)*
-- [x] **Landing Page UI Polish** *(Sprint 4b)* — hero video, botanical cards, scroll-aware header, features redesign
+- [x] **Dark theme UI** *(Sprint 4b)* — `#1A1520` background, glass cards, LandingPage, MainLayout, Explore, Library, Review, DeckDetail
 - [ ] Quiz: session, submit, XP *(Sprint 5)*
 - [ ] AI Generate + `async_jobs` polling *(Sprint 6)*
 - [ ] Progress: heatmap, streak, stats, scheduler 00:01 *(Sprint 5)*
@@ -733,6 +733,7 @@ lumotus/
 - [x] Thư viện + Trang chủ Quizlet-style; due CTA «Ôn n thẻ»
 - [x] Flashcard Review: flip 3D (CSS; Framer Motion tùy chọn), Again/Hard/Good/Easy, phonetic + ảnh + audio
 - [x] Starred review mode: `?starredOnly=true` + pill «Chỉ sao»
+- [x] **Dark theme UI**: `#1A1520` bg, glass cards, ảnh nền mờ, full-width layout — LandingPage, MainLayout, Explore, Library, Review, DeckDetail
 - [ ] Quiz: timer đếm ngược, MCQ / True-False, nộp bài, xem điểm
 - [ ] Trang Progress: heatmap streak calendar (GitHub-style), biểu đồ Chart.js, stats
 - [ ] Leaderboard: bảng xếp hạng avatar + điểm XP

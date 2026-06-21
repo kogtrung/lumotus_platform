@@ -816,3 +816,4 @@ volumes:
 | P2 | Framer Motion flip (hoặc giữ CSS 3D, ghi rõ trong báo cáo) | — |
 | P2 | Offline batch (cache phiên review) | 5+ |
 | P2 | `frontend/README.md` | 6 |
+| P0 | **Dark theme UI** — toàn bộ hệ thống (MainLayout, Landing, Explore, Library, Review, DeckDetail) | 4b |

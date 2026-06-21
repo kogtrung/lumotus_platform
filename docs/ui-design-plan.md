@@ -4,7 +4,7 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 **Liên quan:** [`spec.md`](spec.md) (API & nghiệp vụ) · [`flashcard-project-plan.md`](flashcard-project-plan.md) (roadmap) · [`figma-wireframe-spec.md`](figma-wireframe-spec.md) (input vẽ wireframe Figma)
 
-**Theme:** Light-first · Concept **"Lush & Vibrant"** — màu sắc đậm đà, gradient nhấn mạnh, glow effects, độ tương phản cao.
+**Theme:** Dark-first (Sprint 4b) · Concept **"Lush & Vibrant"** — màu sắc đậm đà, gradient nhấn mạnh, glow effects, độ tương phản cao. Đã triển khai dark theme toàn hệ thống.
 
 **Tham chiếu UX:** Quizlet home — sidebar trái, header search + nút tạo, «Quay lại học ngay», «Gần đây», gợi ý ngang.
 
@@ -550,8 +550,8 @@ Landing page là trang marketing hiển thị cho khách (chưa đăng nhập). 
 || Section | Background | Falling objects | Content |
 |---|---|---|---|
 | Hero | Video background + gradient overlay | 6 botanical flashcard cards (25-50s) | Badge, giant heading, description, CTA buttons, stats |
-| About | White | 6 gentle botanical items (18-30s) | Heading multi-style, body text |
-| Features | `#F8FAFC` | 6 gentle botanical items | Stats strip (50K+, 500K+, 95% AI, 4.9★) + 4-card grid |
+| About | Dark `#1A1520` + gradient pink | 6 gentle botanical items (18-30s) | Heading multi-style, body text |
+| Features | Dark `#1A1520` + gradient pink | 6 gentle botanical items | Stats strip (50K+, 500K+, 95% AI, 4.9★) + 4-card grid (dark glass) |
 | CTA | Dark `#0a0614` + gradient | Botanical falling | Badge, heading, description, CTA buttons |
 
 ### Design tokens (Landing)
@@ -567,11 +567,10 @@ Landing page là trang marketing hiển thị cho khách (chưa đăng nhập). 
 ### Header (scroll-aware)
 
 - Always transparent (no background on scroll)
-- Text color changes based on section background:
-  - White text when over dark sections (Hero, CTA)
-  - Dark text (`#0F172A`) when over light sections (About, Features)
-- Detection: `getBoundingClientRect` of `#hero-section` and `#cta-section`
+- Text color: `#F5F0FA` (white-ish) over all sections (all dark theme since Sprint 4b)
+- Detection: `getBoundingClientRect` of `#hero-section` and `#cta-section` — simplifies to always white
 - `pointer-events-none` on header + `pointer-events-auto` on children
+- Nav links scroll to `#about-section`, `#features-section`, `#cta-section`
 
 ### Falling botanical cards
 
@@ -658,18 +657,27 @@ Landing page là trang marketing hiển thị cho khách (chưa đăng nhập). 
 
 ---
 
-## 11. Phase 2 — Dark Mode (optional)
+## 11. Dark Mode ✅ (Sprint 4b)
 
-| Token | Light | Dark |
+> **Đã triển khai Sprint 4b** — Dark theme cho toàn bộ hệ thống.
+
+| Token | Hex | Dùng cho |
 |---|---|---|
-| bg | `#F6F8FB` | `#13131F` |
-| surface | `#FFFFFF` | `#1E1E2E` |
-| text | `#1A2332` | `#E2E8F0` |
-| border | `#E8EDF4` | `#3B3B52` |
-| primary | `#5B8DEF` | `#7BA3F7` |
+| `bg` | `#1A1520` | Nền chính (deep purple-black) |
+| `surface` | `#252030` | Sidebar, header, card, modal (80% opacity glass) |
+| `elevated` | `#2D2538` | Card hover, elevated surface |
+| `border` | `#3D3348` / `#4A4060` | Viền card, divider |
+| `text-primary` | `#F5F0FA` | Tiêu đề, nội dung chính |
+| `text-secondary` | `#C4B8D9` | Mô tả phụ |
+| `text-muted` | `#8B7A9E` | Caption, placeholder |
+| `primary` | `#EC4899` | CTA, link active (pink) |
+| `accent` | `#F97316` | Accent gradient end (orange) |
+| `glow-shadow` | `rgba(236,72,153,0.15)` | Card glow, button shadow |
 
-Toggle qua `data-theme="dark"` trên `<html>` + Zustand `uiStore`.
+**Background effect:** Ảnh hero mờ 6% + gradient overlay `#1A1520` + radial glow pink ở góc.
+
+**Components affected:** MainLayout, LandingPage, LibraryPage, ExplorePage, DeckDetailPage, ReviewPage, ReviewFlashcard, DeckCard, CardGridItem.
 
 ---
 
-*Tài liệu UI — Lumotus · Cập nhật: 2026-06-07 · Tham chiếu wireframe: [`figma-wireframe-spec.md`](figma-wireframe-spec.md)*
+*Tài liệu UI — Lumotus · Cập nhật: 2026-06-22 · Sprint 4b Dark Theme ✅*

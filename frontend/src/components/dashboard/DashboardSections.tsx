@@ -17,7 +17,7 @@ export function JumpBackCard({ deck, dueCount = 0, dueLoading, className }: Jump
   return (
     <article
       className={cn(
-        'group relative flex min-w-[260px] max-w-[300px] shrink-0 flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-gradient-to-br from-white to-slate-50 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#EC4899]/30 hover:shadow-[var(--shadow-card-hover)] sm:min-w-[280px]',
+        'group relative flex min-w-[260px] max-w-[300px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#EC4899]/50 hover:shadow-xl sm:min-w-[280px]',
         hasDue && 'border-[#EC4899]/50',
         className,
       )}
@@ -26,7 +26,7 @@ export function JumpBackCard({ deck, dueCount = 0, dueLoading, className }: Jump
       <div
         className={cn(
           'absolute inset-x-0 top-0 h-1 rounded-t-2xl transition-all duration-300',
-          hasDue ? 'bg-gradient-to-r from-[#EC4899] to-[#FBCFE8]' : 'bg-gradient-to-r from-slate-200 to-slate-300',
+          hasDue ? 'bg-gradient-to-r from-[#EC4899] to-[#F97316]' : 'bg-gradient-to-r from-[#3D3348] to-[#4A4060]',
         )}
       />
 
@@ -37,29 +37,24 @@ export function JumpBackCard({ deck, dueCount = 0, dueLoading, className }: Jump
 
       {/* Decorative shapes */}
       <div
-        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-30 transition-opacity duration-300 group-hover:opacity-50"
-        style={{ background: 'linear-gradient(135deg, #FDF2F8, #FBCFE8)' }}
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute bottom-0 right-8 h-16 w-16 rounded-full opacity-20"
-        style={{ background: 'linear-gradient(135deg, #FFF7ED, #FED7AA)' }}
+        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-15 transition-opacity duration-300 group-hover:opacity-30"
+        style={{ background: 'linear-gradient(135deg, #EC4899/40, #F97316/30)' }}
         aria-hidden
       />
 
       <div className="relative min-w-0 flex-1 pt-2">
         {/* Due badge */}
         {hasDue && !dueLoading && (
-          <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-[#FEE2E2] px-2 py-0.5 text-xs font-semibold text-[#DC2626]">
+          <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-[#EC4899]/15 px-2 py-0.5 text-xs font-semibold text-[#EC4899]">
             <Flame className="h-3 w-3" />
             {dueCount} thẻ đến hạn
           </div>
         )}
 
-        <h3 className="line-clamp-2 text-lg font-bold leading-snug text-[var(--color-text)] transition-colors group-hover:text-[#EC4899]">
+        <h3 className="line-clamp-2 text-lg font-bold leading-snug text-[#F5F0FA] transition-colors group-hover:text-[#EC4899]">
           {deck.title}
         </h3>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-[#8B7A9E]">
           <span>{deck.cardCount} thẻ</span>
           {dueLoading && (
             <span className="flex items-center gap-1">
@@ -78,7 +73,7 @@ export function JumpBackCard({ deck, dueCount = 0, dueLoading, className }: Jump
         size="md"
         className={cn(
           'relative mt-4 w-full transition-all',
-          hasDue && 'bg-[#EC4899] hover:bg-[#4F46E5]',
+          hasDue && 'bg-[#EC4899] hover:bg-[#DB2777]',
         )}
       >
         {hasDue ? (
@@ -111,11 +106,11 @@ export function JumpBackStrip({ decks, dueCounts, dueLoading, loading }: JumpBac
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="h-[160px] min-w-[260px] rounded-2xl bg-gradient-to-br from-white to-slate-50 p-5 sm:min-w-[280px]"
+            className="h-[160px] min-w-[260px] rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm p-5 sm:min-w-[280px]"
           >
-            <div className="h-6 w-3/4 rounded-lg bg-[#E2E8F0] animate-pulse mb-2" />
-            <div className="h-4 w-1/2 rounded-lg bg-[#F1F5F9] animate-pulse mb-4" />
-            <div className="h-10 w-full rounded-full bg-[#E2E8F0] animate-pulse mt-auto" />
+            <div className="h-6 w-3/4 rounded-lg bg-[#2D2538] animate-pulse mb-2" />
+            <div className="h-4 w-1/2 rounded-lg bg-[#2D2538] animate-pulse mb-4" />
+            <div className="h-10 w-full rounded-full bg-[#2D2538] animate-pulse mt-auto" />
           </div>
         ))}
       </div>
@@ -150,11 +145,11 @@ export function RecentList({ decks, loading, emptyMessage, currentUsername }: Re
     return (
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-white to-slate-50 p-3">
-            <div className="h-10 w-10 rounded-lg bg-[#E2E8F0] animate-pulse" />
+          <div key={i} className="flex items-center gap-3 rounded-xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm p-3">
+            <div className="h-10 w-10 rounded-lg bg-[#2D2538] animate-pulse" />
             <div className="flex-1">
-              <div className="h-4 w-3/4 rounded-lg bg-[#F1F5F9] animate-pulse mb-1" />
-              <div className="h-3 w-1/2 rounded-lg bg-[#F1F5F9] animate-pulse" />
+              <div className="h-4 w-3/4 rounded-lg bg-[#2D2538] animate-pulse mb-1" />
+              <div className="h-3 w-1/2 rounded-lg bg-[#2D2538] animate-pulse" />
             </div>
           </div>
         ))}
@@ -164,21 +159,21 @@ export function RecentList({ decks, loading, emptyMessage, currentUsername }: Re
 
   if (decks.length === 0 && emptyMessage) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-[#E2E5EC] bg-gradient-to-br from-white to-slate-50 p-8 text-center">
-        <p className="font-semibold text-[var(--color-text)]">{emptyMessage}</p>
+      <div className="rounded-2xl border-2 border-dashed border-[#3D3348] bg-[#252030]/60 backdrop-blur-sm p-8 text-center">
+        <p className="font-semibold text-[#F5F0FA]">{emptyMessage}</p>
       </div>
     )
   }
 
   return (
-    <ul className="divide-y divide-[#E2E5EC] rounded-2xl border border-[#E2E5EC] bg-gradient-to-br from-white to-slate-50 overflow-hidden">
+    <ul className="divide-y divide-[#3D3348] rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm overflow-hidden">
       {decks.map((deck) => (
         <li key={deck.id}>
           <Link
             to={`/decks/${deck.slug}`}
-            className="group flex items-center gap-3 p-4 transition-all hover:bg-[#FDF2F8]"
+            className="group flex items-center gap-3 p-4 transition-all hover:bg-[#2D2538]/50"
           >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FDF2F8] to-[#FBCFE8] transition-transform group-hover:scale-105">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2D2538] transition-transform group-hover:scale-105">
               {deck.coverImageUrl ? (
                 <img
                   src={deck.coverImageUrl}
@@ -190,17 +185,17 @@ export function RecentList({ decks, loading, emptyMessage, currentUsername }: Re
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-[var(--color-text)] transition-colors group-hover:text-[#EC4899]">
+              <p className="truncate font-semibold text-[#F5F0FA] transition-colors group-hover:text-[#EC4899]">
                 {deck.title}
               </p>
-              <p className="truncate text-sm text-[var(--color-text-muted)]">
+              <p className="truncate text-sm text-[#8B7A9E]">
                 {deck.cardCount} thẻ · bởi {currentUsername ?? 'bạn'}
                 {deck.sourceDeckTitle && (
                   <> · copy từ {deck.sourceOwnerUsername ?? deck.sourceDeckTitle}</>
                 )}
               </p>
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:translate-x-1 group-hover:text-[#EC4899]" />
+            <ArrowRight className="h-4 w-4 shrink-0 text-[#8B7A9E] transition-transform group-hover:translate-x-1 group-hover:text-[#EC4899]" />
           </Link>
         </li>
       ))}
@@ -219,10 +214,10 @@ export function SuggestedStrip({ decks, loading, emptyMessage }: SuggestedStripP
     return (
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex w-[152px] shrink-0 flex-col rounded-xl border border-[#E2E5EC] bg-gradient-to-br from-white to-slate-50 p-3">
-            <div className="mb-2 flex h-14 items-center justify-center rounded-lg bg-[#E2E8F0] animate-pulse" />
-            <div className="h-4 w-3/4 rounded-lg bg-[#F1F5F9] animate-pulse mb-1" />
-            <div className="h-3 w-1/2 rounded-lg bg-[#F1F5F9] animate-pulse" />
+          <div key={i} className="flex w-[152px] shrink-0 flex-col rounded-xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm p-3">
+            <div className="mb-2 flex h-14 items-center justify-center rounded-lg bg-[#2D2538] animate-pulse" />
+            <div className="h-4 w-3/4 rounded-lg bg-[#2D2538] animate-pulse mb-1" />
+            <div className="h-3 w-1/2 rounded-lg bg-[#2D2538] animate-pulse" />
           </div>
         ))}
       </div>
@@ -231,8 +226,8 @@ export function SuggestedStrip({ decks, loading, emptyMessage }: SuggestedStripP
 
   if (decks.length === 0 && emptyMessage) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-[#E2E5EC] bg-gradient-to-br from-white to-slate-50 p-8 text-center">
-        <p className="text-sm text-[var(--color-text-muted)]">{emptyMessage}</p>
+      <div className="rounded-2xl border-2 border-dashed border-[#3D3348] bg-[#252030]/60 backdrop-blur-sm p-8 text-center">
+        <p className="text-sm text-[#8B7A9E]">{emptyMessage}</p>
       </div>
     )
   }
@@ -243,9 +238,9 @@ export function SuggestedStrip({ decks, loading, emptyMessage }: SuggestedStripP
         <Link
           key={deck.id}
           to={`/decks/${deck.slug}`}
-          className="group flex w-[152px] shrink-0 flex-col rounded-xl border border-[#E2E5EC] bg-gradient-to-br from-white to-slate-50 p-3 transition-all hover:-translate-y-1 hover:border-[#EC4899]/50 hover:shadow-[var(--shadow-card-hover)]"
+          className="group flex w-[152px] shrink-0 flex-col rounded-xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm p-3 transition-all hover:-translate-y-1 hover:border-[#EC4899]/50 hover:shadow-xl"
         >
-          <div className="mb-2 flex h-14 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDF2F8] to-[#FBCFE8] transition-transform group-hover:scale-105">
+          <div className="mb-2 flex h-14 items-center justify-center rounded-lg bg-[#2D2538] transition-transform group-hover:scale-105">
             {deck.coverImageUrl ? (
               <img
                 src={deck.coverImageUrl}
@@ -256,10 +251,10 @@ export function SuggestedStrip({ decks, loading, emptyMessage }: SuggestedStripP
               <Layers className="h-6 w-6 text-[#EC4899]" strokeWidth={2} />
             )}
           </div>
-          <p className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--color-text)] transition-colors group-hover:text-[#EC4899]">
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-[#F5F0FA] transition-colors group-hover:text-[#EC4899]">
             {deck.title}
           </p>
-          <p className="mt-1 truncate text-xs text-[var(--color-text-muted)]">
+          <p className="mt-1 truncate text-xs text-[#8B7A9E]">
             {deck.cardCount} thẻ · {deck.ownerUsername}
           </p>
         </Link>

@@ -65,15 +65,15 @@ export default function ExplorePage() {
       {/* Header with search */}
       <div className="relative">
         {/* Background decoration */}
-        <div className="absolute inset-x-0 -top-8 h-40 bg-gradient-to-b from-[#FDF2F8]/50 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 -top-8 h-40 bg-gradient-to-b from-[rgba(236,72,153,0.08)] to-transparent pointer-events-none" />
 
         <div className="relative">
           {/* Title */}
           <div className="flex items-center gap-3 mb-4">
             <span className="text-3xl">🔍</span>
             <div>
-              <h1 className="text-2xl font-extrabold text-[#0F172A]">Khám phá</h1>
-              <p className="text-[#64748B]">
+              <h1 className="text-2xl font-extrabold text-[#F5F0FA]">Khám phá</h1>
+              <p className="text-[#8B7A9E]">
                 Deck công khai từ cộng đồng — copy về thư viện để học
               </p>
             </div>
@@ -81,21 +81,21 @@ export default function ExplorePage() {
 
           {/* Search bar */}
           <form onSubmit={handleSearch} className="relative max-w-2xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94A3B8]" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8B7A9E]" />
             <input
               type="text"
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Tìm kiếm deck..."
-              className="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-white border-2 border-[#E2E5EC] text-base focus:outline-none focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 transition-all shadow-lg"
+              className="w-full pl-12 pr-24 py-3.5 rounded-2xl bg-[#252030]/80 backdrop-blur-sm border-2 border-[#3D3348] text-base text-[#F5F0FA] placeholder:text-[#8B7A9E] focus:outline-none focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 transition-all shadow-lg"
             />
             {localSearch && (
               <button
                 type="button"
                 onClick={clearSearch}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[#F1F5F9] transition-colors"
+                className="absolute right-20 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[#2D2538] transition-colors"
               >
-                <X className="w-4 h-4 text-[#94A3B8]" />
+                <X className="w-4 h-4 text-[#8B7A9E]" />
               </button>
             )}
             <button
@@ -109,8 +109,8 @@ export default function ExplorePage() {
           {/* Search result info */}
           {urlQ && (
             <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-[#64748B]">
-                Kết quả cho "<span className="font-semibold text-[#0F172A]">{urlQ}</span>"
+              <span className="text-sm text-[#8B7A9E]">
+                Kết quả cho "<span className="font-semibold text-[#F5F0FA]">{urlQ}</span>"
               </span>
               <button
                 onClick={clearSearch}
@@ -158,7 +158,7 @@ export default function ExplorePage() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Compass className="w-5 h-5 text-[#EC4899]" />
-            <h2 className="font-semibold text-[#0F172A]">Chủ đề</h2>
+            <h2 className="font-semibold text-[#F5F0FA]">Chủ đề</h2>
           </div>
           <TopicFilter topics={topics} selectedSlug={topicSlug} onChange={setTopicSlug} />
         </div>
@@ -172,7 +172,7 @@ export default function ExplorePage() {
             {totalDecks > 0 && (
               <>
                 <Sparkles className="w-5 h-5 text-[#F97316]" />
-                <p className="font-semibold text-[#0F172A]">
+                <p className="font-semibold text-[#F5F0FA]">
                   <span className="text-[#EC4899]">{totalDecks}</span> deck được tìm thấy
                 </p>
               </>
@@ -182,8 +182,8 @@ export default function ExplorePage() {
 
         {/* Loading */}
         {isLoading && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
               <DeckGridSkeleton key={i} />
             ))}
           </div>
@@ -191,23 +191,23 @@ export default function ExplorePage() {
 
         {/* Error */}
         {isError && (
-          <div className="rounded-2xl bg-[#FEF2F2] border border-[#FECACA] p-6 text-center">
-            <p className="font-semibold text-[#DC2626]">Không tải được danh sách deck</p>
-            <p className="text-sm text-[#DC2626]/70 mt-1">Vui lòng thử lại sau</p>
+          <div className="rounded-2xl bg-[rgba(239,68,68,0.12)] border border-[#3D3348] p-6 text-center">
+            <p className="font-semibold text-[#EF4444]">Không tải được danh sách deck</p>
+            <p className="text-sm text-[#8B7A9E] mt-1">Vui lòng thử lại sau</p>
           </div>
         )}
 
         {/* Empty */}
         {!isLoading && !isError && totalDecks === 0 && (
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#F1F5F9] to-white p-12 text-center border border-[#E2E5EC]">
+          <div className="relative overflow-hidden rounded-3xl bg-[#252030]/60 backdrop-blur-sm p-12 text-center border border-[#3D3348]">
             <div className="absolute -top-1/2 -right-1/2 w-64 h-64 rounded-full bg-[#EC4899]/5 blur-3xl" />
 
             <div className="relative">
               <span className="text-5xl mb-4 block">🔍</span>
-              <h2 className="text-xl font-bold text-[#0F172A] mb-2">
+              <h2 className="text-xl font-bold text-[#F5F0FA] mb-2">
                 {urlQ ? 'Không tìm thấy kết quả' : 'Chưa có deck công khai'}
               </h2>
-              <p className="text-[#64748B] mb-6 max-w-md mx-auto">
+              <p className="text-[#8B7A9E] mb-6 max-w-md mx-auto">
                 {urlQ
                   ? `Không có deck nào phù hợp với "${urlQ}". Thử từ khóa khác hoặc xem tất cả deck.`
                   : 'Hãy tạo deck đầu tiên và bật chế độ Công khai để chia sẻ với cộng đồng.'}
@@ -234,7 +234,7 @@ export default function ExplorePage() {
 
         {/* Deck grid */}
         {!isLoading && !isError && totalDecks > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {data?.content.map((deck) => (
               <DeckCard
                 key={deck.id}

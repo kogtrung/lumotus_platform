@@ -20,7 +20,7 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 2b | 2 | Slug URLs (`V3`), `{deckRef}`, `topicSlug` | ✅ Xong |
 | 3 | 2 | **Import CSV** + **Media upload** (Cloudinary) — *trước SRS, theo §9* | ✅ Xong |
 | 4 | 2 + 3 | SRS SM-2, Review UI, starred, audio | ✅ MVP |
-| 4b | 2 + 3 | Landing Page UI Polish — hero video, botanical cards, scroll-aware header, features redesign | ✅ In progress |
+| 4b | 2 + 3 | Dark theme UI + ảnh nền cho toàn bộ hệ thống | ✅ Xong |
 | 5 | 2 + 3 | Quiz, heatmap, streak, stats, leaderboard | ⏳ Chưa |
 | 6 | 2 + 3 + 4 | AI generate (async jobs), Admin UI, MockMvc ≥8, Swagger đầy đủ, polish | ⏳ Chưa |
 
@@ -155,28 +155,45 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 3 | FE: `ReviewPage`, flip 3D, `RatingButtonGroup`, xáo trộn | ✅ |
 | 4 | FE: audio upload (4a) + nút phát (4b) | ✅ |
 | 5 | FE: Dashboard due CTA | ✅ |
-| 6 | Framer Motion flip *(tùy chọn — hiện CSS 3D)* | ⏳ |
+| 6 | Streak scheduler | ⏳ |
 
 > **Đối chiếu đề tài:** [`spec.md`](spec.md) §8
 
 ---
 
-## Sprint 4b — Landing Page UI Polish ✅ *(in progress)*
+## Sprint 4b — Dark Theme UI ✅
 
 **Branch:** `style/english-learning-ui`
 
-|| # | Task | |
+> Giao diện dark theme + ảnh nền cho toàn bộ hệ thống.
+
+| # | Task | Trạng thái |
 |---|---|---|
-| 1 | `LandingPage.tsx` — complete redesign | ✅ |
-| 2 | Hero: video background + gradient overlay + botanical falling cards | ✅ |
-| 3 | Hero: content repositioned to show center of video | ✅ |
-| 4 | Falling cards: reduced to 6, botanical SVG on front, slow 25-50s | ✅ |
-| 5 | About: clean white, botanical gentle falling, no SRS/SM-2 refs | ✅ |
-| 6 | Features: stats strip + card grid redesign (AI, Community, Progress) | ✅ |
-| 7 | CTA: dark purple-black gradient, botanical falling | ✅ |
-| 8 | Header: always transparent, scroll-aware text color | ✅ |
-| 9 | Vocab dataset: 16 words, 1 meaning each | ✅ |
+| 1 | `MainLayout.tsx` — ảnh hero mờ 6%, gradient overlay `#1A1520`, full-width | ✅ |
+| 2 | `LibraryPage.tsx` — dark surface, full-width, grid 4 cột | ✅ |
+| 3 | `ExplorePage.tsx` — search bar + cards dark, grid 4 cột | ✅ |
+| 4 | `DeckDetailPage.tsx` — header + card panel dark | ✅ |
+| 5 | `ReviewPage.tsx` + `ReviewFlashcard.tsx` — dark gradient + glass | ✅ |
+| 6 | `DeckCard.tsx` + `CardGridItem.tsx` — dark glass card | ✅ |
+| 7 | `index.css` — `.review-card-inner` dark glass, review card faces | ✅ |
+| 8 | `LandingPage.tsx` — Section 2 & 3 dark, header nav links scroll thật | ✅ |
+| 9 | Build pass | ✅ |
 | 10 | Commit code | ⏳ |
+
+**Design tokens (dark theme):**
+
+| Token | Giá trị |
+|---|---|
+| Background | `#1A1520` |
+| Surface | `#252030` (80% opacity glass) |
+| Elevated | `#2D2538` |
+| Border | `#3D3348` / `#4A4060` |
+| Text primary | `#F5F0FA` |
+| Text secondary | `#C4B8D9` |
+| Text muted | `#8B7A9E` |
+| Primary | `#EC4899` (pink) |
+| Accent | `#F97316` (orange) |
+| Glow shadow | `rgba(236,72,153,0.15)` |
 
 ---
 
@@ -200,9 +217,25 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 
 **Branch:** `feature/quiz-progress`
 
-- Quiz session, score, XP; `quiz_attempts.slug` (optional `attemptRef`)
-- Heatmap, streak, stats; leaderboard Redis ZSET
-- FE: Quiz, Progress, Leaderboard
+### Backend
+
+| # | Task |
+|---|---|
+| 1 | Quiz session: `quiz_attempts`, `attemptRef` slug, score calculation |
+| 2 | Quiz attempt API: `POST /quiz/{deckRef}/start`, `POST /quiz/{attemptRef}/submit` |
+| 3 | Heatmap + streak scheduler (`@Scheduled`, cron `0 0 * * *`), `daily_activity` aggregation |
+| 4 | Redis leaderboard: `ZADD` on review/quiz XP, `ZREVRANGE` top N |
+| 5 | Progress API: `GET /progress/me` (heatmap, streak, stats), `GET /progress/leaderboard` |
+| 6 | Quiz BE endpoints + XP integration |
+
+### Frontend
+
+| # | Task |
+|---|---|
+| 1 | `QuizPage.tsx` — session flow (start → question → submit → result) |
+| 2 | `ProgressPage.tsx` — heatmap, streak counter, weekly stats chart |
+| 3 | `LeaderboardPage.tsx` — top N users by XP |
+| 4 | Dashboard: streak badge, XP display, leaderboard preview |
 
 ---
 
@@ -226,7 +259,7 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 
 - Role TEACHER / classroom
 - RabbitMQ (dùng `@Async` trước)
-- Dark mode UI
+- ~~Dark mode UI~~ — **đã làm Sprint 4b** ✅
 
 ---
 
@@ -240,4 +273,4 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 | Xong task trong buổi | `progress.md` checkbox + session log |
 | Env / tooling mới | `.env.example`, `README.md` (nếu quick start đổi) |
 
-*Cập nhật lần cuối: 2026-06-07 · Đối chiếu đề tài: [`spec.md`](spec.md) §8*
+*Cập nhật lần cuối: 2026-06-22 · Đối chiếu đề tài: [`spec.md`](spec.md) §8*

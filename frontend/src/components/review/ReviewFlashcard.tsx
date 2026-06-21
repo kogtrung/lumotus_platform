@@ -52,7 +52,6 @@ export default function ReviewFlashcard({
     if (!touchStart.current) return
     const dx = e.touches[0].clientX - touchStart.current.x
     const dy = e.touches[0].clientY - touchStart.current.y
-    // Chỉ tracking nếu swipe ngang rõ ràng
     if (Math.abs(dx) > Math.abs(dy)) {
       touchDelta.current = dx
       e.preventDefault()
@@ -62,7 +61,6 @@ export default function ReviewFlashcard({
   const handleTouchEnd = () => {
     if (!touchStart.current) return
     const dx = touchDelta.current
-    // Swipe left > 80px = next card (handled by parent), swipe right > 80px = prev
     if (dx > 80 && onPrev && hasPrev) {
       onPrev()
     }
@@ -72,7 +70,7 @@ export default function ReviewFlashcard({
 
   return (
     <div className="relative mx-auto w-full max-w-xl px-2 sm:px-0">
-      {/* Audio button - góc phải, không đè lên content */}
+      {/* Audio button */}
       <div className="absolute right-2 top-0 z-20 sm:right-4">
         <CardAudioButton
           audioUrl={card.audioUrl}
@@ -102,23 +100,23 @@ export default function ReviewFlashcard({
             <div className="review-card-inner">
               {/* Top label */}
               <div className="flex w-full items-center justify-between">
-                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-subtle)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(236,72,153,0.2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#EC4899]">
                   <Sparkles className="h-3 w-3" strokeWidth={2.5} />
                   Câu hỏi
                 </span>
                 {card.isNew && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FBCFE8] to-[#F9A8D4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#831843] shadow-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(249,115,22,0.2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#F97316] shadow-sm">
                     Mới
                   </span>
                 )}
                 {card.isStarred && !card.isNew && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent-warm)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-warning)] shadow-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(245,158,11,0.2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] shadow-sm">
                     ⭐ Đã gắn sao
                   </span>
                 )}
               </div>
 
-              {/* Image - ưu tiên hiển thị nếu có */}
+              {/* Image */}
               {card.imageUrl && (
                 <div className="mt-4 flex w-full items-center justify-center">
                   <img
@@ -129,14 +127,14 @@ export default function ReviewFlashcard({
                 </div>
               )}
 
-              {/* Word - text lớn */}
-              <p className="mt-4 line-clamp-4 text-center font-bold leading-tight text-[var(--color-text)] flashcard-front text-3xl sm:text-4xl md:text-5xl">
+              {/* Word */}
+              <p className="mt-4 line-clamp-4 text-center font-bold leading-tight text-[#F5F0FA] flashcard-front text-3xl sm:text-4xl md:text-5xl">
                 {card.front}
               </p>
 
               {/* Phonetic */}
               {card.phonetic && (
-                <p className="mt-3 flex items-center justify-center gap-2 text-base italic text-[var(--color-primary)] sm:text-lg">
+                <p className="mt-3 flex items-center justify-center gap-2 text-base italic text-[#EC4899] sm:text-lg">
                   <Volume2 className="h-4 w-4" />
                   {card.phonetic}
                 </p>
@@ -144,16 +142,16 @@ export default function ReviewFlashcard({
 
               {/* Tap hint */}
               <div className="mt-auto flex w-full flex-col items-center gap-1.5 pt-6">
-                <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
-                  <kbd className="rounded-md border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-xs font-bold text-[var(--color-text)] shadow-sm">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#8B7A9E]">
+                  <kbd className="rounded-md border border-[#3D3348] bg-[#2D2538] px-1.5 py-0.5 font-mono text-xs font-bold text-[#F5F0FA] shadow-sm">
                     Space
                   </kbd>
                   <span>để lật thẻ</span>
                 </div>
                 <div className="flex gap-1">
-                  <div className="h-1 w-1 animate-bounce rounded-full bg-[var(--color-primary)]" style={{ animationDelay: '0ms' }} />
-                  <div className="h-1 w-1 animate-bounce rounded-full bg-[var(--color-primary)]" style={{ animationDelay: '150ms' }} />
-                  <div className="h-1 w-1 animate-bounce rounded-full bg-[var(--color-primary)]" style={{ animationDelay: '300ms' }} />
+                  <div className="h-1 w-1 animate-bounce rounded-full bg-[#EC4899]" style={{ animationDelay: '0ms' }} />
+                  <div className="h-1 w-1 animate-bounce rounded-full bg-[#EC4899]" style={{ animationDelay: '150ms' }} />
+                  <div className="h-1 w-1 animate-bounce rounded-full bg-[#EC4899]" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -162,7 +160,7 @@ export default function ReviewFlashcard({
           {/* Back Face */}
           <div className="review-card-face review-card-back">
             <div className="review-card-inner review-card-inner--back">
-              {/* Top label - đáp án */}
+              {/* Top label */}
               <div className="flex w-full items-center justify-between">
                 <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#10B981] to-[#34D399] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                   ✓ Đáp án
@@ -174,7 +172,7 @@ export default function ReviewFlashcard({
                       e.stopPropagation()
                       setShowHint(true)
                     }}
-                    className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent-warm)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-warning)] shadow-sm transition-transform hover:scale-105"
+                    className="inline-flex items-center gap-1 rounded-full bg-[rgba(245,158,11,0.2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] shadow-sm transition-transform hover:scale-105"
                   >
                     <Lightbulb className="h-3 w-3" strokeWidth={2.5} />
                     Xem gợi ý
@@ -183,27 +181,27 @@ export default function ReviewFlashcard({
               </div>
 
               {/* Word recap */}
-              <p className="mt-3 text-center text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)] sm:text-base">
+              <p className="mt-3 text-center text-sm font-semibold uppercase tracking-wide text-[#8B7A9E] sm:text-base">
                 {card.front}
               </p>
 
-              {/* Meaning - text lớn nhất */}
-              <p className="mt-3 line-clamp-4 text-center font-extrabold leading-tight text-[var(--color-text)] flashcard-back text-2xl sm:text-3xl md:text-4xl">
+              {/* Meaning */}
+              <p className="mt-3 line-clamp-4 text-center font-extrabold leading-tight text-[#F5F0FA] flashcard-back text-2xl sm:text-3xl md:text-4xl">
                 {card.back}
               </p>
 
               {/* Phonetic */}
               {card.phonetic && (
-                <p className="mt-2 flex items-center justify-center gap-2 text-sm italic text-[var(--color-primary)] sm:text-base">
+                <p className="mt-2 flex items-center justify-center gap-2 text-sm italic text-[#EC4899] sm:text-base">
                   {card.phonetic}
                 </p>
               )}
 
               {/* Hint revealed */}
               {showHint && card.hint && (
-                <div className="mt-4 flex w-full items-start gap-2 rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-accent-warm)] px-3 py-2.5">
-                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-warning)]" />
-                  <p className="text-xs font-medium text-[var(--color-warning)] sm:text-sm">
+                <div className="mt-4 flex w-full items-start gap-2 rounded-xl border border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.1)] px-3 py-2.5">
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[#F59E0B]" />
+                  <p className="text-xs font-medium text-[#F5F0FA] sm:text-sm">
                     {card.hint}
                   </p>
                 </div>
@@ -211,29 +209,29 @@ export default function ReviewFlashcard({
 
               {/* Example */}
               {card.example && (
-                <div className="mt-4 w-full rounded-2xl border border-[#10B981]/20 bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] p-4">
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#047857]">
+                <div className="mt-4 w-full rounded-2xl border border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.1)] p-4">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#10B981]">
                     Ví dụ
                   </p>
-                  <p className="text-sm italic leading-relaxed text-[#166534] sm:text-base">
-                    "{card.example}"
+                  <p className="text-sm italic leading-relaxed text-[#C4B8D9] sm:text-base">
+                    &ldquo;{card.example}&rdquo;
                   </p>
                 </div>
               )}
 
               {/* Choose rating hint */}
               <div className="mt-auto flex w-full flex-col items-center gap-1.5 pt-4">
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                <p className="text-xs font-medium text-[#8B7A9E]">
                   Chọn mức độ nhớ của bạn
                 </p>
-                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-text-muted)]">
-                  <kbd className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-1 py-0.5 font-bold">1</kbd>
+                <div className="flex items-center gap-1 text-[10px] font-mono text-[#8B7A9E]">
+                  <kbd className="rounded border border-[#3D3348] bg-[#2D2538] px-1 py-0.5 font-bold text-[#F5F0FA]">1</kbd>
                   <span>·</span>
-                  <kbd className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-1 py-0.5 font-bold">2</kbd>
+                  <kbd className="rounded border border-[#3D3348] bg-[#2D2538] px-1 py-0.5 font-bold text-[#F5F0FA]">2</kbd>
                   <span>·</span>
-                  <kbd className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-1 py-0.5 font-bold">3</kbd>
+                  <kbd className="rounded border border-[#3D3348] bg-[#2D2538] px-1 py-0.5 font-bold text-[#F5F0FA]">3</kbd>
                   <span>·</span>
-                  <kbd className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-1 py-0.5 font-bold">4</kbd>
+                  <kbd className="rounded border border-[#3D3348] bg-[#2D2538] px-1 py-0.5 font-bold text-[#F5F0FA]">4</kbd>
                 </div>
               </div>
             </div>
