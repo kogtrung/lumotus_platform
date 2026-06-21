@@ -19,9 +19,10 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 2c | 2 | Trang chủ Quizlet-style, `source_deck_id` (V5), phân trang + tìm thẻ | ✅ Xong |
 | 2b | 2 | Slug URLs (`V3`), `{deckRef}`, `topicSlug` | ✅ Xong |
 | 3 | 2 | **Import CSV** + **Media upload** (Cloudinary) — *trước SRS, theo §9* | ✅ Xong |
-| 4 | 2 + 3 | SRS SM-2, Review UI, starred | ⏳ Tiếp theo |
+| 4 | 2 + 3 | SRS SM-2, Review UI, starred, audio | ✅ MVP |
+| 4b | 2 + 3 | Landing Page UI Polish — hero video, botanical cards, scroll-aware header, features redesign | ✅ In progress |
 | 5 | 2 + 3 | Quiz, heatmap, streak, stats, leaderboard | ⏳ Chưa |
-| 6 | 2 + 3 + 4 | AI generate (async jobs), Admin UI, MockMvc, polish | ⏳ Chưa |
+| 6 | 2 + 3 + 4 | AI generate (async jobs), Admin UI, MockMvc ≥8, Swagger đầy đủ, polish | ⏳ Chưa |
 
 **Đã làm ngoài sprint gốc (ghi nhận):** `scripts/ensure-jwt-secret.mjs`, `ADMIN_BOOTSTRAP_EMAIL`, Postman collection, `vite.config` `envDir` monorepo.
 
@@ -143,13 +144,39 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 
 ---
 
-## Sprint 4 — SRS Review ⏳ *(focus hiện tại)*
+## Sprint 4 — SRS Review ✅ *(MVP xong; polish Sprint 6)*
 
 **Branch:** `feature/review-srs`
 
-- BE: `Sm2Algorithm`, `ReviewService` (`@Transactional` khi rate), `deck_id` trên review
-- FE: `ReviewPage`, flip card, `RatingButtonGroup`, starred
-- FE: nút phát `cards.audio_url` trên mặt thẻ (nếu có URL)
+| # | Task | |
+|---|---|---|
+| 1 | BE: `Sm2Algorithm`, `ReviewService`, `deck_id` denormalized | ✅ |
+| 2 | BE: `GET /review/due`, `POST .../rate`, `POST .../star`, `starredOnly` | ✅ |
+| 3 | FE: `ReviewPage`, flip 3D, `RatingButtonGroup`, xáo trộn | ✅ |
+| 4 | FE: audio upload (4a) + nút phát (4b) | ✅ |
+| 5 | FE: Dashboard due CTA | ✅ |
+| 6 | Framer Motion flip *(tùy chọn — hiện CSS 3D)* | ⏳ |
+
+> **Đối chiếu đề tài:** [`spec.md`](spec.md) §8
+
+---
+
+## Sprint 4b — Landing Page UI Polish ✅ *(in progress)*
+
+**Branch:** `style/english-learning-ui`
+
+|| # | Task | |
+|---|---|---|
+| 1 | `LandingPage.tsx` — complete redesign | ✅ |
+| 2 | Hero: video background + gradient overlay + botanical falling cards | ✅ |
+| 3 | Hero: content repositioned to show center of video | ✅ |
+| 4 | Falling cards: reduced to 6, botanical SVG on front, slow 25-50s | ✅ |
+| 5 | About: clean white, botanical gentle falling, no SRS/SM-2 refs | ✅ |
+| 6 | Features: stats strip + card grid redesign (AI, Community, Progress) | ✅ |
+| 7 | CTA: dark purple-black gradient, botanical falling | ✅ |
+| 8 | Header: always transparent, scroll-aware text color | ✅ |
+| 9 | Vocab dataset: 16 words, 1 meaning each | ✅ |
+| 10 | Commit code | ⏳ |
 
 ---
 
@@ -185,7 +212,7 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 
 - `POST /api/v1/decks/generate` + `async_jobs` + polling `GET /jobs/{jobId}`
 - Admin: users, topics, stats
-- 10+ MockMvc tests; responsive QA; Swagger hoàn thiện
+- 8+ MockMvc tests (Auth, Deck, Card, Review, Quiz) — **yêu cầu đề tài ≥8**; responsive QA; Swagger annotate đầy đủ
 
 ---
 
@@ -213,4 +240,4 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 | Xong task trong buổi | `progress.md` checkbox + session log |
 | Env / tooling mới | `.env.example`, `README.md` (nếu quick start đổi) |
 
-*Cập nhật lần cuối: 2026-06-07*
+*Cập nhật lần cuối: 2026-06-07 · Đối chiếu đề tài: [`spec.md`](spec.md) §8*

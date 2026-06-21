@@ -4,10 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
+import { Eye, EyeOff, Sparkles } from 'lucide-react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 import AuthDivider from '@/components/auth/AuthDivider'
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
+import Button from '@/components/ui/Button'
 import { cn } from '@/utils/cn'
 
 const schema = z.object({
@@ -22,6 +24,7 @@ export default function LoginPage() {
   const location = useLocation()
   const setAuth = useAuthStore((s) => s.setAuth)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -45,67 +48,110 @@ export default function LoginPage() {
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-bold text-[var(--color-text)]">Đăng nhập</h2>
-      <p className="mt-1 text-sm text-[var(--color-text-muted)]">Chào mừng trở lại Lumotus</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#EC4899] to-[#F9A8D4] mb-4 shadow-lg">
+          <Sparkles className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-2xl font-extrabold text-[#0F172A]">Chào mừng trở lại</h2>
+        <p className="mt-1 text-[#64748B]">Đăng nhập để tiếp tục hành trình học tập</p>
+      </div>
 
-      <div className="mt-6">
+      {/* Google Login */}
+      <div>
         <GoogleLoginButton />
       </div>
 
       <AuthDivider />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Form */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Email */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">
+          <label className="mb-2 block text-sm font-semibold text-[#374151]">
             Email
           </label>
           <input
             type="email"
             autoComplete="email"
-            className={inputClass(!!errors.email)}
+            placeholder="nguyen@example.com"
+            className={cn(
+              'w-full rounded-xl border-2 bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition-all',
+              'focus:ring-4 focus:ring-[#EC4899]/10',
+              errors.email
+                ? 'border-[#EF4444] focus:border-[#EF4444]'
+                : 'border-[#E2E5EC] focus:border-[#EC4899]'
+            )}
             {...register('email')}
           />
-          {errors.email && <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.email.message}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">
-            Mật khẩu
-          </label>
-          <input
-            type="password"
-            autoComplete="current-password"
-            className={inputClass(!!errors.password)}
-            {...register('password')}
-          />
-          {errors.password && (
-            <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.password.message}</p>
+          {errors.email && (
+            <p className="mt-1.5 text-xs text-[#EF4444] flex items-center gap-1">
+              {errors.email.message}
+            </p>
           )}
         </div>
 
-        <button
+        {/* Password */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-[#374151]">Mật khẩu</label>
+            <Link
+              to="/forgot-password"
+              className="text-xs font-medium text-[#EC4899] hover:text-[#DB2777]"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              className={cn(
+                'w-full rounded-xl border-2 bg-white px-4 py-3 pr-12 text-sm text-[#0F172A] outline-none transition-all',
+                'focus:ring-4 focus:ring-[#EC4899]/10',
+                errors.password
+                  ? 'border-[#EF4444] focus:border-[#EF4444]'
+                  : 'border-[#E2E5EC] focus:border-[#EC4899]'
+              )}
+              {...register('password')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#EC4899] transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="mt-1.5 text-xs text-[#EF4444] flex items-center gap-1">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        {/* Submit */}
+        <Button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-[var(--color-primary)] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
+          className="w-full py-3 text-base"
         >
           {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-        </button>
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
+      {/* Footer */}
+      <p className="text-center text-sm text-[#64748B]">
         Chưa có tài khoản?{' '}
-        <Link to="/register" className="font-medium text-[var(--color-primary)] hover:underline">
-          Đăng ký
+        <Link
+          to="/register"
+          className="font-semibold text-[#EC4899] hover:text-[#DB2777] transition-colors"
+        >
+          Đăng ký ngay
         </Link>
       </p>
     </div>
-  )
-}
-
-function inputClass(hasError: boolean) {
-  return cn(
-    'w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]',
-    hasError ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]',
   )
 }

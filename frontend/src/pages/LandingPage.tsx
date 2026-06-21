@@ -1,214 +1,992 @@
+import { ArrowRight, Check, BookOpen, Users, Award } from 'lucide-react'
+import { useRef, useState, useEffect } from 'react'
 import {
-  ArrowRight,
-  Brain,
-  Layers,
-  Sparkles,
-  Trophy,
-  Zap,
-} from 'lucide-react'
-import LumotusLogo from '@/components/brand/LumotusLogo'
-import Button from '@/components/ui/Button'
+  motion,
+  useInView,
+  useScroll,
+  useTransform,
+  type Variants,
+} from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
 
-const features = [
-  {
-    icon: Brain,
-    title: 'SRS SM-2',
-    description: 'Ôn đúng lúc — thuật toán lặp lại ngắt quãng giúp nhớ lâu hơn.',
-    color: 'var(--color-primary-subtle)',
-    iconColor: 'var(--color-primary)',
-  },
-  {
-    icon: Zap,
-    title: 'Quiz & XP',
-    description: 'Làm bài trắc nghiệm, tích điểm XP và giữ streak mỗi ngày.',
-    color: 'var(--color-accent-warm)',
-    iconColor: 'var(--color-warning)',
-  },
-  {
-    icon: Layers,
-    title: 'Deck linh hoạt',
-    description: 'Tạo bộ thẻ riêng, khám phá deck công khai hoặc copy về thư viện.',
-    color: 'var(--color-secondary-subtle)',
-    iconColor: 'var(--color-secondary)',
-  },
-  {
-    icon: Trophy,
-    title: 'Leaderboard',
-    description: 'Cạnh tranh lành mạnh với cộng đồng trên bảng xếp hạng.',
-    color: '#E8F8F0',
-    iconColor: 'var(--color-success)',
-  },
-] as const
+// =================== Shared Animation Components ===================
 
-export default function LandingPage() {
-  const user = useAuthStore((s) => s.user)
-  const isInitialized = useAuthStore((s) => s.isInitialized)
+function WordsPullUpMultiStyle({
+  segments,
+  className = '',
+}: {
+  segments: { text: string; className?: string }[]
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-50px' })
 
-  if (!isInitialized) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)]">
-        Đang tải...
-      </div>
-    )
+  const lines: { text: string; className?: string }[][] = []
+  let currentLine: { text: string; className?: string }[] = []
+  segments.forEach((seg) => {
+    const words = seg.text.split(' ')
+    words.forEach((w, wi) => {
+      currentLine.push({ text: w, className: seg.className })
+      if (wi < words.length - 1) currentLine.push({ text: ' ', className: '' })
+    })
+    lines.push(currentLine)
+    currentLine = []
+  })
+
+  let globalIndex = 0
+
+  return (
+    <div ref={ref} className={className}>
+      {lines.map((line, lineIdx) => (
+        <div
+          key={lineIdx}
+          className="flex flex-wrap justify-center"
+          style={{ textAlign: 'center' }}
+        >
+          {line.map((item, i) => {
+            if (item.text === ' ') {
+              return <span key={`${lineIdx}-${i}`} className="w-2 inline-block" />
+            }
+            const idx = globalIndex++
+            return (
+              <span key={`${lineIdx}-${i}`} className="inline-block overflow-hidden mr-[0.2em]">
+                <motion.span
+                  className={`inline-block ${item.className ?? ''}`}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={isInView ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
+                  transition={{
+                    duration: 0.6,
+                    delay: idx * 0.07,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  {item.text}
+                </motion.span>
+              </span>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function AnimatedLetter({
+  char,
+  index,
+  totalChars,
+}: {
+  char: string
+  index: number
+  totalChars: number
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start 0.8', 'end 0.2'],
+  })
+  const charProgress = index / totalChars
+  const opacity = useTransform(
+    scrollYProgress,
+    [charProgress - 0.1, charProgress + 0.05],
+    [0.2, 1],
+  )
+
+  return (
+    <motion.span ref={ref} style={{ opacity }}>
+      {char}
+    </motion.span>
+  )
+}
+
+// =================== Falling Flashcard ===================
+
+interface FlashcardData {
+  id: number
+  front: string
+  back: string
+  phonetic?: string
+  color: string
+  accentColor: string
+}
+
+const FALLING_FLASHCARDS: FlashcardData[] = [
+  { id: 1, front: 'Ephemeral', back: 'Tạm thời', phonetic: '/ɪˈfem(ə)rəl/', color: '#FFF0F3', accentColor: '#EC4899' },
+  { id: 2, front: 'Serendipity', back: 'May mắn', phonetic: '/ˌserənˈdipədē/', color: '#F0F4FF', accentColor: '#6366F1' },
+  { id: 3, front: 'Mellifluous', back: 'Dịu ngọt', phonetic: '/məˈliflo͞oəs/', color: '#F0FDF4', accentColor: '#10B981' },
+  { id: 4, front: 'Sonder', back: 'Thấu hiểu', phonetic: '/ˈsändər/', color: '#FFFBEB', accentColor: '#F59E0B' },
+  { id: 5, front: 'Petrichor', back: 'Mùi đất mưa', phonetic: '/ˈpetrɪkɔː/', color: '#FDF2F8', accentColor: '#EC4899' },
+  { id: 6, front: 'Ethereal', back: 'Siêu thực', phonetic: '/əˈTHirēəl/', color: '#EFF6FF', accentColor: '#3B82F6' },
+  { id: 7, front: 'Luminous', back: 'Bừng sáng', phonetic: '/ˈlo͞omənəs/', color: '#FFF7ED', accentColor: '#F97316' },
+  { id: 8, front: 'Resilience', back: 'Kiên cường', phonetic: '/rəˈzilyəns/', color: '#F5F3FF', accentColor: '#8B5CF6' },
+  { id: 9, front: 'Aurora', back: 'Cực quang', phonetic: '/əˈrôrə/', color: '#FFF0F3', accentColor: '#EC4899' },
+  { id: 10, front: 'Panacea', back: 'Thuốc chữa mọi bệnh', phonetic: '/ˌpanəˈsēə/', color: '#F0F4FF', accentColor: '#6366F1' },
+  { id: 11, front: 'Hiraeth', back: 'Nỗi nhớ', phonetic: '/ˈhirīeth/', color: '#F0FDF4', accentColor: '#10B981' },
+  { id: 12, front: 'Saudade', back: 'Nỗi khát khao', phonetic: '/säˈTHäTHə/', color: '#FFFBEB', accentColor: '#F59E0B' },
+  { id: 13, front: 'Labyrinth', back: 'Mê cung', phonetic: '/ˈlab(ə)rinTH/', color: '#EFF6FF', accentColor: '#3B82F6' },
+  { id: 14, front: 'Euphoria', back: 'Hưng phấn', phonetic: '/yo͞oˈfôrēə/', color: '#F5F3FF', accentColor: '#8B5CF6' },
+  { id: 15, front: 'Nirvana', back: 'Cảnh giới siêu thoát', phonetic: '/nərˈväNə/', color: '#FFF7ED', accentColor: '#F97316' },
+  { id: 16, front: 'Halcyon', back: 'Thái bình', phonetic: '/ˈhalˌsīən/', color: '#FDF2F8', accentColor: '#EC4899' },
+]
+
+function FallingFlashcard({
+  data,
+  delay,
+  duration,
+  x,
+}: {
+  data: FlashcardData
+  delay: number
+  duration: number
+  x: number
+}) {
+  const [flipped, setFlipped] = useState(false)
+
+  const variants: Variants = {
+    hidden: { y: '-20vh', x: 0, opacity: 0, rotate: 0 },
+    visible: {
+      y: '115vh',
+      x: x + Math.sin(delay * 1.7) * 50,
+      opacity: [0, 1, 1, 0],
+      rotate: Math.sin(delay) * 20,
+      transition: {
+        duration,
+        delay,
+        ease: 'linear',
+        repeat: Infinity,
+        repeatDelay: Math.random() * 12 + 8,
+      },
+    },
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
-      <header className="lumo-header sticky top-0 z-40 bg-[var(--color-surface)]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-8">
-          <LumotusLogo to="/" size="md" />
-          <nav className="flex items-center gap-2 sm:gap-3">
-            {user ? (
-              <Button to="/home" size="sm">
-                Vào ứng dụng
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <>
-                <Button to="/login" variant="ghost" size="sm">
-                  Đăng nhập
-                </Button>
-                <Button to="/register" size="sm">
-                  Bắt đầu miễn phí
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+    <motion.div
+      className="absolute cursor-pointer z-[2]"
+      style={{ left: `${x}%`, top: 0 }}
+      variants={variants}
+      initial="hidden"
+      animate="visible"
+      onClick={() => setFlipped(!flipped)}
+      whileHover={{ scale: 1.08, zIndex: 10 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    >
+      {/* 1/8 of original: ~w-16 h-20 (64x80px) */}
+      <div
+        className="relative w-16 h-20 rounded-xl overflow-hidden"
+        style={{ perspective: '800px' }}
+      >
+        <motion.div
+          className="absolute inset-0 w-full h-full"
+          style={{ transformStyle: 'preserve-3d' }}
+          animate={{ rotateY: flipped ? 180 : 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {/* Front — botanical illustration, blank card */}
+          <div
+            className="absolute inset-0 rounded-xl shadow-md border"
+            style={{
+              backgroundColor: data.color,
+              borderColor: data.accentColor + '50',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+          >
+            {/* Botanical SVG: small leaf/petal illustration */}
+            <svg
+              viewBox="0 0 64 80"
+              className="absolute inset-0 w-full h-full opacity-40"
+              style={{ color: data.accentColor }}
+              fill="currentColor"
+            >
+              {/* Stem */}
+              <path d="M32 78 C32 60, 28 45, 20 30 C14 20, 8 15, 6 10" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              {/* Leaf 1 */}
+              <path d="M20 30 C16 26, 10 28, 8 24 C6 20, 12 16, 20 18 C24 19, 22 26, 20 30Z" />
+              {/* Leaf 2 */}
+              <path d="M24 42 C22 38, 16 40, 14 36 C12 32, 18 28, 24 30 C28 31, 26 38, 24 42Z" />
+              {/* Small petal top */}
+              <ellipse cx="6" cy="8" rx="4" ry="5" opacity="0.7" />
+              {/* Small dots/seeds */}
+              <circle cx="12" cy="22" r="1" opacity="0.5" />
+              <circle cx="18" cy="34" r="0.8" opacity="0.4" />
+            </svg>
+          </div>
 
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-90"
-          style={{ background: 'var(--gradient-hero)' }}
-        />
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--color-primary)]/10 blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-[var(--color-secondary)]/10 blur-3xl" />
-
-        <div className="relative mx-auto max-w-6xl px-4 py-20 md:px-8 md:py-28">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="lumo-card mb-8 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-[var(--color-text-secondary)]">
-              <Sparkles className="h-4 w-4 text-[var(--color-warning)]" />
-              Học từ vựng thông minh với AI & SRS
-            </div>
-
-            <div className="mb-8 flex justify-center">
-              <LumotusLogo size="lg" />
-            </div>
-
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-[var(--color-text)] md:text-5xl lg:text-6xl">
-              Ghi nhớ từ vựng{' '}
-              <span className="text-[var(--color-primary)]">lâu hơn</span>, học{' '}
-              <span className="text-[var(--color-primary)]">ít hơn</span>
-            </h1>
-            <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--color-text-secondary)]">
-              Lumotus kết hợp flashcard, lịch ôn SM-2, quiz và gamification — giúp bạn học tiếng Anh
-              có hệ thống, không áp lực.
+          {/* Back — word + phonetic + Vietnamese meaning */}
+          <div
+            className="absolute inset-0 rounded-xl p-2 flex flex-col items-center justify-center text-center overflow-hidden"
+            style={{
+              backgroundColor: data.accentColor,
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)',
+            }}
+          >
+            {/* Top accent bar */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+              style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
+            />
+            {/* Word */}
+            <p
+              className="text-[11px] font-bold text-white leading-tight mb-0.5"
+              style={{ fontFamily: 'Literata, serif' }}
+            >
+              {data.front}
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              {user ? (
-                <Button to="/home" size="lg" className="min-w-[200px]">
-                  Vào ứng dụng
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              ) : (
-                <>
-                  <Button to="/register" size="lg" className="min-w-[200px]">
-                    Tạo tài khoản
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                  <Button to="/login" variant="outline" size="lg" className="min-w-[200px]">
-                    Đã có tài khoản? Đăng nhập
-                  </Button>
-                </>
-              )}
-            </div>
-            <p className="mt-6 text-sm text-[var(--color-text-muted)]">
-              Miễn phí cho học cá nhân · Không cần thẻ tín dụng
+            {/* Phonetic */}
+            <p className="text-[8px] text-white/70 leading-tight mb-1">
+              {data.phonetic}
+            </p>
+            {/* Divider */}
+            <div className="w-6 h-px bg-white/30 mb-1" />
+            {/* Vietnamese meaning */}
+            <p className="text-[9px] text-white/90 leading-snug font-medium">
+              {data.back}
             </p>
           </div>
-        </div>
-      </section>
+        </motion.div>
+      </div>
+    </motion.div>
+  )
+}
 
-      <section className="mx-auto max-w-6xl px-4 py-16 md:px-8 md:py-24">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-[var(--color-text)] md:text-3xl">
-            Mọi thứ bạn cần để học từ vựng
-          </h2>
-          <p className="mt-3 text-[var(--color-text-secondary)]">
-            Từ tạo deck đến theo dõi tiến độ — trên một nền tảng gọn nhẹ.
-          </p>
-        </div>
+function BotanicalFalling({
+  intensity = 'normal',
+}: {
+  intensity?: 'normal' | 'gentle' | 'dense'
+}) {
+  const count = intensity === 'dense' ? 16 : intensity === 'gentle' ? 6 : 12
+  const items = Array.from({ length: count }, (_, i) => ({
+    id: i,
+    delay: Math.random() * (intensity === 'gentle' ? 16 : 8),
+    duration: intensity === 'gentle'
+      ? 18 + Math.random() * 12
+      : 10 + Math.random() * 6,
+    x: Math.random() * 100,
+    size: Math.random() * 12 + 8,
+  }))
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map(({ icon: Icon, title, description, color, iconColor }) => (
-            <div key={title} className="lumo-card lumo-card-hover p-6">
-              <div
-                className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
-                style={{ backgroundColor: color }}
+  const petalColors = ['#FBCFE8', '#FDE68A', '#A7F3D0', '#F9A8D4', '#BFDBFE']
+  const leafEmojis = ['🍃', '🌿', '🍂', '🌾', '🍀', '✿']
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" aria-hidden>
+      {items.map((item) => (
+        <motion.div
+          key={item.id}
+          className="absolute pointer-events-none select-none"
+          style={{ left: `${item.x}%`, top: 0, fontSize: item.size }}
+          animate={{
+            y: ['-10vh', '110vh'],
+            x: item.x + Math.sin(item.id * 2.1) * 40,
+            opacity: [0, 0.8, 0.8, 0],
+            rotate: Math.sin(item.id * 1.3) * 180,
+          }}
+          transition={{
+            duration: item.duration,
+            delay: item.delay,
+            ease: 'linear',
+            repeat: Infinity,
+            repeatDelay: Math.random() * 6 + 4,
+          }}
+        >
+          {item.id % 3 === 0 ? (
+            <div
+              className="rounded-full opacity-70"
+              style={{
+                width: item.size,
+                height: item.size,
+                backgroundColor: petalColors[item.id % petalColors.length],
+              }}
+            />
+          ) : (
+            <span>{leafEmojis[item.id % leafEmojis.length]}</span>
+          )}
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+// =================== Header ===================
+
+const NAV_ITEMS = ['Giới thiệu', 'Tính năng', 'Cộng đồng', 'Hướng dẫn']
+
+function Header() {
+  const user = useAuthStore((s) => s.user)
+  const [overDark, setOverDark] = useState(false)
+  const [overLight, setOverLight] = useState(false)
+
+  useEffect(() => {
+    const heroSection = document.getElementById('hero-section')
+    const ctaSection = document.getElementById('cta-section')
+
+    const onScroll = () => {
+      const heroBottom = heroSection?.getBoundingClientRect().bottom ?? 0
+      const ctaTop = ctaSection?.getBoundingClientRect().top ?? window.innerHeight
+      setOverDark(heroBottom > 0)
+      setOverLight(ctaTop <= 0)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const textColor = overDark || overLight ? 'text-white' : 'text-[#0F172A]'
+  const linkColor = overDark || overLight
+    ? 'text-white/80 hover:text-white'
+    : 'text-[#475569] hover:text-[#EC4899]'
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-3 pointer-events-none [&>*]:pointer-events-auto">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Logo */}
+        <a href="/" className={`flex items-center gap-2 ${textColor} transition-colors duration-200`}>
+          <img
+            src="/logo.svg"
+            alt="Lumotus"
+            className="w-9 h-9 rounded-xl object-contain"
+          />
+          <span className="text-lg font-bold drop-shadow-sm">Lumotus</span>
+        </a>
+
+        {/* Nav */}
+        <nav className="hidden md:flex items-center gap-8">
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item}
+              href="#"
+              className={`text-sm transition-colors duration-200 font-medium ${linkColor}`}
+            >
+              {item}
+            </a>
+          ))}
+        </nav>
+
+        {/* Auth buttons */}
+        <div className="flex items-center gap-2">
+          {user ? (
+            <a
+              href="/home"
+              className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+            >
+              Tiếp tục học
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          ) : (
+            <>
+              <a
+                href="/login"
+                className={`text-sm transition-colors duration-200 font-medium ${linkColor}`}
               >
-                <Icon className="h-6 w-6" style={{ color: iconColor }} strokeWidth={2} />
-              </div>
-              <h3 className="font-semibold text-[var(--color-text)]">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                {description}
-              </p>
+                Đăng nhập
+              </a>
+              <a
+                href="/register"
+                className="flex items-center gap-1.5 text-white bg-[#EC4899] hover:bg-[#DB2777] rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+              >
+                Bắt đầu
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  )
+}
+
+// =================== Section 1: Hero ===================
+
+const HERO_VIDEO =
+  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4'
+
+function HeroSection() {
+  const user = useAuthStore((s) => s.user)
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true })
+
+  return (
+    <section id="hero-section" className="relative h-screen overflow-hidden">
+      {/* Background video */}
+      <video
+        src={HERO_VIDEO}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+
+      {/* Noise overlay */}
+      <div className="noise-overlay" />
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/85" />
+
+      {/* Falling flashcards — botanical cards from hero */}
+      {FALLING_FLASHCARDS.slice(0, 6).map((card, i) => (
+        <FallingFlashcard
+          key={card.id}
+          data={card}
+          delay={i * 5 + Math.random() * 6}
+          duration={35 + Math.random() * 15}
+          x={10 + (i * 16) % 75}
+        />
+      ))}
+
+      {/* Hero content — vertically centered on the visible video area */}
+      <div
+        ref={ref}
+        className="relative h-full flex flex-col items-center justify-end text-center px-6 pb-20 md:pb-28"
+      >
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-white/20"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
+          </span>
+          <span className="text-xs sm:text-sm text-white/80">
+            Hơn <span className="text-white font-semibold">10,000</span> người đang học
+          </span>
+        </motion.div>
+
+        {/* Giant heading */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-5"
+        >
+          <h1 className="text-[18vw] sm:text-[16vw] md:text-[13vw] lg:text-[11vw] xl:text-[9vw] font-extrabold leading-[0.88] tracking-tight">
+            <span className="bg-gradient-to-r from-[#F472B6] via-[#EC4899] to-[#F97316] bg-clip-text text-transparent drop-shadow-lg">
+              Lumotus
+            </span>
+          </h1>
+        </motion.div>
+
+        {/* Description */}
+        <motion.p
+          className="text-xs sm:text-sm md:text-base text-white/70 max-w-md mb-8 leading-relaxed"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        >
+          Học từ vựng mỗi ngày, tích lũy kiến thức, tiến bộ từng bước cùng cộng đồng người học trên toàn thế giới.
+        </motion.p>
+
+        {/* CTA buttons */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-3 items-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {user ? (
+            <a
+              href="/home"
+              className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
+              style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
+            >
+              Tiếp tục học tập
+              <ArrowRight className="w-5 h-5" />
+            </a>
+          ) : (
+            <>
+              <a
+                href="/register"
+                className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
+                style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
+              >
+                Bắt đầu ngay
+                <ArrowRight className="w-5 h-5" />
+              </a>
+              <a
+                href="/login"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20"
+              >
+                Đăng nhập
+              </a>
+            </>
+          )}
+        </motion.div>
+
+        {/* Stats row */}
+        <motion.div
+          className="flex items-center gap-6 sm:gap-10 mt-10 text-white/60"
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 1, delay: 0.75 }}
+        >
+          {[
+            { icon: Users, label: '50K+ người dùng' },
+            { icon: BookOpen, label: '500K+ từ vựng' },
+            { icon: Award, label: '5M+ lượt học' },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-2 text-xs sm:text-sm">
+              <Icon className="w-4 h-4 text-[#EC4899]" />
+              <span>{label}</span>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : {}}
+        transition={{ delay: 1.2 }}
+      >
+        <div className="w-5 h-8 rounded-full border-2 border-white/30 flex justify-center pt-1.5">
+          <div className="w-1 h-2 bg-white/50 rounded-full animate-bounce" />
+        </div>
+      </motion.div>
+    </section>
+  )
+}
+
+// =================== Section 2: About ===================
+
+function AboutSection() {
+  const bodyText =
+    'Lumotus giúp bạn xây dựng thói quen học tập lành mạnh, theo dõi tiến độ với streak, XP và bảng xếp hạng. Mỗi ngày một bước tiến, bạn sẽ ngạc nhiên với những gì mình đạt được.'
+
+  return (
+    <section className="bg-white py-20 md:py-28 px-4 md:px-6 relative overflow-hidden">
+      <BotanicalFalling intensity="gentle" />
+
+      <div className="relative z-10 max-w-6xl mx-auto text-center">
+        {/* Label */}
+        <p className="text-[#EC4899] text-[10px] sm:text-xs uppercase tracking-widest mb-10 md:mb-14 font-semibold">
+          Về chúng tôi
+        </p>
+
+        {/* Heading */}
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-3xl mx-auto leading-[1.25] sm:leading-[1.15] mb-12 md:mb-16 font-extrabold text-[#0F172A]">
+          <WordsPullUpMultiStyle
+            segments={[
+              { text: 'Mỗi ngày', className: '' },
+              { text: 'một bước tiến,', className: '' },
+              { text: 'kiến thức tích lũy,', className: 'text-[#EC4899]' },
+              { text: 'thói quen bền vững.', className: '' },
+            ]}
+          />
+        </h2>
+
+        {/* Body paragraph */}
+        <p className="text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed text-[#475569]">
+          {bodyText.split('').map((char, i) => (
+            <AnimatedLetter
+              key={i}
+              char={char}
+              index={i}
+              totalChars={bodyText.length}
+            />
+          ))}
+        </p>
+      </div>
+    </section>
+  )
+}
+
+// =================== Section 3: Features ===================
+
+const FEATURE_CARD_VIDEO =
+  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260406_133058_0504132a-0cf3-4450-a370-8ea3b05c95d4.mp4'
+
+const STORYBOARD_ICON =
+  'https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171918_4a5edc79-d78f-4637-ac8b-53c43c220606.png&w=1280&q=85'
+
+const CRITIQUES_ICON =
+  'https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171741_ed9845ab-f5b2-4018-8ce7-07cc01823522.png&w=1280&q=85'
+
+const CAPSULE_ICON =
+  'https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171809_f56666dc-c099-4778-ad82-9ad4f209567b.png&w=1280&q=85'
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.95, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      delay: i * 0.15,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  }),
+}
+
+function FeatureCardVideo() {
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <motion.div
+      ref={ref}
+      className="relative rounded-2xl overflow-hidden"
+      variants={cardVariants}
+      initial="hidden"
+      animate={isInView ? 'visible' : 'hidden'}
+      custom={0}
+    >
+      <video
+        src={FEATURE_CARD_VIDEO}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="relative z-10 p-5 sm:p-6 md:p-8 flex flex-col justify-end h-full min-h-[320px] md:min-h-[400px]">
+        <p className="text-base sm:text-lg md:text-xl font-semibold text-white mb-1">
+          Nền tảng học tập
+        </p>
+        <p className="text-xs sm:text-sm text-white/70">
+          Mọi thứ bạn cần trong một ứng dụng
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+function FeatureCardContent({
+  number,
+  title,
+  iconUrl,
+  items,
+  delay,
+}: {
+  number: string
+  title: string
+  iconUrl: string
+  items: string[]
+  delay: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <motion.div
+      ref={ref}
+      className="relative bg-white rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col shadow-sm border border-[#E2E5EC] hover:shadow-lg hover:border-[#EC4899]/30 transition-all duration-300 min-h-[320px] md:min-h-[400px]"
+      variants={cardVariants}
+      initial="hidden"
+      animate={isInView ? 'visible' : 'hidden'}
+      custom={delay}
+    >
+      {/* Top icon */}
+      <div className="flex items-center gap-2 mb-4 sm:mb-5">
+        <img
+          src={iconUrl}
+          alt=""
+          className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded object-cover"
+        />
+        <span className="text-[#EC4899] text-xs font-semibold">{number}</span>
+      </div>
+
+      {/* Title */}
+      <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#0F172A] mb-4 sm:mb-5">
+        {title}
+      </h3>
+
+      {/* Checklist */}
+      <ul className="space-y-2 sm:space-y-2.5 flex-1">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-2">
+            <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#EC4899] shrink-0 mt-0.5" />
+            <span className="text-[#475569] text-xs sm:text-sm leading-snug">{item}</span>
+          </li>
+        ))}
+      </ul>
+
+      {/* Learn more */}
+      <a
+        href="#"
+        className="inline-flex items-center gap-1.5 mt-5 text-[#EC4899] text-xs sm:text-sm font-semibold hover:gap-2.5 transition-all duration-200"
+      >
+        Tìm hiểu thêm
+        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-[-45deg]" />
+      </a>
+    </motion.div>
+  )
+}
+
+function StatCard({ value, label, delay }: { value: string; label: string; delay: number }) {
+  const ref = useRef(null)
+  const isIn = useInView(ref, { once: true, margin: '-50px' })
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 15 }}
+      animate={isIn ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay }}
+      className="bg-white rounded-2xl p-5 text-center shadow-sm border border-[#E2E5EC]"
+    >
+      <p
+        className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#EC4899] to-[#F97316] bg-clip-text text-transparent mb-1"
+        style={{ fontFamily: 'Literata, serif' }}
+      >
+        {value}
+      </p>
+      <p className="text-xs sm:text-sm text-[#94A3B8] font-medium">{label}</p>
+    </motion.div>
+  )
+}
+
+function FeaturesSection() {
+  const headerRef = useRef<HTMLDivElement>(null)
+  useInView(headerRef, { once: true, margin: '-50px' })
+
+  const stats = [
+    { value: '50K+', label: 'Người dùng' },
+    { value: '500K+', label: 'Từ vựng' },
+    { value: '95%', label: 'Độ chính xác AI' },
+    { value: '4.9★', label: 'Đánh giá' },
+  ]
+
+  return (
+    <section className="min-h-screen bg-[#F8FAFC] relative py-24 md:py-32 px-4 md:px-6 overflow-hidden">
+      <BotanicalFalling intensity="gentle" />
+      <div className="bg-noise" />
+
+      <div className="relative z-10 max-w-7xl mx-auto">
+        {/* Stats highlight strip */}
+        <div ref={headerRef} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 md:mb-16">
+          {stats.map(({ value, label }, i) => (
+            <StatCard key={label} value={value} label={label} delay={i * 0.1} />
+          ))}
+        </div>
+
+        {/* Card grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-3 items-start">
+          <FeatureCardVideo />
+
+          <FeatureCardContent
+            number="01"
+            title="Tạo với AI."
+            iconUrl={STORYBOARD_ICON}
+            delay={0}
+            items={[
+              'Sinh flashcard từ văn bản',
+              'Gợi ý từ vựng liên quan',
+              'Phát âm chuẩn tự động',
+              'Dịch nghĩa thông minh',
+            ]}
+          />
+
+          <FeatureCardContent
+            number="02"
+            title="Cộng đồng."
+            iconUrl={CRITIQUES_ICON}
+            delay={1}
+            items={[
+              'Chia sẻ deck công khai',
+              'Khám phá bộ từ vựng hot',
+              'Theo dõi bạn bè',
+              'Thi đua trên bảng xếp hạng',
+            ]}
+          />
+
+          <FeatureCardContent
+            number="03"
+            title="Theo dõi tiến độ."
+            iconUrl={CAPSULE_ICON}
+            delay={2}
+            items={[
+              'Heatmap học tập hàng ngày',
+              'Streak & chuỗi ngày liên tiếp',
+              'Biểu đồ XP & thành tựu',
+              'Báo cáo chi tiết hàng tuần',
+            ]}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// =================== CTA Section ===================
+
+function CTASection() {
+  const user = useAuthStore((s) => s.user)
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-50px' })
+
+  return (
+    <section id="cta-section" className="relative bg-[#0a0614] py-20 md:py-28 px-4 md:px-6 overflow-hidden">
+      {/* Dark gradient background matching hero overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0614] via-[#1a0a2e] to-[#2d0a3a]" />
+      {/* Decorative blobs */}
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#EC4899]/10 blur-3xl" />
+      <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-[#F97316]/10 blur-3xl" />
+      {/* Soft inner glow */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+      {/* Botanical on CTA */}
+      <BotanicalFalling />
+
+      <div ref={ref} className="relative z-10 max-w-3xl mx-auto text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <p className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-8 text-sm text-white/80 border border-white/20">
+            <span className="text-white font-semibold">Miễn phí</span> mãi mãi
+          </p>
+        </motion.div>
+
+        <motion.h2
+          className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        >
+          Sẵn sàng bắt đầu
+          <br />
+          <span className="bg-gradient-to-r from-[#FBCFE8] to-[#F97316] bg-clip-text text-transparent">
+            hành trình của bạn?
+          </span>
+        </motion.h2>
+
+        <motion.p
+          className="text-base md:text-lg text-white/70 mb-10 max-w-xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
+          Đăng ký trong 10 giây và bắt đầu học ngay hôm nay.
+        </motion.p>
+
+        <motion.div
+          className="flex flex-col sm:flex-row gap-3 justify-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {user ? (
+            <a
+              href="/home"
+              className="flex items-center justify-center gap-2 bg-white text-[#EC4899] rounded-full px-8 py-3.5 text-base font-bold hover:bg-white/90 transition-all duration-300 hover:scale-105"
+            >
+              Tiếp tục học tập
+              <ArrowRight className="w-5 h-5" />
+            </a>
+          ) : (
+            <>
+              <a
+                href="/register"
+                className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-8 py-3.5 text-base font-bold transition-all duration-300 hover:scale-105 shadow-lg"
+                style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
+              >
+                Đăng ký miễn phí
+                <ArrowRight className="w-5 h-5" />
+              </a>
+              <a
+                href="/login"
+                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 border border-white/30"
+              >
+                Đăng nhập
+              </a>
+            </>
+          )}
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+// =================== Footer ===================
+
+function Footer() {
+  return (
+    <footer className="bg-[#0F172A] text-white/60 py-12 md:py-16 px-4 md:px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2 mb-4">
+              <img src="/logo.svg" alt="Lumotus" className="w-8 h-8 object-contain" />
+              <span className="text-base font-bold text-white">Lumotus</span>
+            </div>
+            <p className="text-xs text-white/40 leading-relaxed">
+              Học từ vựng mỗi ngày, tích lũy kiến thức, tiến bộ từng bước.
+            </p>
+          </div>
+
+          {/* Links */}
+          {[
+            {
+              title: 'Sản phẩm',
+              links: ['Tính năng', 'Bảng giá', 'Hướng dẫn', 'Cập nhật'],
+            },
+            {
+              title: 'Cộng đồng',
+              links: ['Blog', 'Diễn đàn', 'Sự kiện', 'Hỗ trợ'],
+            },
+            {
+              title: 'Công ty',
+              links: ['Giới thiệu', 'Tuyển dụng', 'Liên hệ', 'Bảo mật'],
+            },
+          ].map(({ title, links }) => (
+            <div key={title}>
+              <p className="text-xs font-semibold text-white/80 uppercase tracking-wider mb-3">{title}</p>
+              <ul className="space-y-2">
+                {links.map((link) => (
+                  <li key={link}>
+                    <a href="#" className="text-xs hover:text-white transition-colors duration-200">
+                      {link}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
-      </section>
 
-      <section className="mx-4 mb-16 md:mx-8">
-        <div
-          className="mx-auto max-w-6xl overflow-hidden rounded-[var(--radius-xl)] px-6 py-14 text-center md:px-12"
-          style={{ background: 'var(--color-primary)' }}
-        >
-          <h2 className="text-2xl font-bold text-white md:text-3xl">
-            Sẵn sàng bắt đầu hành trình học từ vựng?
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-white/85">
-            Đăng ký trong vài giây — tạo deck đầu tiên và ôn thẻ ngay hôm nay.
+        {/* Bottom */}
+        <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-white/30">
+            &copy; {new Date().getFullYear()} Lumotus. Mọi quyền được bảo lưu.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            {user ? (
-              <Button
-                to="/home"
-                size="lg"
-                className="min-w-[180px] bg-white text-[var(--color-primary)] hover:bg-white/95 hover:text-[var(--color-primary-hover)]"
+          <div className="flex items-center gap-4">
+            {['Facebook', 'Twitter', 'Instagram'].map((social) => (
+              <a
+                key={social}
+                href="#"
+                className="text-xs text-white/30 hover:text-white transition-colors duration-200"
               >
-                Tiếp tục học
-              </Button>
-            ) : (
-              <>
-                <Button
-                  to="/register"
-                  size="lg"
-                  className="min-w-[180px] bg-white text-[var(--color-primary)] hover:bg-white/95 hover:text-[var(--color-primary-hover)]"
-                >
-                  Đăng ký miễn phí
-                </Button>
-                <Button
-                  to="/login"
-                  size="lg"
-                  variant="outline"
-                  className="min-w-[180px] border-white/40 bg-white/10 text-white hover:border-white hover:bg-white/20 hover:text-white"
-                >
-                  Đăng nhập
-                </Button>
-              </>
-            )}
+                {social}
+              </a>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
+    </footer>
+  )
+}
 
-      <footer className="lumo-header border-t py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-[var(--color-text-muted)] md:flex-row md:px-8">
-          <LumotusLogo to="/" size="sm" />
-          <p>© {new Date().getFullYear()} Lumotus — Smart Flashcard English</p>
-        </div>
-      </footer>
+// =================== Page ===================
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <HeroSection />
+      <AboutSection />
+      <FeaturesSection />
+      <CTASection />
+      <Footer />
     </div>
   )
 }
