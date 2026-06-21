@@ -2,7 +2,7 @@ import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'reac
 import { Link } from 'react-router-dom'
 import { cn } from '@/utils/cn'
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost'
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'accent'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 const variantClass: Record<ButtonVariant, string> = {
@@ -11,9 +11,11 @@ const variantClass: Record<ButtonVariant, string> = {
   secondary:
     'bg-[var(--color-secondary)] text-white hover:opacity-90 shadow-[var(--shadow-btn)] hover:-translate-y-0.5 active:translate-y-0',
   outline:
-    'border border-[var(--color-border-strong)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-[var(--shadow-sm)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-0.5 active:translate-y-0',
+    'border-2 border-[var(--color-border-strong)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-[var(--shadow-sm)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-0.5 active:translate-y-0',
   ghost:
     'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-sm)]',
+  accent:
+    'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] shadow-[var(--shadow-accent)] hover:shadow-[var(--shadow-accent-hover)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[var(--shadow-accent)]',
 }
 
 const sizeClass: Record<ButtonSize, string> = {
@@ -43,7 +45,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const classes = cn(
-    'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none',
+    'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none',
     variantClass[variant],
     sizeClass[size],
     className,

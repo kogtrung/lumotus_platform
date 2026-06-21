@@ -70,7 +70,7 @@ export default function MainLayout() {
           <Menu className="h-5 w-5" strokeWidth={2} />
         </button>
 
-        <LumotusLogo to="/home" size="sm" showText className="shrink-0" />
+        <LumotusLogo to="/" size="sm" showText className="shrink-0" />
 
         <AppSearchBar className="hidden min-w-0 flex-1 sm:ml-2 sm:block" />
 
