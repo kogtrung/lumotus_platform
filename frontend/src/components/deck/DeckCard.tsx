@@ -22,12 +22,12 @@ export default function DeckCard({
   return (
     <article
       className={cn(
-        'lumo-card-hover group relative flex flex-col overflow-hidden rounded-2xl border border-[#E2E5EC] bg-gradient-to-br from-white to-slate-50',
+        'lumo-card-hover group relative flex flex-col overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm',
         className,
       )}
     >
       {/* Gradient accent line on top */}
-      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#EC4899] to-[#F472B6] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#EC4899] to-[#F97316] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
       <Link to={`/decks/${deck.slug}`} className="flex flex-1 flex-col p-5">
         {/* Cover */}
@@ -38,10 +38,10 @@ export default function DeckCard({
               alt=""
               className="h-28 w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
           </div>
         ) : (
-          <div className="mb-4 flex h-28 items-center justify-center rounded-xl bg-gradient-to-br from-[#FDF2F8] to-[#FBCFE8] transition-transform duration-300 group-hover:scale-105">
+          <div className="mb-4 flex h-28 items-center justify-center rounded-xl bg-[#2D2538] transition-transform duration-300 group-hover:scale-105">
             <Layers className="h-10 w-10 text-[#EC4899]" strokeWidth={1.5} />
           </div>
         )}
@@ -51,12 +51,12 @@ export default function DeckCard({
           {variant === 'library' && (
             <>
               {deck.isPublic ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] px-2.5 py-1 text-xs font-semibold text-[#059669] shadow-sm">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 px-2.5 py-1 text-xs font-semibold text-[#10B981] shadow-sm">
                   <Globe className="h-3 w-3" />
                   Công khai
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#F1F5F9] to-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#64748B] shadow-sm">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#8B7A9E]/15 px-2.5 py-1 text-xs font-semibold text-[#8B7A9E] shadow-sm">
                   <Lock className="h-3 w-3" />
                   Riêng tư
                 </span>
@@ -64,7 +64,7 @@ export default function DeckCard({
             </>
           )}
           {variant === 'explore' && isOwn && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] px-2.5 py-1 text-xs font-semibold text-[#D97706] shadow-sm">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#F59E0B]/15 px-2.5 py-1 text-xs font-semibold text-[#F59E0B] shadow-sm">
               Của bạn
             </span>
           )}
@@ -73,8 +73,8 @@ export default function DeckCard({
               key={t.id}
               className="rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
               style={{
-                backgroundColor: t.colorHex ? `${t.colorHex}22` : 'var(--color-secondary-subtle)',
-                color: t.colorHex ?? 'var(--color-secondary)',
+                backgroundColor: t.colorHex ? `${t.colorHex}22` : 'rgba(167, 139, 250, 0.15)',
+                color: t.colorHex ?? '#A78BFA',
               }}
             >
               {t.name}
@@ -83,14 +83,14 @@ export default function DeckCard({
         </div>
 
         {/* Title */}
-        <h3 className="line-clamp-2 text-base font-bold text-[var(--color-text)] transition-colors group-hover:text-[#EC4899]">
+        <h3 className="line-clamp-2 text-base font-bold text-[#F5F0FA] transition-colors group-hover:text-[#EC4899]">
           {deck.title}
         </h3>
 
         {/* Owner info (explore only) */}
         {variant === 'explore' && (
-          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#EC4899]/20 to-[#F472B6]/20">
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[#8B7A9E]">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EC4899]/20">
               <User className="h-3 w-3 text-[#EC4899]" />
             </div>
             {deck.ownerUsername}
@@ -99,13 +99,13 @@ export default function DeckCard({
 
         {/* Description */}
         {deck.description && (
-          <p className="mt-1.5 line-clamp-2 text-sm text-[var(--color-text-muted)]">
+          <p className="mt-1.5 line-clamp-2 text-sm text-[#8B7A9E]">
             {deck.description}
           </p>
         )}
 
         {/* Meta info */}
-        <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-[var(--color-text-muted)]">
+        <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-[#8B7A9E]">
           <span className="flex items-center gap-1 font-medium">
             <Layers className="h-3.5 w-3.5" />
             {deck.cardCount} thẻ
@@ -132,7 +132,7 @@ export default function DeckCard({
       {variant === 'library' && deck.sourceDeckId && deck.sourceDeckTitle && sourceRef && (
         <Link
           to={`/decks/${sourceRef}`}
-          className="group/sourse flex items-center gap-2 border-t border-[#E2E5EC] px-5 py-3 text-xs text-[var(--color-text-muted)] transition-all hover:bg-[#FDF2F8] hover:text-[#EC4899]"
+          className="group/sourse flex items-center gap-2 border-t border-[#3D3348] px-5 py-3 text-xs text-[#8B7A9E] transition-all hover:bg-[#2D2538]/50 hover:text-[#EC4899]"
         >
           <GitBranch className="h-3.5 w-3.5 shrink-0" />
           <span className="line-clamp-1 flex-1">

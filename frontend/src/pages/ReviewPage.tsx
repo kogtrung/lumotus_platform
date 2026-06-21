@@ -87,7 +87,7 @@ export default function ReviewPage() {
         toast.success(`+${data.xpEarned} XP`, {
           duration: 1500,
           position: 'top-center',
-          style: { fontSize: '14px', padding: '8px 16px' },
+          style: { fontSize: '14px', padding: '8px 16px', background: '#252030', color: '#F5F0FA' },
         })
         try {
           const me = await authApi.me()
@@ -112,7 +112,7 @@ export default function ReviewPage() {
       if (starredOnly && !starred) {
         setSessionCards((prev) => prev.filter((c) => c.cardId !== current?.cardId))
       }
-      toast.success(starred ? 'Đã gắn sao ⭐' : 'Đã bỏ sao', { duration: 1200 })
+      toast.success(starred ? 'Đã gắn sao ⭐' : 'Đã bỏ sao', { duration: 1200, style: { background: '#252030', color: '#F5F0FA' } })
     },
   })
 
@@ -152,7 +152,7 @@ export default function ReviewPage() {
 
   const toggleStarredOnly = () => {
     setStarredOnly((prev) => {
-      toast.success(prev ? 'Ôn tất cả thẻ' : 'Chỉ ôn thẻ đã gắn sao', { duration: 1500 })
+      toast.success(prev ? 'Ôn tất cả thẻ' : 'Chỉ ôn thẻ đã gắn sao', { duration: 1500, style: { background: '#252030', color: '#F5F0FA' } })
       return !prev
     })
     setMenuOpen(false)
@@ -160,7 +160,7 @@ export default function ReviewPage() {
 
   const toggleShuffle = () => {
     setShuffleOn((prev) => {
-      toast.success(prev ? 'Đã tắt xáo trộn' : 'Đã bật xáo trộn', { duration: 1500 })
+      toast.success(prev ? 'Đã tắt xáo trộn' : 'Đã bật xáo trộn', { duration: 1500, style: { background: '#252030', color: '#F5F0FA' } })
       return !prev
     })
     setMenuOpen(false)
@@ -178,10 +178,10 @@ export default function ReviewPage() {
 
   if (dueQuery.isLoading || deckQuery.isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[var(--color-bg)] to-[#F1F3F8]">
+      <div className="flex min-h-screen items-center justify-center" style={{ background: '#1A1520' }}>
         <div className="flex flex-col items-center gap-4">
           <div className="review-loader" />
-          <p className="text-sm font-semibold text-[var(--color-text-muted)]">Đang tải thẻ...</p>
+          <p className="text-sm font-semibold text-[#8B7A9E]">Đang tải thẻ...</p>
         </div>
       </div>
     )
@@ -189,12 +189,12 @@ export default function ReviewPage() {
 
   if (dueQuery.isError || deckQuery.isError) {
     return (
-      <div className="review-empty mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-[var(--color-bg)] px-6 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-danger-subtle)]">
-          <X className="h-10 w-10 text-[var(--color-danger)]" strokeWidth={2.5} />
+      <div className="review-empty mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center" style={{ background: '#1A1520' }}>
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[rgba(239,68,68,0.15)]">
+          <X className="h-10 w-10 text-[#EF4444]" strokeWidth={2.5} />
         </div>
-        <h2 className="text-2xl font-extrabold text-[var(--color-text)]">Không tải được phiên ôn</h2>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+        <h2 className="text-2xl font-extrabold text-[#F5F0FA]">Không tải được phiên ôn</h2>
+        <p className="mt-2 text-sm text-[#8B7A9E]">
           Kiểm tra backend đã restart sau khi thêm API review chưa.
         </p>
         <Button to={`/decks/${deckRef}`} className="mt-6">
@@ -206,12 +206,12 @@ export default function ReviewPage() {
 
   if (finished) {
     return (
-      <div className="review-empty mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-[var(--color-bg)] px-6 text-center">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--color-primary-subtle)] to-[var(--color-accent-warm)] shadow-lg">
-          <Star className="h-12 w-12 fill-[var(--color-warning)] text-[var(--color-warning)]" strokeWidth={1.5} />
+      <div className="review-empty mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center" style={{ background: '#1A1520' }}>
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[rgba(236,72,153,0.2)] to-[rgba(249,115,22,0.2)] shadow-lg">
+          <Star className="h-12 w-12 fill-[#F59E0B] text-[#F59E0B]" strokeWidth={1.5} />
         </div>
-        <h2 className="text-2xl font-extrabold text-[var(--color-text)]">Không có thẻ cần ôn</h2>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+        <h2 className="text-2xl font-extrabold text-[#F5F0FA]">Không có thẻ cần ôn</h2>
+        <p className="mt-2 text-sm text-[#8B7A9E]">
           Thêm thẻ mới hoặc quay lại sau khi đến hạn.
         </p>
         <Button to={`/decks/${deckRef}`} className="mt-6">
@@ -223,26 +223,26 @@ export default function ReviewPage() {
 
   if (sessionDone) {
     return (
-      <div className="review-empty mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-[var(--color-bg)] px-6 text-center">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#10B981] to-[#34D399] shadow-2xl shadow-[#10B981]/30">
+      <div className="review-empty mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center" style={{ background: '#1A1520' }}>
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#10B981]/20 to-[#34D399]/20 shadow-2xl shadow-[#10B981]/20">
           <span className="text-5xl">🎉</span>
         </div>
-        <h2 className="text-3xl font-extrabold text-[var(--color-text)]">Hoàn thành phiên ôn!</h2>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+        <h2 className="text-3xl font-extrabold text-[#F5F0FA]">Hoàn thành phiên ôn!</h2>
+        <p className="mt-2 text-sm text-[#8B7A9E]">
           Bạn đã ôn {cards.length} thẻ trong lượt này.
         </p>
 
         {/* Stats */}
         <div className="mt-6 grid w-full grid-cols-4 gap-2">
           {[
-            { label: 'Quên', value: sessionStats.again, color: 'text-[#B91C1C]', bg: 'bg-red-50' },
-            { label: 'Khó', value: sessionStats.hard, color: 'text-[#B45309]', bg: 'bg-amber-50' },
-            { label: 'Đúng', value: sessionStats.good, color: 'text-[#047857]', bg: 'bg-emerald-50' },
-            { label: 'Dễ', value: sessionStats.easy, color: 'text-[#1D4ED8]', bg: 'bg-blue-50' },
+            { label: 'Quên', value: sessionStats.again, color: 'text-[#EF4444]', bg: 'bg-[rgba(239,68,68,0.15)]' },
+            { label: 'Khó', value: sessionStats.hard, color: 'text-[#F59E0B]', bg: 'bg-[rgba(245,158,11,0.15)]' },
+            { label: 'Đúng', value: sessionStats.good, color: 'text-[#10B981]', bg: 'bg-[rgba(16,185,129,0.15)]' },
+            { label: 'Dễ', value: sessionStats.easy, color: 'text-[#3B82F6]', bg: 'bg-[rgba(59,130,246,0.15)]' },
           ].map((s) => (
             <div key={s.label} className={cn('rounded-2xl p-3', s.bg)}>
               <div className={cn('text-2xl font-extrabold', s.color)}>{s.value}</div>
-              <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#8B7A9E]">
                 {s.label}
               </div>
             </div>
@@ -250,7 +250,7 @@ export default function ReviewPage() {
         </div>
 
         {sessionStats.xp > 0 && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FEF3C7] to-[#FED7AA] px-4 py-2 text-sm font-bold text-[#92400E] shadow-sm">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[rgba(236,72,153,0.2)] to-[rgba(249,115,22,0.2)] px-4 py-2 text-sm font-bold text-[#F5F0FA] shadow-sm">
             <span>✨</span>
             <span>+{sessionStats.xp} XP đã nhận</span>
           </div>
@@ -269,9 +269,9 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="review-session relative flex min-h-screen flex-col bg-gradient-to-br from-[var(--color-bg)] via-[#F8F9FC] to-[var(--color-bg)]">
-      {/* Top bar - clean, chỉ progress + nút thoát */}
-      <header className="sticky top-0 z-30 shrink-0 bg-[var(--color-bg)]/80 px-4 py-3 backdrop-blur-md sm:px-6">
+    <div className="review-session relative flex min-h-screen flex-col" style={{ background: 'linear-gradient(180deg, #1A1520 0%, #252030 100%)' }}>
+      {/* Top bar */}
+      <header className="sticky top-0 z-30 shrink-0 px-4 py-3 backdrop-blur-md sm:px-6" style={{ background: 'rgba(26,21,32,0.8)' }}>
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <Link
             to={`/decks/${deckRef}`}
@@ -283,15 +283,15 @@ export default function ReviewPage() {
           </Link>
 
           <div className="flex-1">
-            <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-text-muted)]">
-              <span className="truncate">{deckQuery.data?.title ?? 'Ôn tập'}</span>
-              <span className="ml-2 shrink-0 tabular-nums">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#8B7A9E]">
+              <span className="truncate text-[#F5F0FA]">{deckQuery.data?.title ?? 'Ôn tập'}</span>
+              <span className="ml-2 shrink-0 tabular-nums text-[#F5F0FA]">
                 {index + 1} / {cards.length}
               </span>
             </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#3D3348]">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[#F97316] transition-all duration-500 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-[#EC4899] to-[#F97316] transition-all duration-500 ease-out"
                 style={{ width: `${progress * 100}%` }}
               />
             </div>
@@ -313,7 +313,7 @@ export default function ReviewPage() {
                   className="fixed inset-0 z-30"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="review-menu absolute right-0 top-12 z-40 w-56 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-2xl">
+                <div className="review-menu absolute right-0 top-12 z-40 w-56 rounded-2xl border border-[#3D3348] bg-[#252030] p-2 shadow-2xl">
                   <button
                     type="button"
                     onClick={toggleShuffle}
@@ -321,7 +321,7 @@ export default function ReviewPage() {
                   >
                     <Shuffle className="h-4 w-4" strokeWidth={2.25} />
                     <span>Xáo trộn thẻ</span>
-                    {shuffleOn && <span className="ml-auto text-[10px] font-bold text-[var(--color-primary)]">ON</span>}
+                    {shuffleOn && <span className="ml-auto text-[10px] font-bold text-[#EC4899]">ON</span>}
                   </button>
                   <button
                     type="button"
@@ -330,9 +330,9 @@ export default function ReviewPage() {
                   >
                     <Star className="h-4 w-4" strokeWidth={2.25} />
                     <span>Chỉ ôn thẻ sao</span>
-                    {starredOnly && <span className="ml-auto text-[10px] font-bold text-[var(--color-warning)]">ON</span>}
+                    {starredOnly && <span className="ml-auto text-[10px] font-bold text-[#F59E0B]">ON</span>}
                   </button>
-                  <div className="my-1 h-px bg-[var(--color-border)]" />
+                  <div className="my-1 h-px bg-[#3D3348]" />
                   <button
                     type="button"
                     onClick={restartSession}
@@ -363,10 +363,9 @@ export default function ReviewPage() {
       </main>
 
       {/* Footer: actions */}
-      <footer className="shrink-0 bg-[var(--color-surface)] px-4 pb-4 pt-3 shadow-[0_-4px_24px_rgba(15,23,42,0.06)] sm:px-6">
+      <footer className="shrink-0 px-4 pb-4 pt-3 sm:px-6" style={{ background: 'rgba(37,32,48,0.9)', backdropFilter: 'blur(12px)' }}>
         <div className="mx-auto max-w-2xl">
           {!flipped ? (
-            // Trước khi lật: 1 nút lật lớn + star
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -391,14 +390,13 @@ export default function ReviewPage() {
                 className="review-flip-cta group"
                 aria-label="Lật thẻ"
               >
-                <span className="text-base font-extrabold sm:text-lg">Lật thẻ</span>
-                <kbd className="ml-2 hidden rounded border border-white/30 bg-white/20 px-2 py-0.5 font-mono text-xs font-bold backdrop-blur-sm sm:inline-block">
+                <span className="text-base font-extrabold sm:text-lg text-[#F5F0FA]">Lật thẻ</span>
+                <kbd className="ml-2 hidden rounded border border-[#3D3348] bg-[#2D2538] px-2 py-0.5 font-mono text-xs font-bold text-[#8B7A9E] sm:inline-block">
                   Space
                 </kbd>
               </button>
             </div>
           ) : (
-            // Sau khi lật: 4 nút rating
             <RatingButtonGroup
               inactive={!flipped}
               disabled={rateMutation.isPending}

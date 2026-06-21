@@ -311,7 +311,12 @@ function BotanicalFalling({
 
 // =================== Header ===================
 
-const NAV_ITEMS = ['Giới thiệu', 'Tính năng', 'Cộng đồng', 'Hướng dẫn']
+const NAV_ITEMS = [
+  { label: 'Giới thiệu', href: '#about-section' },
+  { label: 'Tính năng', href: '#features-section' },
+  { label: 'Cộng đồng', href: '#features-section' },
+  { label: 'Hướng dẫn', href: '#cta-section' },
+]
 
 function Header() {
   const user = useAuthStore((s) => s.user)
@@ -334,10 +339,10 @@ function Header() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const textColor = overDark || overLight ? 'text-white' : 'text-[#0F172A]'
+  const textColor = overDark || overLight ? 'text-white' : 'text-[#F5F0FA]'
   const linkColor = overDark || overLight
     ? 'text-white/80 hover:text-white'
-    : 'text-[#475569] hover:text-[#EC4899]'
+    : 'text-[#C4B8D9] hover:text-[#EC4899]'
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-3 pointer-events-none [&>*]:pointer-events-auto">
@@ -356,11 +361,11 @@ function Header() {
         <nav className="hidden md:flex items-center gap-8">
           {NAV_ITEMS.map((item) => (
             <a
-              key={item}
-              href="#"
+              key={item.label}
+              href={item.href}
               className={`text-sm transition-colors duration-200 font-medium ${linkColor}`}
             >
-              {item}
+              {item.label}
             </a>
           ))}
         </nav>
@@ -437,104 +442,92 @@ function HeroSection() {
         />
       ))}
 
-      {/* Hero content — vertically centered on the visible video area */}
+      {/* Hero content — split layout: giant text left, CTA right */}
       <div
         ref={ref}
-        className="relative h-full flex flex-col items-center justify-end text-center px-6 pb-20 md:pb-28"
+        className="relative h-full flex items-end text-left px-8 md:px-12 lg:px-16 pb-16 md:pb-20"
       >
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-white/20"
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
-          </span>
-          <span className="text-xs sm:text-sm text-white/80">
-            Hơn <span className="text-white font-semibold">10,000</span> người đang học
-          </span>
-        </motion.div>
-
-        {/* Giant heading */}
+        {/* Left: Giant heading */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-5"
+          className="flex-1"
         >
-          <h1 className="text-[18vw] sm:text-[16vw] md:text-[13vw] lg:text-[11vw] xl:text-[9vw] font-extrabold leading-[0.88] tracking-tight">
+          <h1 className="text-[22vw] sm:text-[18vw] md:text-[14vw] lg:text-[12vw] xl:text-[10vw] font-extrabold leading-[0.88] tracking-tight">
             <span className="bg-gradient-to-r from-[#F472B6] via-[#EC4899] to-[#F97316] bg-clip-text text-transparent drop-shadow-lg">
               Lumotus
             </span>
           </h1>
         </motion.div>
 
-        {/* Description */}
-        <motion.p
-          className="text-xs sm:text-sm md:text-base text-white/70 max-w-md mb-8 leading-relaxed"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        >
-          Học từ vựng mỗi ngày, tích lũy kiến thức, tiến bộ từng bước cùng cộng đồng người học trên toàn thế giới.
-        </motion.p>
-
-        {/* CTA buttons */}
+        {/* Right: Badge + Description + CTA + Stats */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-3 items-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, x: 30 }}
+          animate={isInView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-start gap-6 max-w-sm md:max-w-md mb-4"
         >
-          {user ? (
-            <a
-              href="/home"
-              className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
-              style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
-            >
-              Tiếp tục học tập
-              <ArrowRight className="w-5 h-5" />
-            </a>
-          ) : (
-            <>
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
+            </span>
+            <span className="text-xs sm:text-sm text-white/80">
+              Hơn <span className="text-white font-semibold">10,000</span> người đang học
+            </span>
+          </div>
+
+          {/* Description */}
+          <p className="text-sm md:text-base text-white/70 leading-relaxed">
+            Học từ vựng mỗi ngày, tích lũy kiến thức, tiến bộ từng bước cùng cộng đồng người học trên toàn thế giới.
+          </p>
+
+          {/* CTA buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {user ? (
               <a
-                href="/register"
-                className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
+                href="/home"
+                className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
                 style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
               >
-                Bắt đầu ngay
-                <ArrowRight className="w-5 h-5" />
+                Tiếp tục học tập
+                <ArrowRight className="w-4 h-4" />
               </a>
-              <a
-                href="/login"
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20"
-              >
-                Đăng nhập
-              </a>
-            </>
-          )}
-        </motion.div>
+            ) : (
+              <>
+                <a
+                  href="/register"
+                  className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
+                  style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
+                >
+                  Bắt đầu ngay
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <a
+                  href="/login"
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20"
+                >
+                  Đăng nhập
+                </a>
+              </>
+            )}
+          </div>
 
-        {/* Stats row */}
-        <motion.div
-          className="flex items-center gap-6 sm:gap-10 mt-10 text-white/60"
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 1, delay: 0.75 }}
-        >
-          {[
-            { icon: Users, label: '50K+ người dùng' },
-            { icon: BookOpen, label: '500K+ từ vựng' },
-            { icon: Award, label: '5M+ lượt học' },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2 text-xs sm:text-sm">
-              <Icon className="w-4 h-4 text-[#EC4899]" />
-              <span>{label}</span>
-            </div>
-          ))}
+          {/* Stats row */}
+          <div className="flex items-center gap-5 text-white/60">
+            {[
+              { icon: Users, label: '50K+' },
+              { icon: BookOpen, label: '500K+' },
+              { icon: Award, label: '5M+' },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Icon className="w-3.5 h-3.5 text-[#EC4899]" />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
 
@@ -560,8 +553,9 @@ function AboutSection() {
     'Lumotus giúp bạn xây dựng thói quen học tập lành mạnh, theo dõi tiến độ với streak, XP và bảng xếp hạng. Mỗi ngày một bước tiến, bạn sẽ ngạc nhiên với những gì mình đạt được.'
 
   return (
-    <section className="bg-white py-20 md:py-28 px-4 md:px-6 relative overflow-hidden">
+    <section id="about-section" className="relative py-20 md:py-28 px-4 md:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
       <BotanicalFalling intensity="gentle" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(236,72,153,0.04)] to-transparent pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto text-center">
         {/* Label */}
@@ -570,7 +564,7 @@ function AboutSection() {
         </p>
 
         {/* Heading */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-3xl mx-auto leading-[1.25] sm:leading-[1.15] mb-12 md:mb-16 font-extrabold text-[#0F172A]">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-3xl mx-auto leading-[1.25] sm:leading-[1.15] mb-12 md:mb-16 font-extrabold" style={{ color: '#F5F0FA' }}>
           <WordsPullUpMultiStyle
             segments={[
               { text: 'Mỗi ngày', className: '' },
@@ -582,7 +576,7 @@ function AboutSection() {
         </h2>
 
         {/* Body paragraph */}
-        <p className="text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed text-[#475569]">
+        <p className="text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed" style={{ color: '#C4B8D9' }}>
           {bodyText.split('').map((char, i) => (
             <AnimatedLetter
               key={i}
@@ -678,7 +672,11 @@ function FeatureCardContent({
   return (
     <motion.div
       ref={ref}
-      className="relative bg-white rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col shadow-sm border border-[#E2E5EC] hover:shadow-lg hover:border-[#EC4899]/30 transition-all duration-300 min-h-[320px] md:min-h-[400px]"
+      className="relative rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col border transition-all duration-300 min-h-[320px] md:min-h-[400px]"
+      style={{
+        background: 'rgba(37, 32, 48, 0.7)',
+        borderColor: '#3D3348',
+      }}
       variants={cardVariants}
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
@@ -695,7 +693,7 @@ function FeatureCardContent({
       </div>
 
       {/* Title */}
-      <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#0F172A] mb-4 sm:mb-5">
+      <h3 className="text-base sm:text-lg md:text-xl font-bold mb-4 sm:mb-5" style={{ color: '#F5F0FA' }}>
         {title}
       </h3>
 
@@ -704,7 +702,7 @@ function FeatureCardContent({
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2">
             <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#EC4899] shrink-0 mt-0.5" />
-            <span className="text-[#475569] text-xs sm:text-sm leading-snug">{item}</span>
+            <span className="text-xs sm:text-sm leading-snug" style={{ color: '#C4B8D9' }}>{item}</span>
           </li>
         ))}
       </ul>
@@ -730,7 +728,8 @@ function StatCard({ value, label, delay }: { value: string; label: string; delay
       initial={{ opacity: 0, y: 15 }}
       animate={isIn ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay }}
-      className="bg-white rounded-2xl p-5 text-center shadow-sm border border-[#E2E5EC]"
+      className="rounded-2xl p-5 text-center border"
+      style={{ background: 'rgba(37, 32, 48, 0.7)', borderColor: '#3D3348' }}
     >
       <p
         className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#EC4899] to-[#F97316] bg-clip-text text-transparent mb-1"
@@ -738,7 +737,7 @@ function StatCard({ value, label, delay }: { value: string; label: string; delay
       >
         {value}
       </p>
-      <p className="text-xs sm:text-sm text-[#94A3B8] font-medium">{label}</p>
+      <p className="text-xs sm:text-sm font-medium" style={{ color: '#8B7A9E' }}>{label}</p>
     </motion.div>
   )
 }
@@ -755,9 +754,9 @@ function FeaturesSection() {
   ]
 
   return (
-    <section className="min-h-screen bg-[#F8FAFC] relative py-24 md:py-32 px-4 md:px-6 overflow-hidden">
+    <section id="features-section" className="min-h-screen relative py-24 md:py-32 px-4 md:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
       <BotanicalFalling intensity="gentle" />
-      <div className="bg-noise" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[rgba(236,72,153,0.04)] via-transparent to-[rgba(249,115,22,0.04)] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Stats highlight strip */}
@@ -980,7 +979,7 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ background: '#1A1520' }}>
       <Header />
       <HeroSection />
       <AboutSection />

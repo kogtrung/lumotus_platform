@@ -86,39 +86,39 @@ export default function LibraryPage() {
   }, [data, query, visibility, sort])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 -mx-4 md:mx-0">
       {/* Header */}
-      <div className="relative">
+      <div className="relative px-4 md:px-0">
         {/* Decorative gradient blur */}
-        <div className="pointer-events-none absolute inset-x-0 -top-4 h-40 bg-gradient-to-b from-[var(--color-primary-subtle)] via-transparent to-transparent opacity-70" />
+        <div className="pointer-events-none absolute inset-x-0 -top-4 h-40 bg-gradient-to-b from-[rgba(236,72,153,0.08)] via-transparent to-transparent opacity-70" />
 
         <div className="relative">
           {/* Title row */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-subtle)] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[rgba(236,72,153,0.12)] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#EC4899]">
                 <BookOpen className="h-3.5 w-3.5" strokeWidth={2.5} />
                 Thư viện
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-text)] md:text-4xl">
+              <h1 className="text-3xl font-extrabold tracking-tight text-[#F5F0FA] md:text-4xl">
                 Deck của bạn
               </h1>
-              <p className="mt-1.5 text-sm text-[var(--color-text-muted)]">
-                <span className="font-bold text-[var(--color-primary)]">{totalDecks}</span> deck · Tạo,
+              <p className="mt-1.5 text-sm text-[#8B7A9E]">
+                <span className="font-bold text-[#EC4899]">{totalDecks}</span> deck · Tạo,
                 import và chỉnh sửa bộ thẻ của bạn
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               {/* View toggle */}
-              <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-sm">
+              <div className="flex rounded-xl border border-[#3D3348] bg-[#252030]/80 p-1 shadow-sm">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
                     'flex h-8 w-8 items-center justify-center rounded-lg transition-all',
                     viewMode === 'grid'
-                      ? 'bg-[var(--color-primary)] text-white shadow-md'
-                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg)]',
+                      ? 'bg-[#EC4899] text-white shadow-md'
+                      : 'text-[#8B7A9E] hover:bg-[#2D2538]',
                   )}
                   aria-label="Grid view"
                   title="Lưới"
@@ -130,8 +130,8 @@ export default function LibraryPage() {
                   className={cn(
                     'flex h-8 w-8 items-center justify-center rounded-lg transition-all',
                     viewMode === 'list'
-                      ? 'bg-[var(--color-primary)] text-white shadow-md'
-                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg)]',
+                      ? 'bg-[#EC4899] text-white shadow-md'
+                      : 'text-[#8B7A9E] hover:bg-[#2D2538]',
                   )}
                   aria-label="List view"
                   title="Danh sách"
@@ -154,13 +154,13 @@ export default function LibraryPage() {
           {/* Search & Filter bar */}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B7A9E]" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Tìm kiếm deck..."
-                className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-4 text-sm shadow-sm transition-all focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                className="h-10 w-full rounded-xl border border-[#3D3348] bg-[#252030]/80 pl-10 pr-4 text-sm text-[#F5F0FA] placeholder:text-[#8B7A9E] shadow-sm transition-all focus:border-[#EC4899] focus:outline-none focus:ring-2 focus:ring-[#EC4899]/20"
               />
             </div>
 
@@ -169,19 +169,19 @@ export default function LibraryPage() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortMode)}
-                className="h-10 cursor-pointer appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-9 pr-8 text-sm font-semibold text-[var(--color-text)] shadow-sm transition-all hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                className="h-10 cursor-pointer appearance-none rounded-xl border border-[#3D3348] bg-[#252030]/80 pl-9 pr-8 text-sm font-semibold text-[#F5F0FA] shadow-sm transition-all hover:border-[#EC4899] focus:border-[#EC4899] focus:outline-none focus:ring-2 focus:ring-[#EC4899]/20"
               >
                 <option value="newest">Mới nhất</option>
                 <option value="oldest">Cũ nhất</option>
                 <option value="az">A → Z</option>
                 <option value="za">Z → A</option>
               </select>
-              <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
+              <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8B7A9E]" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8B7A9E]" />
             </div>
 
             {/* Visibility filters */}
-            <div className="flex gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-sm">
+            <div className="flex gap-1.5 rounded-xl border border-[#3D3348] bg-[#252030]/80 p-1 shadow-sm">
               {[
                 { id: 'ALL' as const, label: 'Tất cả' },
                 { id: 'PUBLIC' as const, label: 'Công khai' },
@@ -194,8 +194,8 @@ export default function LibraryPage() {
                   className={cn(
                     'rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
                     visibility === f.id
-                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]',
+                      ? 'bg-[#EC4899] text-white shadow-sm'
+                      : 'text-[#8B7A9E] hover:bg-[#2D2538] hover:text-[#F5F0FA]',
                   )}
                 >
                   {f.label}
@@ -207,11 +207,11 @@ export default function LibraryPage() {
       </div>
 
       {/* Content */}
-      <div>
+      <div className="px-4 md:px-0">
         {/* Loading */}
         {isLoading && (
-          <div className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-3'}>
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'space-y-3'}>
+            {Array.from({ length: 8 }).map((_, i) => (
               <DeckGridSkeleton key={i} />
             ))}
           </div>
@@ -219,16 +219,16 @@ export default function LibraryPage() {
 
         {/* Empty state */}
         {!isLoading && totalDecks === 0 && (
-          <div className="relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-subtle)] via-[var(--color-surface)] to-[var(--color-accent-warm)] p-12 text-center shadow-sm">
-            <div className="pointer-events-none absolute -top-1/2 -right-1/2 h-64 w-64 rounded-full bg-[var(--color-primary)]/5 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-1/2 -left-1/2 h-48 w-48 rounded-full bg-[var(--color-warning)]/5 blur-3xl" />
+          <div className="relative overflow-hidden rounded-3xl border border-[#3D3348] bg-[#252030]/60 backdrop-blur-sm p-12 text-center shadow-sm">
+            <div className="pointer-events-none absolute -top-1/2 -right-1/2 h-64 w-64 rounded-full bg-[#EC4899]/5 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-1/2 -left-1/2 h-48 w-48 rounded-full bg-[#F97316]/5 blur-3xl" />
 
             <div className="relative">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] shadow-lg shadow-[var(--color-primary)]/30">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#EC4899] to-[#F97316] shadow-lg shadow-[#EC4899]/30">
                 <Sparkles className="h-10 w-10 text-white" strokeWidth={2} />
               </div>
-              <h2 className="text-xl font-extrabold text-[var(--color-text)]">Thư viện trống</h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-text-muted)]">
+              <h2 className="text-xl font-extrabold text-[#F5F0FA]">Thư viện trống</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-[#8B7A9E]">
                 Bạn chưa có deck nào. Tạo deck đầu tiên hoặc khám phá kho deck công khai từ cộng đồng.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -246,14 +246,14 @@ export default function LibraryPage() {
 
         {/* Filtered empty state */}
         {!isLoading && totalDecks > 0 && filteredDecks.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)] p-10 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-bg)]">
-              <Search className="h-6 w-6 text-[var(--color-text-muted)]" />
+          <div className="rounded-2xl border border-dashed border-[#4A4060] bg-[#252030]/40 p-10 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#2D2538]">
+              <Search className="h-6 w-6 text-[#8B7A9E]" />
             </div>
-            <p className="text-sm font-semibold text-[var(--color-text)]">
+            <p className="text-sm font-semibold text-[#F5F0FA]">
               Không có deck phù hợp
             </p>
-            <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+            <p className="mt-1 text-xs text-[#8B7A9E]">
               Thử đổi bộ lọc hoặc từ khoá khác
             </p>
             <button
@@ -262,7 +262,7 @@ export default function LibraryPage() {
                 setQuery('')
                 setVisibility('ALL')
               }}
-              className="mt-3 text-xs font-bold text-[var(--color-primary)] hover:underline"
+              className="mt-3 text-xs font-bold text-[#EC4899] hover:underline"
             >
               Xoá bộ lọc
             </button>
@@ -272,17 +272,17 @@ export default function LibraryPage() {
         {/* Deck grid */}
         {!isLoading && filteredDecks.length > 0 && (
           <>
-            <div className="mb-4 flex items-center justify-between text-sm text-[var(--color-text-muted)]">
+            <div className="mb-4 flex items-center justify-between text-sm text-[#8B7A9E]">
               <p>
-                Hiển thị <span className="font-bold text-[var(--color-text)]">{filteredDecks.length}</span>{' '}
-                trong <span className="font-bold text-[var(--color-primary)]">{totalDecks}</span> deck
+                Hiển thị <span className="font-bold text-[#F5F0FA]">{filteredDecks.length}</span>{' '}
+                trong <span className="font-bold text-[#EC4899]">{totalDecks}</span> deck
               </p>
             </div>
 
             <div
               className={
                 viewMode === 'grid'
-                  ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+                  ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                   : 'space-y-3'
               }
             >
