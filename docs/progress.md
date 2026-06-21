@@ -33,32 +33,31 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 3 xong — chuẩn bị Sprint 4 SRS |
-| **Branch** | `develop` (chưa commit session này) |
-| **Sprint đang focus** | Sprint 4 SRS Review (+ roadmap audio 4a–4b) |
-| **Việc tiếp theo** | SM-2 backend + Review UI; upload/phát `audio_url` |
-| **Cập nhật lần cuối** | 2026-06-07 |
+| **Giai đoạn** | Sprint 4 xong — Đang chuyển sang đợt refactor UI học tiếng Anh |
+| **Branch** | `develop` |
+| **Sprint đang focus** | UI Refactor Sprint (LandingPage redesign, scroll-aware header) |
+| **Việc tiếp theo** | Refactor Dashboard / Library / Review pages; Figma sync |
+| **Đối chiếu đề tài** | [`spec.md`](spec.md) §8 |
+| **Cập nhật lần cuối** | 2026-06-22 |
 
 ### Tóm tắt nhanh
 
-- **Docs:** `spec.md`, `flashcard-project-plan.md`, `development-plan.md` (kèm roadmap audio), `progress.md`
-- **Backend:** Auth + Deck/Card/Topic; Cloudinary upload; CSV import **upsert**; `V5` `source_deck_id` khi copy; phân trang + search thẻ
-- **Frontend:** Landing; `/home` Dashboard Quizlet-style (gợi ý deck công khai); `/library` quản lý deck; nguồn gốc copy trên thẻ + chi tiết deck
-- **Infra:** JWT script, `.env` monorepo, `CLOUDINARY_*` cho upload ảnh
+- **Đã ổn định:** Auth, Deck/Card, Import CSV, Media upload, SRS Review + audio
+- **Đang tập trung:** UI refactor Landing Page (hero, about, features, CTA); scroll-aware header
+- **Chưa triển khai:** Quiz, Progress, Leaderboard, Admin — giữ nguyên Sprint 5–6
 
-### Nhánh gợi ý (session hiện tại)
+### Nhánh gợi ý (đợt này)
 
 | Phạm vi | Nhánh |
 |---|---|
-| Gộp Sprint 3 + deck UX | `feature/async-import-media` |
-| Chỉ import upsert | `feature/deck-import-upsert` |
-| Chỉ SRS tiếp | `feature/review-srs` |
+| Refactor UI + đồng bộ Figma | `style/english-learning-ui` |
+| Chỉ cập nhật docs | `docs/ui-refactor-plan` |
 
 ---
 
 ## Checklist theo sprint
 
-### Sprint 0 — Nền tảng
+### Sprint 0 — Nền tảng ✅
 
 - [x] `V1__init.sql` (13 bảng, index, `search_vector`, trigger `total_cards`)
 - [x] `BaseEntity`, `SoftDeleteEntity`, `JpaConfig`, `GlobalExceptionHandler`
@@ -66,20 +65,20 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] Backend đọc biến môi trường từ `.env` gốc monorepo
 - [x] FE: light tokens `index.css`, `axiosClient`, `MainLayout` shell
 
-### Sprint 1 — Auth
+### Sprint 1 — Auth ✅
 
 - [x] JWT + Redis refresh + Auth API (`register`, `login`, `refresh`, `logout`, `me`)
 - [x] `PUT /me` (username, avatarUrl), `PUT /me/password`
 - [x] Login / Register FE + silent refresh + `PrivateRoute`
 - [x] Fix refresh cookie (path `/`, Vite proxy) + sessionStorage accessToken
 
-### Sprint 1b — Google OAuth
+### Sprint 1b — Google OAuth ✅
 
 - [x] Migration `V2__users_oauth.sql`
 - [x] `POST /api/v1/auth/google` + verify Google ID token
 - [x] FE: nút Google trên Login/Register (`@react-oauth/google`)
 
-### Sprint 2 — Deck & Card
+### Sprint 2 — Deck & Card ✅
 
 - [x] BE: entities Topic / Deck / Card / DeckTopic + repositories
 - [x] BE: Topic CRUD (ADMIN), Deck & Card CRUD + copy deck
@@ -89,18 +88,19 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] Explore, Dashboard (`/home`), Library (`/library`), DeckDetail FE
 - [x] API client deck/card/topic + React Query
 - [x] `V5__decks_source_deck.sql` — lineage khi copy deck
-- [x] Trang chủ Quizlet-style: gợi ý deck công khai, strip «Gần đây»
+- [x] Trang chủ Quizlet-style; sidebar icon ↔ có chữ; logo cánh sen; header search
+- [x] `EditDeckDialog`; phân trang + search thẻ; nguồn gốc copy (V5)
 
-### Sprint 2b — Slug URLs
+### Sprint 2b — Slug URLs ✅
 
-- [x] Docs: `spec.md` + plan — `decks.slug`; quiz slug ghi chú Sprint 4
+- [x] Docs: `spec.md` + plan — `decks.slug`; quiz slug ghi chú Sprint 5
 - [x] Migration `V3__decks_slug.sql` + index `idx_decks_owner_slug`
 - [x] `SlugUtils`, deck path `{deckRef}` hybrid UUID/slug
 - [x] Topic `GET/PUT/DELETE /topics/{slug}`; filter `?topicSlug=`
 - [ ] Quiz `attemptRef` slug — Sprint 5
 - [x] FE routes dùng slug (`/decks/:deckRef`)
 
-### Sprint 3 — Import & Media *(trước SRS — theo flashcard §9)*
+### Sprint 3 — Import & Media ✅
 
 - [x] `POST /media/upload` (Cloudinary, `MediaFolder`)
 - [x] `POST /decks/import` CSV (sync, max 500 thẻ)
@@ -109,18 +109,25 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] `EditDeckDialog` — sửa deck, bật công khai, gắn topic
 - [x] Khám phá chỉ deck public; Thư viện = deck của tôi; hiển thị `ownerUsername`
 - [x] Lưới thẻ compact (5 cột desktop); phân trang 50/trang + tìm thẻ
-- [ ] Roadmap audio: upload `audio/` + phát trong Review (xem `development-plan.md`)
+- [x] Roadmap audio: upload `audio/` + phát trong Review (xem `development-plan.md`)
 
-### Sprint 4 — SRS Review
+### Sprint 4 — SRS Review ✅
 
-- [ ] SM-2 + `ReviewService` + Review UI + starred
+- [x] BE: `Sm2Algorithm` + unit test
+- [x] BE: entities/repos `user_card_review`, `user_deck_progress`, `daily_activity`
+- [x] BE: `ReviewService` — due (thẻ mới + đến hạn), rate, star; XP + daily_activity
+- [x] BE: `ReviewController` — `GET /review/due`, `POST /review/{cardId}/rate|star`
+- [x] FE: `ReviewPage` — flip thẻ, `RatingButtonGroup`, star, `/decks/:deckRef/review`
+- [x] FE: nút phát `audio_url` (pha 4b) + upload audio (pha 4a)
+- [x] FE: filter ôn chỉ thẻ starred (`?starredOnly=true`)
+- [ ] Streak scheduler
 
-### Sprint 5 — Quiz & Progress
+### Sprint 5 — Quiz & Progress ⏳
 
 - [ ] Quiz session + `attemptRef` slug
 - [ ] Heatmap, streak, stats, leaderboard Redis
 
-### Sprint 6 — AI, Admin & Polish
+### Sprint 6 — AI, Admin & Polish ⏳
 
 - [ ] AI generate + `async_jobs` polling
 - [ ] Admin UI + MockMvc tests + responsive
@@ -130,6 +137,131 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-06-22 — Landing Page UI Polish & Header Contrast
+
+**Đã làm**
+
+- `LandingPage.tsx` — complete redesign:
+  - **Hero (Section 1):** Video background, gradient overlay, botanical falling cards (6 cards, 25-50s duration, botanical SVG on front face), content repositioned to `justify-end pb-20` to show center of video
+  - **About (Section 2):** Clean white, botanical gentle falling (6 items, 18-30s), removed SRS/SM-2 references from body text, heading leading increased to `1.25/1.15`
+  - **Features (Section 3):** Stats strip (50K+, 500K+, 95% AI, 4.9★) + card grid redesign (AI create, Community, Progress tracking), botanical gentle falling, removed SRS/SM-2 from header
+  - **CTA (Section 4):** Dark purple-black gradient matching hero overlay (`#0a0614`), botanical falling, pink CTA button
+- **Header:** Always transparent, `pointer-events-none` trick, scroll-aware text color (white over dark sections via `getBoundingClientRect`, black over light sections), section IDs for detection
+- **Falling cards:** Reduced from 16 to 6, botanical SVG on front face (stem + leaves + petal), `repeatDelay` increased to 8-20s
+- **Vocab dataset:** 16 words, 1 meaning each, no examples
+- Build: `npm run build` ✅
+
+**Chưa xong / blocker**
+
+- Code chưa commit
+- Header `getBoundingClientRect` có thể cần debounce khi resize
+
+**Next**
+
+- Commit landing page UI changes
+- Refactor Dashboard / Library pages
+- Figma wireframe sync
+- Review page polish
+
+**Nhánh gợi ý**
+
+|| Phạm vi | Nhánh |
+|---|---|
+| Landing page UI | `style/english-learning-ui` |
+| Docs sync only | `docs/ui-refactor-plan` |
+
+---
+
+### Session 2026-06-18 — Đồng bộ trạng thái thực tế + lập kế hoạch refactor UI
+
+**Đã làm**
+
+- Đối chiếu code hiện có với yêu cầu đề tài
+- Xác nhận chưa làm Quiz/Leaderboard/Admin; chỉ củng cố hệ thống
+- Ghi nhận điểm chưa ưng ý: trải nghiệm giao diện học tiếng Anh chưa đủ mượt
+- Cập nhật docs phác thảo đợt refactor UI tách biệt khỏi Quiz/Leaderboard/Admin
+
+**Chưa xong / blocker**
+
+- Chưa bắt đầu refactor code; chưa mở Figma wireframe mới
+
+**Next**
+
+- Refactor UI tập trung: Home, Library, Explore, Deck Detail, Review
+- Cập nhật Figma wireframe cho các màn đã có
+- Giữ nguyên phạm vi: không mở Quiz/Leaderboard/Admin trong đợt này
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Refactor UI + đồng bộ Figma | `style/english-learning-ui` |
+| Chỉ cập nhật docs | `docs/ui-refactor-plan` |
+
+---
+
+### Session 2026-06-07 — Review UX polish + audio + starred filter
+
+**Đã làm**
+
+- Fix lật thẻ 3D: `key` theo `cardId`, tắt transition khi đổi thẻ, z-index/backface CSS — không còn flash mặt sau thẻ kế
+- BE pha **4a**: `MediaFolder.AUDIO`, upload MP3/WAV/OGG/WebM qua Cloudinary (`resource_type: video`)
+- FE pha **4b**: `CardAudioButton` trên flashcard Review (preload khi lật, nút 🔊 3D); `AudioUploadField` trong `CardFormDialog`
+- BE+FE: `GET /review/due?starredOnly=true` — chỉ thẻ đã gắn sao; pill **Chỉ sao** trên ReviewPage
+- Dashboard **Quay lại học ngay**: hiển thị `{n} đến hạn`, nút **Ôn n thẻ** → `/decks/:slug/review`
+
+**Chưa xong / blocker**
+
+- Streak cron scheduler
+- Code chưa commit
+
+**Next**
+
+- Commit/PR `feature/review-srs`
+- Sprint 5: Quiz session
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp SRS + audio + UX | `feature/review-srs` |
+
+---
+
+### Session 2026-06-07 — Sprint 4 SRS Review (MVP)
+
+**Đã làm**
+
+- BE: `Sm2Algorithm`, `ReviewRating`, entities + repos review/progress/daily_activity
+- BE: `ReviewService` — due cards (mới + đến hạn), rate SM-2, toggle star; cập nhật XP, `daily_activity`, `user_deck_progress`
+- BE: `ReviewController` — `GET /api/v1/review/due?deckRef=`, `POST .../rate`, `POST .../star`
+- BE: `Sm2AlgorithmTest` (3 test cases)
+- FE: `ReviewPage` + `MinimalLayout` — lật thẻ, Again/Hard/Good/Easy, đánh dấu sao, toast XP
+- FE: nút «Ôn tập» trên `DeckDetailPage` (owner)
+- UI (session trước, đã merge): sidebar icon/chữ toggle, logo sen, Quizlet layout
+
+**Chưa xong / blocker**
+
+- Restart backend sau pull để chạy migration V5 (nếu chưa)
+- Audio upload/phát trong Review (pha 4a–4b)
+- Streak cron, filter ôn chỉ thẻ starred
+- Code SRS chưa commit
+
+**Next**
+
+- Commit/PR `feature/review-srs`
+- Pha 4b: phát `audio_url` trên flashcard Review
+- Dashboard: hiển thị số thẻ đến hạn từ API
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Gộp SRS MVP | `feature/review-srs` |
+| Chỉ audio | `feature/media-audio-upload` |
 
 ---
 
@@ -290,7 +422,7 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 **Chưa xong / blocker**
 
-- Quiz slug — chờ Sprint 4 (đã ghi trong spec)
+- Quiz slug — chờ Sprint 5 (đã ghi trong spec)
 - FE Explore / DeckDetail chưa làm (cố ý bỏ qua session này)
 
 **Next**
@@ -499,7 +631,8 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 | Phạm vi | File / module | Nhánh |
 |---|---|---|
-| … | … | `feature/...` |
+| Gộp | … | `feature/...` |
+| Tách (nếu cần) | … | `feature/...` |
 
 ---
 

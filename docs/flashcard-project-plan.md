@@ -700,17 +700,18 @@ lumotus/
 - [x] RBAC: USER / ADMIN (`@PreAuthorize`, `ADMIN_BOOTSTRAP_EMAIL` dev)
 - [x] CRUD Topics (Admin); path/filter theo `slug`
 - [x] CRUD Deck & Card; copy deck; `{deckRef}` slug/UUID; pagination cards
-- [ ] Import file: **CSV trước** → Excel → DOCX *(Sprint 3 — trước SRS)*
-- [ ] Media upload Cloudinary → URL *(Sprint 3 — avatar, card image, deck cover)*
+- [x] Import file: CSV sync + upsert *(Sprint 3)*
+- [x] Media upload Cloudinary → URL *(Sprint 3 — ảnh; Sprint 4 — audio)*
 - [ ] Deck tags cá nhân (`deck_tags`)
-- [ ] SRS Review: due cards, rating SM-2 *(Sprint 4)*
-- [ ] Starred card *(Sprint 4)*
+- [x] SRS Review: due cards, rating SM-2 *(Sprint 4)*
+- [x] Starred card + filter `starredOnly` *(Sprint 4)*
+- [x] **Landing Page UI Polish** *(Sprint 4b)* — hero video, botanical cards, scroll-aware header, features redesign
 - [ ] Quiz: session, submit, XP *(Sprint 5)*
 - [ ] AI Generate + `async_jobs` polling *(Sprint 6)*
 - [ ] Progress: heatmap, streak, stats, scheduler 00:01 *(Sprint 5)*
 - [ ] Leaderboard Redis ZSET *(Sprint 5)*
 - [x] Xử lý lỗi tập trung `@ControllerAdvice`
-- [ ] Swagger/OpenAPI docs đầy đủ
+- [ ] Swagger/OpenAPI docs đầy đủ *(springdoc có; annotate endpoint — Sprint 6)*
 
 **Ghi chú hiệu năng (Giai đoạn 2):**
 
@@ -728,17 +729,18 @@ lumotus/
 - [x] React Router: `PrivateRoute`, `AuthLayout`, `MainLayout`
 - [x] Trang Auth: Login, Register, Google OAuth
 - [x] Trang Khám phá: browse deck theo `topicSlug`, tìm kiếm
-- [x] Trang chi tiết Deck: danh sách card, phiên âm (ảnh chờ Sprint 3 Media)
-- [x] Thư viện cá nhân: deck của tôi trên Home (tiến độ từng deck — Sprint 5)
-- [ ] Flashcard Review: flip 3D animation (Framer Motion), nút Again/Hard/Good/Easy, hiển thị phonetic + ảnh + audio
-- [ ] Starred review mode: chỉ ôn thẻ đã đánh dấu
+- [x] Trang chi tiết Deck: CRUD thẻ, import CSV, upload ảnh/audio
+- [x] Thư viện + Trang chủ Quizlet-style; due CTA «Ôn n thẻ»
+- [x] Flashcard Review: flip 3D (CSS; Framer Motion tùy chọn), Again/Hard/Good/Easy, phonetic + ảnh + audio
+- [x] Starred review mode: `?starredOnly=true` + pill «Chỉ sao»
 - [ ] Quiz: timer đếm ngược, MCQ / True-False, nộp bài, xem điểm
 - [ ] Trang Progress: heatmap streak calendar (GitHub-style), biểu đồ Chart.js, stats
 - [ ] Leaderboard: bảng xếp hạng avatar + điểm XP
-- [ ] Import file UI: upload, loading, hiển thị report kết quả
+- [x] Import file UI: upload CSV, report added/updated
 - [ ] AI Generate UI: form chủ đề + số từ, polling progress
 - [ ] Admin: quản lý topic, deck, user, thống kê
-- [ ] Responsive: desktop + tablet + mobile
+- [ ] Offline batch: cache phiên review cơ bản
+- [ ] Responsive: desktop + tablet + mobile *(QA Sprint 6)*
 
 ### Giai đoạn 4 — Kiểm thử và đóng gói
 - [ ] JUnit + MockMvc: tối thiểu 10 test case chính (Auth, Deck, Card, SRS, Quiz)

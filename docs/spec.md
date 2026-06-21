@@ -456,26 +456,26 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - **`DELETE /{tagName}`**: Xóa một tag cụ thể khỏi deck.
 
 #### Nhóm 5: Ôn tập thuật toán SRS (`/api/v1/review`)
-- **`GET /due`**: Lấy các thẻ đến hạn cần ôn tập (Lọc theo `?deckId=` tùy chọn).
-- **`POST /{cardId}/rate`**: Gửi kết quả đánh giá chất lượng nhớ để tính lịch ôn tiếp theo.
-- **`POST /{cardId}/star`**: Đánh dấu / Bỏ đánh dấu sao (`is_starred = true/false`).
+- **`GET /due`**: Lấy thẻ đến hạn (`?deckRef=` hoặc `?deckId=`, `?limit=`, `?starredOnly=`).
+- **`POST /{cardId}/rate`**: Gửi đánh giá AGAIN / HARD / GOOD / EASY (SM-2).
+- **`POST /{cardId}/star`**: Đánh dấu / bỏ sao thẻ.
 
-#### Nhóm 6: Kiểm tra trắc nghiệm (`/api/v1/quiz`)
+#### Nhóm 6: Kiểm tra trắc nghiệm (`/api/v1/quiz`) — *Sprint 5, chưa implement*
 - **`POST /start`**: Khởi tạo session quiz cho một deck (Truyền body: `deckId`, `questionCount`, `types`).
 - **`GET /{attemptId}/questions`**: Lấy danh sách câu hỏi của session.
 - **`POST /{attemptId}/submit`**: Nộp bài làm (Gửi kèm danh sách các lựa chọn của từng câu hỏi).
 - **`GET /{attemptId}/result`**: Lấy kết quả điểm số, XP và đáp án chi tiết.
 
-#### Nhóm 7: Tiến trình học & Leaderboard (`/api/v1/progress` & `/api/v1/leaderboard`)
+#### Nhóm 7: Tiến trình học & Leaderboard (`/api/v1/progress` & `/api/v1/leaderboard`) — *Sprint 5, chưa implement*
 - **`GET /progress/heatmap`**: Lấy dữ liệu hoạt động học hàng ngày để vẽ lịch đóng góp (date & xp_earned).
 - **`GET /progress/streak`**: Lấy thông tin số ngày học liên tiếp hiện tại.
 - **`GET /progress/stats`**: Thống kê số thẻ đã học, đã thuộc, số bài test đã làm.
 - **`GET /leaderboard`**: Top 50 người dùng có XP cao nhất (Được cache trong Redis 60s).
 
 #### Nhóm 8: File Storage Upload (`/api/v1/media`)
-- **`POST /upload`**: Tải file ảnh lên Cloudinary qua multipart form-data. Trả về JSON chứa `url`.
+- **`POST /upload`**: Multipart upload lên Cloudinary. Query `folder`: `avatars` | `cards` | `decks` | `audio`. Ảnh: JPEG/PNG/WebP/GIF; audio: MP3/WAV/OGG/WebM.
 
-#### Nhóm 9: Admin Management (`/api/v1/admin`)
+#### Nhóm 9: Admin Management (`/api/v1/admin`) — *Sprint 6, chưa implement*
 - **`GET /users`**: Danh sách user hệ thống (phân trang).
 - **`PUT /users/{id}/status`**: Khóa (ban) hoặc kích hoạt lại tài khoản.
 - **`GET /decks/popular`**: Thống kê các bộ thẻ được copy và xem nhiều nhất.
@@ -684,3 +684,135 @@ volumes:
    - Build Image Backend $\rightarrow$ Push lên Registry (Docker Hub / Github Package).
    - Build Image Frontend $\rightarrow$ Chứa file tĩnh để Nginx phục vụ trực tiếp.
 4. **Deploy**: Github Actions SSH vào máy chủ VPS, thực thi lệnh kéo image mới về và restart lại cụm container bằng `docker compose -f docker-compose.prod.yml up -d --build`.
+
+---
+
+## 8. Đối chiếu yêu cầu đề tài ban đầu
+
+> Ma trận này căn theo đề cương: học từ vựng theo bộ thẻ + quiz ngắn + SRS.  
+> **Cập nhật:** 2026-06-07 · Chi tiết sprint: [`development-plan.md`](development-plan.md) · Tiến độ code: [`progress.md`](progress.md)
+
+**Ký hiệu:** ✅ Đã có (code/docs) · ⚠️ Một phần · ❌ Chưa · 📋 Chỉ có trong spec/roadmap
+
+### 8.1. Giới thiệu đề tài
+
+| Nội dung | Trạng thái |
+|---|---|
+| Hệ thống học từ vựng theo bộ thẻ (deck/card) | ✅ |
+| Bài kiểm tra ngắn (quiz MCQ) | 📋 Sprint 5 |
+| Ôn tập SRS (SM-2) | ✅ MVP |
+| Gamification (XP, streak, leaderboard) | ⚠️ XP khi review; streak/leaderboard chưa |
+
+### 8.2. Backend (Spring Boot 4)
+
+#### Yêu cầu kỹ thuật nền
+
+| Yêu cầu | Trạng thái | Ghi chú |
+|---|---|---|
+| Spring Boot 4 | ✅ | |
+| Spring Web (REST) | ✅ | prefix `/api/v1` |
+| Spring Security | ✅ | JWT filter, refresh cookie |
+| Spring Data JPA | ✅ | |
+| PostgreSQL | ✅ | v17, Flyway V1–V5 |
+| Flyway migration | ✅ | Không sửa file đã chạy |
+| Bean Validation | ✅ | `@Valid` trên request DTO |
+| Swagger / OpenAPI | ⚠️ | `springdoc-openapi` + `/swagger-ui.html`; chưa annotate đủ từng endpoint |
+| JUnit + MockMvc | ❌ | Chỉ `Sm2AlgorithmTest` (3 case) + smoke `LumotusApplicationTests` — **chưa đủ 8 MockMvc** |
+| JWT + Refresh Token | ✅ | Access 15m, refresh Redis 7d |
+| RBAC USER / ADMIN | ✅ | `@PreAuthorize`, bootstrap ADMIN dev |
+| Phân trang / lọc / sắp xếp | ⚠️ | `page`/`size` deck & card; topic filter; FTS nâng cao chưa |
+| Xử lý lỗi tập trung | ✅ | `GlobalExceptionHandler` |
+
+#### Nhóm API nghiệp vụ
+
+| Nhóm | Trạng thái | Endpoint chính |
+|---|---|---|
+| Auth | ✅ | register, login, google, refresh, logout, me, password |
+| Topics (Admin) | ✅ | CRUD slug |
+| Decks & Cards | ✅ | CRUD, copy, import CSV, pagination |
+| Tags cá nhân | 📋 | Spec §4 — chưa code |
+| Media upload | ✅ | ảnh + **audio** (`audio/`) |
+| SRS Review | ✅ | due, rate, star, `starredOnly` |
+| Quiz | ❌ | start, submit, result — Sprint 5 |
+| Progress | ❌ | heatmap, streak, stats — Sprint 5 |
+| Leaderboard | ❌ | Redis ZSET — Sprint 5 |
+| Admin | ❌ | users, stats, popular decks — Sprint 6 |
+| AI / async jobs | ❌ | generate, import async — Sprint 6 |
+
+#### CSDL & kiểm thử bàn giao
+
+| Hạng mục | Trạng thái |
+|---|---|
+| Lược đồ CSDL chuẩn hóa (3NF, UUID, junction PK) | ✅ `spec.md` §2 + `V1__init.sql` |
+| Bộ test API tối thiểu **8 trường hợp** | ❌ Cần Sprint 6: Auth, Deck CRUD, Review rate, Quiz submit… |
+| Tài liệu Swagger/OpenAPI | ⚠️ UI chạy được; spec JSON `/api-docs` cần bổ sung mô tả |
+
+### 8.3. Frontend (React 18 + TypeScript)
+
+#### 8.3.1. Mô tả giao diện & UX
+
+| Yêu cầu | Trạng thái | Ghi chú |
+|---|---|---|
+| Flip card animation | ⚠️ | **CSS 3D** (`ReviewFlashcard`); đề tài ghi Framer Motion — lib đã cài, chưa dùng cho flip |
+| Review session tương tác | ✅ | Again/Hard/Good/Easy, xáo trộn, sao, audio |
+| Dashboard tiến độ hàng ngày | ⚠️ | Due CTA trên Home; **chưa** heatmap/streak page |
+| Offline cơ bản (batch) | ❌ | Chưa: cần cache due cards + IndexedDB (ghi Sprint 5+) |
+
+#### 8.3.2. Công nghệ Frontend
+
+| Công nghệ | Trạng thái |
+|---|---|
+| React 18 + TypeScript | ✅ |
+| Vite | ✅ |
+| TailwindCSS | ✅ v4 |
+| Framer Motion | ⚠️ Có trong `package.json`, chưa dùng flip |
+| React Query | ✅ |
+| React Router v6 | ✅ |
+| Axios | ✅ |
+| Chart.js | ⚠️ Có `chart.js` + `react-chartjs-2`, chưa có trang Progress |
+
+#### 8.3.3. Trang / màn hình
+
+| Trang (đề tài) | Route Lumotus | Trạng thái |
+|---|---|---|
+| Thư viện Deck — số card, tiến độ, ngày ôn | `/library`, `/home` | ⚠️ Số card ✅; tiến độ mastered / next review trên Library **chưa** |
+| Học Flashcard — flip + rating | `/decks/:deckRef/review` | ✅ |
+| Quiz — MCQ, timer, điểm | `/decks/:deckRef/quiz` | ❌ Sprint 5 |
+| Tiến độ — heatmap, streak | `/progress` | ❌ Sprint 5 |
+| Bảng xếp hạng | `/leaderboard` | ❌ Sprint 5 |
+| Admin | `/admin` | ❌ Sprint 6 |
+
+#### 8.3.4. Component chính
+
+| Component (đề tài) | File / tương đương | Trạng thái |
+|---|---|---|
+| FlashCard (Framer Motion 3D) | `ReviewFlashcard.tsx` | ⚠️ CSS 3D, không Framer Motion |
+| ReviewRatingButtons | `RatingButtonGroup.tsx` | ✅ màu + hint VI |
+| StreakCalendar (heatmap) | — | ❌ Sprint 5 |
+| DeckProgressBar | `ProgressBar` trong `DeckCard` (mỏng) | ⚠️ Chưa mastered/total từ API |
+| QuizTimer | — | ❌ Sprint 5 |
+| LeaderboardTable | — | ❌ Sprint 5 |
+
+#### 8.3.5. Sản phẩm frontend bàn giao
+
+| Hạng mục | Trạng thái |
+|---|---|
+| Animation mượt + UX học tập | ⚠️ Review tốt; Quiz/Progress chưa |
+| Tích hợp đầy đủ API review + quiz | ⚠️ Review ✅; Quiz ❌ |
+| Responsive mọi thiết bị | ⚠️ Layout responsive cơ bản; chưa QA đủ |
+| README frontend | ⚠️ Gộp trong root `README.md`; chưa có `frontend/README.md` riêng |
+
+### 8.4. Việc cần làm để đạt đủ đề tài
+
+| Ưu tiên | Hạng mục | Sprint gợi ý |
+|---|---|---|
+| P0 | MockMvc ≥ 8 test (Auth, Deck, Card, Review) | 6 |
+| P0 | Quiz BE + FE + QuizTimer | 5 |
+| P0 | Progress heatmap + StreakCalendar + Chart.js | 5 |
+| P0 | Leaderboard BE + LeaderboardTable | 5 |
+| P1 | Admin UI + thống kê deck phổ biến | 6 |
+| P1 | Swagger annotate đầy đủ + export OpenAPI | 6 |
+| P1 | Library: tiến độ deck + ngày ôn tiếp (`user_deck_progress`) | 5 |
+| P2 | Framer Motion flip (hoặc giữ CSS 3D, ghi rõ trong báo cáo) | — |
+| P2 | Offline batch (cache phiên review) | 5+ |
+| P2 | `frontend/README.md` | 6 |

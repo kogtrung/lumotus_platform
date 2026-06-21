@@ -4,7 +4,7 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 **Liên quan:** [`spec.md`](spec.md) (API & nghiệp vụ) · [`flashcard-project-plan.md`](flashcard-project-plan.md) (roadmap) · [`figma-wireframe-spec.md`](figma-wireframe-spec.md) (input vẽ wireframe Figma)
 
-**Theme:** Light-first · Concept **"Clean Study"** (Quizlet-inspired) — nền sáng, chrome tối giản, thao tác nhanh.
+**Theme:** Light-first · Concept **"Lush & Vibrant"** — màu sắc đậm đà, gradient nhấn mạnh, glow effects, độ tương phản cao.
 
 **Tham chiếu UX:** Quizlet home — sidebar trái, header search + nút tạo, «Quay lại học ngay», «Gần đây», gợi ý ngang.
 
@@ -29,50 +29,61 @@ Tài liệu thiết kế UI/UX cho ứng dụng học từ vựng Tiếng Anh **
 
 | Token | Hex | Dùng cho |
 |---|---|---|
-| `bg` | `#F6F7F9` | Nền vùng nội dung chính |
+| `bg` | `#F1F3F8` | Nền vùng nội dung chính |
 | `surface` | `#FFFFFF` | Sidebar, header, card, modal |
-| `border-subtle` | `#E4E6EB` | Viền card, divider |
-| `border-strong` | `#D0D4DC` | Viền input/outline button |
-| `primary` | `#4255FF` | CTA, link active, logo mark (Quizlet blue) |
-| `primary-hover` | `#3245EE` | Hover CTA |
-| `primary-subtle` | `#EDEFFD` | Nav active, chip selected, icon tile |
-| `secondary` | `#586380` | Text phụ, secondary button |
-| `secondary-subtle` | `#F0F2F5` | Nền tile nhẹ |
+| `border-subtle` | `#E2E5EC` | Viền card, divider |
+| `border-strong` | `#C8CDD9` | Viền input/outline button |
+| `primary` | `#6366F1` | CTA, link active, logo mark (indigo) |
+| `primary-hover` | `#4F46E5` | Hover CTA |
+| `primary-deep` | `#4338CA` | Deep variant |
+| `primary-subtle` | `#EEF2FF` | Nav active, chip selected, icon tile |
+| `primary-glow` | `rgba(99,102,241,0.4)` | Glow effect |
+| `accent` | `#F97316` | Gamification, CTA đặc biệt (orange) |
+| `accent-hover` | `#EA580C` | Hover accent |
+| `accent-subtle` | `#FFF7ED` | Accent background |
+| `secondary` | `#475569` | Text phụ, secondary button |
+| `secondary-subtle` | `#F1F5F9` | Nền tile nhẹ |
 
 ### 2.2 Semantic
 
 | Token | Hex | Dùng cho |
 |---|---|---|
-| `success` | `#3CBF8A` | Hoàn thành, đúng quiz |
-| `warning` | `#F0B429` | Timer sắp hết, cảnh báo |
-| `danger` | `#F07167` | Lỗi, xóa |
-| `info` | `#5BC0EB` | Thông tin |
+| `success` | `#10B981` | Hoàn thành, đúng quiz |
+| `success-subtle` | `#ECFDF5` | Success background |
+| `warning` | `#F59E0B` | Timer sắp hết, cảnh báo |
+| `warning-subtle` | `#FFFBEB` | Warning background |
+| `danger` | `#EF4444` | Lỗi, xóa |
+| `danger-subtle` | `#FEF2F2` | Danger background |
 
 ### 2.3 Text
 
 | Token | Hex | Dùng cho |
 |---|---|---|
-| `text-primary` | `#282E3D` | Tiêu đề, nội dung chính |
-| `text-secondary` | `#586380` | Mô tả phụ |
-| `text-muted` | `#939BB4` | Caption, placeholder |
+| `text-primary` | `#0F172A` | Tiêu đề, nội dung chính |
+| `text-secondary` | `#475569` | Mô tả phụ |
+| `text-muted` | `#94A3B8` | Caption, placeholder |
 | `text-inverse` | `#FFFFFF` | Text trên nút primary |
 
 ### 2.4 Gamification
 
 | Token | Hex | Dùng cho |
 |---|---|---|
-| `xp-gold` | `#F5C542` | Icon XP, badge điểm |
-| `streak-flame` | `#FF9B5E` | Chuỗi ngày học |
-| `star` | `#FFD166` | Thẻ đã đánh dấu sao |
+| `xp-gold` | `#F59E0B` | Icon XP, badge điểm, glow effect |
+| `xp-gold-subtle` | `#FEF3C7` | XP background |
+| `streak-flame` | `#EF4444` | Chuỗi ngày học, glow effect |
+| `streak-subtle` | `#FEF2F2` | Streak background |
+| `star` | `#FBBF24` | Thẻ đã đánh dấu sao |
 
-### 2.5 SRS Rating Buttons
+### 2.5 SRS Rating Buttons (Enhanced)
 
-| Rating | Background | Text/Icon | Icon (Lucide) |
+| Rating | Background | Text/Icon | Shadow |
 |---|---|---|---|
-| AGAIN | `#FEE8E6` | `#D94F4F` | `RotateCcw` |
-| HARD | `#FEF3D6` | `#C98A10` | `Clock` |
-| GOOD | `#E3F5ED` | `#2A9D6A` | `Check` |
-| EASY | `#E0F4FA` | `#2B8FC0` | `Zap` |
+| AGAIN | `#FEE2E2` → `#FCA5A5` | `#B91C1C` | Red glow `rgba(239,68,68,0.3)` |
+| HARD | `#FEF9C3` → `#FCD34D` | `#B45309` | Amber glow `rgba(245,158,11,0.3)` |
+| GOOD | `#D1FAE5` → `#6EE7B7` | `#047857` | Emerald glow `rgba(16,185,129,0.3)` |
+| EASY | `#DBEAFE` → `#93C5FD` | `#1D4ED8` | Blue glow `rgba(59,130,246,0.3)` |
+
+Button style: 3D effect với gradient background, border accent, và shadow đáy 4px.
 
 ### 2.6 Topic dynamic color
 
@@ -81,15 +92,32 @@ Từ `topics.color_hex` (API):
 - Chip border: `color_hex` @ 40% opacity
 - Fallback: `#5B8DEF`
 
-### 2.7 Gradient (tiết chế)
+### 2.7 Gradient & Glow Effects (Enhanced)
 
-Chỉ Auth hero / marketing strip:
+Sử dụng gradient cho hero sections, feature cards, và buttons:
 
 ```css
-background: linear-gradient(135deg, #EBF3FE 0%, #F0EDFE 50%, #FEF3D6 100%);
+/* Hero gradient - indigo to purple to warm */
+--gradient-hero: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 30%, #F3E8FF 70%, #FEF3C7 100%);
+
+/* Brand gradient - indigo spectrum */
+--gradient-brand: linear-gradient(135deg, #818CF8 0%, #6366F1 50%, #4F46E5 100%);
+
+/* Accent gradient - orange spectrum */
+--gradient-accent: linear-gradient(135deg, #FB923C 0%, #F97316 50%, #EA580C 100%);
+
+/* Glow effects */
+--glow-primary: 0 0 20px rgba(99, 102, 241, 0.35), 0 0 40px rgba(99, 102, 241, 0.15);
+--glow-accent: 0 0 20px rgba(249, 115, 22, 0.35), 0 0 40px rgba(249, 115, 22, 0.15);
+--glow-gold: 0 0 16px rgba(245, 158, 11, 0.4);
+--glow-flame: 0 0 16px rgba(239, 68, 68, 0.4);
+
+/* Gradient border cards */
+background: linear-gradient(surface, surface) padding-box,
+            linear-gradient(135deg, primary, accent) border-box;
 ```
 
-**Không** dùng gradient trên Review/Quiz.
+**Dùng gradient trên:** Landing hero, feature cards, CTA sections, rating buttons.
 
 ### 2.8 CSS Variables (`frontend/src/index.css`)
 
@@ -351,12 +379,12 @@ Path: `frontend/src/components/ui/`
 
 ### 5.3 Organisms
 
-**FlashCard**
+**FlashCard** (`ReviewFlashcard.tsx`)
 - Max-width 480px, min-height 360px
-- Flip 3D `rotateY` (Framer Motion)
-- Front (`flashcard-front`): **Literata** — word EN, phonetic (Plus Jakarta italic), image, audio btn
-- Back (`flashcard-back`): **Be Vietnam Pro** — nghĩa VI, example, hint
-- Tap anywhere hoặc nút "Lật thẻ" để flip
+- Flip 3D `rotateY` — **CSS 3D** (Framer Motion optional, đã có trong deps)
+- Front (`flashcard-front`): word EN, phonetic, image, `CardAudioButton`
+- Back (`flashcard-back`): nghĩa VI, example, hint
+- Tap anywhere để flip; rating qua `RatingButtonGroup` ở footer
 
 **HeatmapCalendar**
 - Ô 12×12px, gap 3px, radius 2px
@@ -511,6 +539,56 @@ Sub-nav tabs: Users | Topics | Decks | Stats
 
 ---
 
+## 6.11 Landing Page (`/`) — Marketing Landing
+
+### Overview
+
+Landing page là trang marketing hiển thị cho khách (chưa đăng nhập). Mục tiêu: gây ấn tượng, giới thiệu tính năng, kêu gọi đăng ký.
+
+### Sections
+
+|| Section | Background | Falling objects | Content |
+|---|---|---|---|
+| Hero | Video background + gradient overlay | 6 botanical flashcard cards (25-50s) | Badge, giant heading, description, CTA buttons, stats |
+| About | White | 6 gentle botanical items (18-30s) | Heading multi-style, body text |
+| Features | `#F8FAFC` | 6 gentle botanical items | Stats strip (50K+, 500K+, 95% AI, 4.9★) + 4-card grid |
+| CTA | Dark `#0a0614` + gradient | Botanical falling | Badge, heading, description, CTA buttons |
+
+### Design tokens (Landing)
+
+|| Token | Hex | Dùng cho |
+|---|---|---|---|
+| `gradient-hero` | `from-black/50 via-black/30 to-black/85` | Hero overlay |
+| `gradient-cta` | `from-[#0a0614] via-[#1a0a2e] to-[#2d0a3a]` | CTA background |
+| `brand-pink` | `#EC4899` | CTA button, accents, link |
+| `brand-orange` | `#F97316` | Gradient end |
+| `surface-light` | `#F8FAFC` | Features section bg |
+
+### Header (scroll-aware)
+
+- Always transparent (no background on scroll)
+- Text color changes based on section background:
+  - White text when over dark sections (Hero, CTA)
+  - Dark text (`#0F172A`) when over light sections (About, Features)
+- Detection: `getBoundingClientRect` of `#hero-section` and `#cta-section`
+- `pointer-events-none` on header + `pointer-events-auto` on children
+
+### Falling botanical cards
+
+- 6 cards from `FALLING_FLASHCARDS` array (16 words, 1 meaning each)
+- Botanical SVG on front face (stem + leaves + petal)
+- Duration: 25-50s, `repeatDelay`: 8-20s, staggered delay 5-11s
+- Click to flip: front (botanical) ↔ back (word + phonetic + meaning)
+
+### BotanicalFalling component
+
+- Props: `intensity: 'gentle' | 'normal' | 'dense'`
+- Gentle: 6 items, 18-30s, opacity max 0.5
+- Normal: 12 items, 10-16s
+- Dense: 16 items, 10-16s
+
+---
+
 ## 7. Motion & Micro-interactions
 
 | Interaction | Spec |
@@ -553,13 +631,30 @@ Sub-nav tabs: Users | Topics | Decks | Stats
 
 ## 10. Implementation Checklist (Giai đoạn 3)
 
-1. [ ] Cập nhật `index.css` tokens (thay dark palette hiện tại)
-2. [ ] `components/ui/` — Button, Input, Badge, Avatar, Skeleton
-3. [ ] Layouts — MainLayout, AuthLayout, MinimalLayout
-4. [ ] Pages theo thứ tự: Auth → Dashboard → Explore → Deck Detail → Review → Quiz → Progress → Leaderboard → Admin
-5. [ ] Framer Motion FlashCard flip
-6. [ ] Chart.js heatmap + line chart trên Progress
+> **Đối chiếu yêu cầu đề tài:** [`spec.md`](spec.md) §8 · **Tiến độ:** [`progress.md`](progress.md)
+
+1. [x] Cập nhật `index.css` tokens (Quizlet light)
+2. [x] `components/ui/` — Button, Input, Badge, ImageUpload, AudioUpload…
+3. [x] Layouts — MainLayout (sidebar icon/chữ), AuthLayout, MinimalLayout
+4. [ ] Pages đầy đủ theo đề tài:
+   - [x] Auth, Dashboard, Explore, Library, Deck Detail, Review
+   - [ ] Quiz, Progress, Leaderboard, Admin
+5. [ ] Framer Motion FlashCard flip *(hiện CSS 3D trong `ReviewFlashcard.tsx` — đạt UX, khác stack đề tài)*
+6. [ ] Chart.js heatmap + line chart trên Progress (`StreakCalendar`)
 7. [ ] Responsive QA mobile / tablet / desktop
+8. [ ] Offline batch cache phiên review
+
+### 10.1 Component đề tài ↔ code
+
+| Đề tài | File hiện tại | Trạng thái |
+|---|---|---|
+| FlashCard | `components/review/ReviewFlashcard.tsx` | ⚠️ CSS 3D |
+| ReviewRatingButtons | `components/review/RatingButtonGroup.tsx` | ✅ |
+| StreakCalendar | — | ❌ Sprint 5 |
+| DeckProgressBar | `DeckCard` progress mỏng | ⚠️ thiếu mastered/total |
+| QuizTimer | — | ❌ Sprint 5 |
+| LeaderboardTable | — | ❌ Sprint 5 |
+| CardAudioButton | `components/review/CardAudioButton.tsx` | ✅ (mở rộng) |
 
 ---
 

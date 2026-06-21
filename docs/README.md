@@ -35,7 +35,7 @@ flowchart TD
 |---|---|
 | **Tiến độ & session hôm nay** | [`progress.md`](progress.md) |
 | **Thứ tự code (sprint)** | [`development-plan.md`](development-plan.md) |
-| Schema, API, SM-2 | [`spec.md`](spec.md) |
+| Schema, API, SM-2, **đối chiếu đề tài §8** | [`spec.md`](spec.md) |
 | Roadmap dài hạn, Redis, deploy | [`flashcard-project-plan.md`](flashcard-project-plan.md) |
 | Design system, màn hình FE | [`ui-design-plan.md`](ui-design-plan.md) |
 | Wireframe Figma | [`figma-wireframe-spec.md`](figma-wireframe-spec.md) |
