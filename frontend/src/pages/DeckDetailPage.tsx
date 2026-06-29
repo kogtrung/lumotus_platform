@@ -48,6 +48,7 @@ export default function DeckDetailPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [editDeckOpen, setEditDeckOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<Card | null>(null)
+  const [studyModeOpen, setStudyModeOpen] = useState(false)
 
   useEffect(() => {
     setPage(0)
@@ -257,9 +258,9 @@ export default function DeckDetailPage() {
             )}
             {isOwner && (
               <>
-                <Button to={`/decks/${deckRef}/review`} size="md">
+                <Button size="md" onClick={() => setStudyModeOpen(true)}>
                   <Play className="h-4 w-4" strokeWidth={2.5} />
-                  Ôn tập
+                  Học
                 </Button>
                 <Button variant="outline" size="md" onClick={() => setEditDeckOpen(true)}>
                   <Settings className="h-4 w-4" />
@@ -451,6 +452,52 @@ export default function DeckDetailPage() {
         }}
         onSubmit={(data) => saveCardMutation.mutate(data)}
       />
+
+      {/* Study mode selection popup */}
+      {studyModeOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setStudyModeOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-[#3D3348] bg-[#252030] p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-center text-xl font-extrabold text-[#F5F0FA]">
+              Chọn chế độ học
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { mode: 'FLASHCARD', label: 'Flashcard', desc: 'Ôn tập thẻ', icon: '📇' },
+                { mode: 'QUIZ', label: 'Quiz', desc: 'Trắc nghiệm', icon: '📝' },
+                { mode: 'LEARN', label: 'Learn', desc: 'Học gõ đáp án', icon: '✏️' },
+                { mode: 'SPELL', label: 'Spell', desc: 'Nghe và đánh vần', icon: '🎧' },
+              ] as const).map(({ mode, label, desc, icon }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    setStudyModeOpen(false)
+                    navigate(`/decks/${deckRef}/study/${mode.toLowerCase()}`)
+                  }}
+                  className="flex flex-col items-center gap-2 rounded-xl border-2 border-[#3D3348] bg-[#1D1A24] p-4 transition-all hover:border-[#EC4899] hover:bg-[#2D2538]"
+                >
+                  <span className="text-2xl">{icon}</span>
+                  <span className="text-sm font-bold text-[#F5F0FA]">{label}</span>
+                  <span className="text-xs text-[#8B7A9E]">{desc}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setStudyModeOpen(false)}
+              className="mt-4 w-full rounded-xl py-2 text-sm font-semibold text-[#8B7A9E] transition-colors hover:text-[#F5F0FA]"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -69,7 +69,7 @@ export function JumpBackCard({ deck, dueCount = 0, dueLoading, className }: Jump
       </div>
 
       <Button
-        to={hasDue ? `/decks/${deck.slug}/review` : `/decks/${deck.slug}`}
+        to={hasDue ? `/decks/${deck.slug}/study` : `/decks/${deck.slug}`}
         size="md"
         className={cn(
           'relative mt-4 w-full transition-all',

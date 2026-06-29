@@ -102,6 +102,9 @@ html { scroll-behavior: smooth; }
     --radius-xl: 20px;
     --radius-pill: 9999px;
 
+    /* ── Review flashcard ─────────────────────────── */
+    --review-card-height: 480px;
+
     /* ── Shadows ─────────────────────────────────────────── */
     /* 3D depth — inset highlight + layered shadow */
     --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -581,7 +584,7 @@ html { scroll-behavior: smooth; }
   /* ── Review session ───────────────────────────────────── */
 
   .review-session {
-    --review-card-height: 420px;
+    --review-card-height: 480px;
   }
 
   .review-exit-btn {
@@ -611,23 +614,36 @@ html { scroll-behavior: smooth; }
     box-shadow: var(--shadow-sm);
   }
 
-  /* Card flip - dạng slide ngang mượt mà, không 3D */
-  .review-card {
-    display: block;
-    width: 100%;
-    height: var(--review-card-height);
+  /* ── Card flip ────────────────────────────────────────────
+     Front and back have identical grid rows (fixed heights).
+     Audio buttons are positioned absolutely in top-right corners.
+     This eliminates any height difference between front/back faces.
+  ──────────────────────────────────────────────────────── */
+  .review-card-perspective {
     position: relative;
+    width: 100%;
+    height: 100%;
+    perspective: 1400px;
+    perspective-origin: center center;
+  }
+
+  /* Card: clickable wrapper, no transform here */
+  .review-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
     cursor: pointer;
     border: none;
     padding: 0;
     background: transparent;
     outline: none;
     -webkit-tap-highlight-color: transparent;
-    perspective: 1200px;
   }
 
   .review-card:focus-visible {
-    outline: none;
+    outline: 2px solid rgba(236, 72, 153, 0.6);
+    outline-offset: 4px;
+    border-radius: 1.5rem;
   }
 
   .review-card-track {
@@ -636,36 +652,60 @@ html { scroll-behavior: smooth; }
     height: 100%;
     transform-style: preserve-3d;
     -webkit-transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(0.4, 0.15, 0.2, 1);
-    transform: translateX(0);
+    transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
   }
 
   .review-card.is-flipped .review-card-track {
-    /* Khi flipped: dùng 3D flip nhẹ để tránh lộ nội dung back */
     transform: rotateY(180deg);
   }
 
-  .review-card--instant .review-card-track {
-    transition: none !important;
+  .review-card--instant.is-flipped .review-card-track {
+    transition: none;
+    transform: rotateY(180deg);
   }
 
+  /* Both faces: identical grid — row heights are fixed on both front/back.
+     Row 1: auto (label row, small)
+     Row 2: 1fr (content grows to fill available space)
+     Row 3: 5rem (fixed bottom row — ensures both faces have same total height)
+  */
   .review-card-face {
     position: absolute;
-    inset: 0;
-    transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: center center;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr 5rem;
+    padding: 1.25rem 1.5rem 1.25rem;
+    text-align: center;
+    border-radius: 1.5rem;
+    border: 1px solid var(--color-border);
+    background:
+      linear-gradient(160deg, rgba(45, 37, 56, 0.98) 0%, rgba(37, 32, 48, 0.98) 100%),
+      var(--color-surface);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      0 24px 64px -12px rgba(236, 72, 153, 0.12);
   }
 
   .review-card-front {
-    transform: rotateY(0deg);
+    transform-origin: center center;
     z-index: 2;
   }
 
   .review-card-back {
+    transform-origin: center center;
     transform: rotateY(180deg);
     z-index: 1;
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      0 24px 64px -12px rgba(16, 185, 129, 0.18);
   }
 
   .review-card.is-flipped .review-card-front {
@@ -676,54 +716,16 @@ html { scroll-behavior: smooth; }
     z-index: 2;
   }
 
-  .review-card-inner {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    height: 100%;
-    padding: 1.5rem 1.25rem 1.25rem;
-    text-align: center;
-    overflow: hidden;
-    border-radius: 1.5rem;
-    border: 1px solid var(--color-border);
-    background:
-      linear-gradient(180deg, rgba(45, 37, 56, 0.95) 0%, rgba(37, 32, 48, 0.95) 100%),
-      var(--color-surface);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.3),
-      0 20px 48px -8px rgba(236, 72, 153, 0.15);
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-  }
-
-  .review-card-inner--back {
-    background:
-      linear-gradient(180deg, rgba(45, 37, 56, 0.95) 0%, rgba(37, 32, 48, 0.95) 100%),
-      var(--color-surface);
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.3),
-      0 20px 48px -8px rgba(16, 185, 129, 0.2);
-  }
-
-  /* Card enter animation */
+  /* Card enter animation — only opacity, no position/scale transform
+     so it doesn't conflict with flip rotateY */
   @keyframes review-card-enter {
-    0% {
-      opacity: 0;
-      transform: translateY(20px) scale(0.96);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
-  .review-card:not(.review-card--instant) {
-    animation: review-card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  .review-card:not(.review-card--instant) .review-card-track {
+    animation: review-card-enter 0.35s ease-out;
   }
-
-  /* Nav arrows */
   .review-nav-arrow {
     position: absolute;
     top: 50%;
@@ -1327,4 +1329,57 @@ html {
   animation: lumo-zero-gravity var(--lumo-duration, 6s) ease-in-out var(--lumo-delay, 0s) infinite;
   will-change: transform;
 }
+
+/* ── Quiz options ─────────────────────────────────────── */
+.quiz-option {
+  transition: all 0.2s ease;
+}
+.quiz-option:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+/* ── Study Mode Tabs ─────────────────────────────────── */
+.study-mode-tab--active {
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.3);
+}
+
+/* ── Study range input ───────────────────────────────── */
+.study-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: #3D3348;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+.study-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EC4899, #F97316);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.4);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+.study-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EC4899, #F97316);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.4);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+/* ── Study floating mode button ───────────────────────── */
+.study-floating-btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.study-floating-btn:hover {
+  transform: scale(1.08);
+}
+
 
