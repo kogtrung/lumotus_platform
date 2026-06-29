@@ -1,10 +1,8 @@
 package com.backend.lumotus.entity;
 
-import com.backend.lumotus.entity.ReviewRating;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -38,7 +36,6 @@ public class UserCardReview {
     @Column(name = "next_review_at", nullable = false)
     private Instant nextReviewAt;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "last_rating", length = 20)
     private ReviewRating lastRating;
 

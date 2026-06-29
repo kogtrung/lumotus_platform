@@ -460,11 +460,34 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - **`POST /{cardId}/rate`**: Gửi đánh giá AGAIN / HARD / GOOD / EASY (SM-2).
 - **`POST /{cardId}/star`**: Đánh dấu / bỏ sao thẻ.
 
-#### Nhóm 6: Kiểm tra trắc nghiệm (`/api/v1/quiz`) — *Sprint 5, chưa implement*
-- **`POST /start`**: Khởi tạo session quiz cho một deck (Truyền body: `deckId`, `questionCount`, `types`).
-- **`GET /{attemptId}/questions`**: Lấy danh sách câu hỏi của session.
-- **`POST /{attemptId}/submit`**: Nộp bài làm (Gửi kèm danh sách các lựa chọn của từng câu hỏi).
-- **`GET /{attemptId}/result`**: Lấy kết quả điểm số, XP và đáp án chi tiết.
+#### Nhóm 6: Học tập & Quiz (`/api/v1/study`) — *Sprint 5, implement dynamic*
+
+| Method | Endpoint | Body / Params | Mô tả |
+|---|---|---|---|
+| `POST` | `/study/{deckRef}/start` | `{ "mode": "FLASHCARD"|"QUIZ"|"LEARN"|"SPELL", "count": 10, "direction": "forward"|"reverse" }` | Tạo session, trả về questions (direction cho LEARN mode) |
+| `POST` | `/study/{attemptId}/submit` | `{ "answers": [{ "questionId", "selectedAnswer" }] }` | Nộp bài, tính score + XP |
+| `GET` | `/study/{attemptId}/result` | — | Lấy kết quả chi tiết |
+
+**Study modes:**
+- `FLASHCARD` — flip + rate SM-2 (reuse review logic), không nhận XP trong session này
+- `QUIZ` — MCQ: front là câu hỏi, back là đáp án đúng, 3 đáp án sai lấy từ cards khác trong deck (Levenshtein distance loại bỏ đáp án quá giống)
+- `LEARN` — nhập đáp án: front là prompt (hoặc back nếu direction=reverse), user nhập đáp án, so sánh normalized
+- `SPELL` — nghe + nhập: cần card có `audio_url`, user nghe và nhập front
+
+**Question generation:** Sinh từ card data trong memory khi bắt đầu session — không lưu bảng `quiz_questions`. Mỗi lần bắt đầu là quiz mới.
+
+**Direction support (LEARN mode):**
+- `forward`: front → câu hỏi, back → đáp án (EN → VN)
+- `reverse`: back → câu hỏi, front → đáp án (VN → EN)
+
+**Score & XP:**
+
+| Mode | Đúng khi | XP/câu |
+|---|---|---|
+| FLASHCARD | Rate GOOD/EASY (server-side, qua `/review/{cardId}/rate`) | 0 trong session này |
+| QUIZ | `selected == correct` | 8 |
+| LEARN | `normalized(selected) == normalized(correct)` | 10 |
+| SPELL | `normalized(selected) == normalized(front)` | 12 |
 
 #### Nhóm 7: Tiến trình học & Leaderboard (`/api/v1/progress` & `/api/v1/leaderboard`) — *Sprint 5, chưa implement*
 - **`GET /progress/heatmap`**: Lấy dữ liệu hoạt động học hàng ngày để vẽ lịch đóng góp (date & xp_earned).
@@ -603,6 +626,43 @@ Hệ thống duy trì streak (số ngày học liên tiếp) của người dùn
 - Hệ thống sử dụng interface `TaskDispatcher` và implement mặc định là `SpringAsyncDispatcher` (chạy trên Thread Pool cấu hình qua `@Async`).
 - Khi user gửi yêu cầu, backend tạo một bản ghi trong bảng `async_jobs` với trạng thái `PENDING`, đưa tác vụ vào queue/thread pool, rồi trả về `jobId` ngay lập tức với mã HTTP `202 Accepted`.
 - Tác vụ chạy nền cập nhật trạng thái job thành `PROCESSING`. Sau khi hoàn tất (thành công hay thất bại), cập nhật trạng thái thành `DONE` hoặc `FAILED` kèm theo payload chi tiết ở cột `result` (JSON).
+
+---
+
+### 5.4. Study Modes — Dynamic Quiz & Flashcard
+
+Hệ thống học tập hợp nhất 4 chế độ (Study Modes), sinh câu hỏi **dynamic** từ card data trong memory — không cần bảng `quiz_questions`.
+
+#### Khởi tạo session
+
+1. User chọn mode + số câu (default 10)
+2. Server lấy cards từ `cards` table, shuffle, chọn N cards
+3. `QuestionGenerator` tạo questions theo mode
+4. Questions + answers lưu trong `StudyAttempt` (in-memory, `ConcurrentHashMap`)
+5. Trả về `attemptId` + questions
+
+#### Question generation per mode
+
+| Mode | Front (prompt) | Correct | Options |
+|---|---|---|---|
+| FLASHCARD | `card.front` | `card.back` | — |
+| QUIZ | `card.front` | `card.back` | 3 wrong answers (lấy từ backs khác trong deck, shuffle) |
+| LEARN | `card.front` | `card.back` | — |
+| SPELL | `card.front` (ẩn) | `card.front` | — |
+
+#### Scoring
+
+- **FLASHCARD**: User flip thẻ + rate. Answer gửi lên `/study/{attemptId}/submit` với rating (AGAIN/HARD/GOOD/EASY). Server gọi `ReviewService.rateCard()` để update SM-2 state. XP=0 trong session này (qua rate riêng).
+- **QUIZ/LEARN/SPELL**: `normalized(selected).equals(normalized(correct))`. Normalize = trim + lowercase + normalize quotes.
+
+#### Submit & Result
+
+1. Server gọi `activeAttempts.remove(attemptId)` (idempotent — submit 1 lần)
+2. Tính score = correct/total, XP = correct * xpPerQuestion
+3. Update `users.xp`, `daily_activity`
+4. Trả về result với chi tiết từng câu
+
+> **Lưu ý:** Questions sinh trong memory — không persistent qua server restart. Mỗi session là quiz mới.
 - Frontend thực hiện cơ chế Polling (gọi định kỳ mỗi 2 giây) tới endpoint `/api/v1/jobs/{jobId}` để cập nhật giao diện người dùng.
 
 ---
@@ -690,7 +750,7 @@ volumes:
 ## 8. Đối chiếu yêu cầu đề tài ban đầu
 
 > Ma trận này căn theo đề cương: học từ vựng theo bộ thẻ + quiz ngắn + SRS.  
-> **Cập nhật:** 2026-06-07 · Chi tiết sprint: [`development-plan.md`](development-plan.md) · Tiến độ code: [`progress.md`](progress.md)
+> **Cập nhật:** 2026-06-29 · Chi tiết sprint: [`development-plan.md`](development-plan.md) · Tiến độ code: [`progress.md`](progress.md)
 
 **Ký hiệu:** ✅ Đã có (code/docs) · ⚠️ Một phần · ❌ Chưa · 📋 Chỉ có trong spec/roadmap
 
@@ -777,6 +837,8 @@ volumes:
 |---|---|---|
 | Thư viện Deck — số card, tiến độ, ngày ôn | `/library`, `/home` | ⚠️ Số card ✅; tiến độ mastered / next review trên Library **chưa** |
 | Học Flashcard — flip + rating | `/decks/:deckRef/review` | ✅ |
+| **Study Modes — 4 modes** | `/decks/:deckRef/study` | ✅ Mới |
+| **Session persistence — TTL, resume dialog** | — | ✅ Mới |
 | Quiz — MCQ, timer, điểm | `/decks/:deckRef/quiz` | ❌ Sprint 5 |
 | Tiến độ — heatmap, streak | `/progress` | ❌ Sprint 5 |
 | Bảng xếp hạng | `/leaderboard` | ❌ Sprint 5 |
@@ -788,6 +850,14 @@ volumes:
 |---|---|---|
 | FlashCard (Framer Motion 3D) | `ReviewFlashcard.tsx` | ⚠️ CSS 3D, không Framer Motion |
 | ReviewRatingButtons | `RatingButtonGroup.tsx` | ✅ màu + hint VI |
+| **StudyHeader** | `StudyHeader.tsx` | ✅ Mới |
+| **StudyConfigView** | `StudyConfigView.tsx` | ✅ Mới |
+| **ModeDropdown** | `ModeDropdown.tsx` | ✅ Mới |
+| **ModeSettings** | `ModeSettings.tsx` | ✅ Mới |
+| **ResumeDialog** | `ResumeDialog.tsx` | ✅ Mới |
+| **StudyEmptyState** | `StudyEmptyState.tsx` | ✅ Mới |
+| **FlashcardResult** | `FlashcardResult.tsx` | ✅ Mới |
+| **QuizResult** | `QuizResult.tsx` | ✅ Mới |
 | StreakCalendar (heatmap) | — | ❌ Sprint 5 |
 | DeckProgressBar | `ProgressBar` trong `DeckCard` (mỏng) | ⚠️ Chưa mastered/total từ API |
 | QuizTimer | — | ❌ Sprint 5 |

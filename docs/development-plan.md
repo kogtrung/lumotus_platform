@@ -21,7 +21,7 @@ Thứ tự sprint **căn theo** [`flashcard-project-plan.md`](flashcard-project-
 | 3 | 2 | **Import CSV** + **Media upload** (Cloudinary) — *trước SRS, theo §9* | ✅ Xong |
 | 4 | 2 + 3 | SRS SM-2, Review UI, starred, audio | ✅ MVP |
 | 4b | 2 + 3 | Dark theme UI + ảnh nền cho toàn bộ hệ thống | ✅ Xong |
-| 5 | 2 + 3 | Quiz, heatmap, streak, stats, leaderboard | ⏳ Chưa |
+| 5 | 2 + 3 | Study Modes (Flashcard/Quiz/Learn/Spell) ✅ · Session persistence ✅ · Components ✅ · Mode switch ✅ · Progress/Leaderboard ⏳ | 🔄 Đang |
 | 6 | 2 + 3 + 4 | AI generate (async jobs), Admin UI, MockMvc ≥8, Swagger đầy đủ, polish | ⏳ Chưa |
 
 **Đã làm ngoài sprint gốc (ghi nhận):** `scripts/ensure-jwt-secret.mjs`, `ADMIN_BOOTSTRAP_EMAIL`, Postman collection, `vite.config` `envDir` monorepo.
@@ -213,29 +213,53 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 
 ---
 
-## Sprint 5 — Quiz & Progress ⏳
+## Sprint 5 — Study Modes & Progress 🔄
 
-**Branch:** `feature/quiz-progress`
+**Branch:** `feature/quiz-progress` · `feature/study-session` · `feature/progress-leaderboard`
 
-### Backend
+### Backend — Study Modes ✅ *(done)*
 
-| # | Task |
-|---|---|
-| 1 | Quiz session: `quiz_attempts`, `attemptRef` slug, score calculation |
-| 2 | Quiz attempt API: `POST /quiz/{deckRef}/start`, `POST /quiz/{attemptRef}/submit` |
-| 3 | Heatmap + streak scheduler (`@Scheduled`, cron `0 0 * * *`), `daily_activity` aggregation |
-| 4 | Redis leaderboard: `ZADD` on review/quiz XP, `ZREVRANGE` top N |
-| 5 | Progress API: `GET /progress/me` (heatmap, streak, stats), `GET /progress/leaderboard` |
-| 6 | Quiz BE endpoints + XP integration |
+| # | Task | Trạng thái |
+|---|---|---|
+| 1 | `StudyMode` enum (`FLASHCARD`, `QUIZ`, `LEARN`, `SPELL`) | ✅ |
+| 2 | `StudyAttempt` in-memory model + `QuestionGenerator` | ✅ |
+| 3 | `StudyController`: `POST /study/{deckRef}/start`, `POST /{attemptId}/submit`, `GET /{attemptId}/result` | ✅ |
+| 4 | Question generation: FLASHCARD (due cards), QUIZ (MCQ), LEARN (type), SPELL (listen) | ✅ |
+| 5 | Scoring + XP: `daily_activity`, `users.xp` | ✅ |
+| 6 | Session persistence (frontend `studySession.ts`) — TTL, resume dialog, config per mode | ✅ |
+| 7 | Heatmap + streak scheduler (`@Scheduled`, cron `0 0 * * *`) | ⏳ |
+| 8 | Redis leaderboard: `ZADD` on XP, `ZREVRANGE` top N | ⏳ |
+| 9 | Progress API: `GET /progress/me`, `GET /progress/leaderboard` | ⏳ |
 
-### Frontend
+### Frontend — Study Modes ✅ *(done)*
 
-| # | Task |
-|---|---|
-| 1 | `QuizPage.tsx` — session flow (start → question → submit → result) |
-| 2 | `ProgressPage.tsx` — heatmap, streak counter, weekly stats chart |
-| 3 | `LeaderboardPage.tsx` — top N users by XP |
-| 4 | Dashboard: streak badge, XP display, leaderboard preview |
+| # | Task | Trạng thái |
+|---|---|---|
+| 1 | `StudyPage.tsx` — unified page: config → session → result | ✅ |
+| 2 | `ModeTab.tsx` — 4 mode tabs with icons | ✅ |
+| 3 | `QuizView.tsx` — MCQ options with correct/wrong highlight | ✅ |
+| 4 | `LearnView.tsx` — type-answer with normalize check | ✅ |
+| 5 | `SpellView.tsx` — audio player + type input | ✅ |
+| 6 | Result screen: score ring SVG, XP, stats breakdown | ✅ |
+| 7 | DeckDetailPage: nút «Học» → `/decks/:deckRef/study` | ✅ |
+| 8 | Dashboard: JumpBackCard link đến `/study` | ✅ |
+| 9 | Session persistence + resume dialog (`ResumeDialog.tsx`) | ✅ |
+| 10 | Component extraction: 9 components tách từ StudyPage (975 → 365 dòng) | ✅ |
+| 11 | Mode switch fix: FLASHCARD → QUIZ auto-starts session | ✅ |
+| 12 | Quiz UX: auto-advance default, timeout auto-submit, wrong answers Levenshtein | ✅ |
+| 13 | Learn UX: direction support (reverse default VN→EN), timer, session persistence | ✅ |
+| 14 | FlashCard: TTL toggle ON/OFF, remove starredOnly, debug logging | ✅ |
+| 15 | `ProgressPage.tsx` — heatmap, streak, stats | ⏳ |
+| 16 | `LeaderboardPage.tsx` — top N by XP | ⏳ |
+
+### Design — Study UI
+
+- 4 mode tabs: Flashcard (Layers), Quiz (FileText), Learn (Pencil), Spell (Volume2)
+- Active tab: gradient pink→orange pill + glow shadow
+- Quiz options: 2-col grid, correct=green border, wrong=red border
+- Learn/Spell input: large text input, border-focus pink
+- Result: score ring (SVG circle with gradient), XP badge
+- Session persistence: TTL options (5m → 3d), "Tiếp tục?" dialog, config per mode
 
 ---
 
@@ -245,13 +269,13 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 
 - `POST /api/v1/decks/generate` + `async_jobs` + polling `GET /jobs/{jobId}`
 - Admin: users, topics, stats
-- 8+ MockMvc tests (Auth, Deck, Card, Review, Quiz) — **yêu cầu đề tài ≥8**; responsive QA; Swagger annotate đầy đủ
+- 8+ MockMvc tests (Auth, Deck, Card, Review, Study) — **yêu cầu đề tài ≥8**; responsive QA; Swagger annotate đầy đủ
 
 ---
 
 ## MVP demo (~4 tuần)
 
-Đăng ký → tạo/import deck + thẻ → upload ảnh → ôn SRS → quiz → leaderboard.
+Đăng ký → tạo/import deck + thẻ → upload ảnh → ôn SRS → Study modes → leaderboard.
 
 ---
 
@@ -273,4 +297,4 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 | Xong task trong buổi | `progress.md` checkbox + session log |
 | Env / tooling mới | `.env.example`, `README.md` (nếu quick start đổi) |
 
-*Cập nhật lần cuối: 2026-06-22 · Đối chiếu đề tài: [`spec.md`](spec.md) §8*
+*Cập nhật lần cuối: 2026-06-29 · Đối chiếu đề tài: [`spec.md`](spec.md) §8*

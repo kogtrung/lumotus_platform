@@ -11,47 +11,87 @@ const ratings: {
   icon: typeof Check
   variant: 'again' | 'hard' | 'good' | 'easy'
 }[] = [
-  { value: 'AGAIN', label: 'Lại', hint: 'Quên', preview: '<1 ngày', shortcut: '1', icon: RotateCcw, variant: 'again' },
-  { value: 'HARD', label: 'Khó', hint: 'Nhớ lờ', preview: '~3 ngày', shortcut: '2', icon: Clock, variant: 'hard' },
-  { value: 'GOOD', label: 'Đúng', hint: 'Nhớ được', preview: '~7 ngày', shortcut: '3', icon: Check, variant: 'good' },
-  { value: 'EASY', label: 'Dễ', hint: 'Rất tốt', preview: '~14 ngày', shortcut: '4', icon: Zap, variant: 'easy' },
+  {
+    value: 'AGAIN',
+    label: 'Again',
+    hint: 'Forgot',
+    preview: '<1 day',
+    shortcut: '1',
+    icon: RotateCcw,
+    variant: 'again',
+  },
+  {
+    value: 'HARD',
+    label: 'Hard',
+    hint: 'Struggled',
+    preview: '~3 days',
+    shortcut: '2',
+    icon: Clock,
+    variant: 'hard',
+  },
+  {
+    value: 'GOOD',
+    label: 'Good',
+    hint: 'Remembered',
+    preview: '~7 days',
+    shortcut: '3',
+    icon: Check,
+    variant: 'good',
+  },
+  {
+    value: 'EASY',
+    label: 'Easy',
+    hint: 'Instant',
+    preview: '~14 days',
+    shortcut: '4',
+    icon: Zap,
+    variant: 'easy',
+  },
 ]
 
 interface RatingButtonGroupProps {
   onRate: (rating: ReviewRating) => void
+  flipped?: boolean
   disabled?: boolean
-  inactive?: boolean
 }
 
-export default function RatingButtonGroup({ onRate, disabled, inactive }: RatingButtonGroupProps) {
+export default function RatingButtonGroup({ onRate, flipped, disabled }: RatingButtonGroupProps) {
   return (
     <div
       className={cn(
-        'grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3',
-        inactive && 'pointer-events-none opacity-40',
+        'mt-3 grid w-full grid-cols-4 gap-2 transition-opacity duration-300',
+        flipped ? 'opacity-100' : 'opacity-0 pointer-events-none',
       )}
     >
       {ratings.map(({ value, label, hint, preview, shortcut, icon: Icon, variant }) => (
         <button
           key={value}
           type="button"
-          disabled={disabled}
+          disabled={disabled || !flipped}
           onClick={() => onRate(value)}
-          className={cn('review-rate-btn', `review-rate-btn--${variant}`)}
-          aria-label={`${label} - ${hint}`}
+          className={cn(
+            'flex flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-center transition-colors',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            // Color variants matching the flashcard rating colors
+            variant === 'again' && 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20',
+            variant === 'hard'  && 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20',
+            variant === 'good'  && 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20',
+            variant === 'easy'  && 'border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20',
+          )}
+          aria-label={`${label} — ${hint}`}
         >
           <div className="flex w-full items-center justify-between gap-1">
             <Icon className="h-5 w-5 shrink-0" strokeWidth={2.5} />
-            <kbd className="hidden rounded border border-current/30 bg-white/30 px-1 font-mono text-[10px] font-bold opacity-70 sm:inline-block">
+            <kbd className="rounded border border-current/30 bg-white/10 px-1 font-mono text-[10px] font-bold opacity-70">
               {shortcut}
             </kbd>
           </div>
           <div className="flex w-full flex-col items-center">
-            <span className="text-sm font-extrabold leading-tight sm:text-base">{label}</span>
+            <span className="text-sm font-extrabold leading-tight">{label}</span>
             <span className="text-[10px] font-medium uppercase leading-tight opacity-75">
               {hint}
             </span>
-            <span className="review-rate-preview mt-1 text-[10px] font-bold">
+            <span className="mt-1 text-[10px] font-bold opacity-70">
               {preview}
             </span>
           </div>

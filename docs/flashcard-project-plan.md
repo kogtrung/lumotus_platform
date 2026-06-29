@@ -706,8 +706,7 @@ lumotus/
 - [x] SRS Review: due cards, rating SM-2 *(Sprint 4)*
 - [x] Starred card + filter `starredOnly` *(Sprint 4)*
 - [x] **Dark theme UI** *(Sprint 4b)* — `#1A1520` background, glass cards, LandingPage, MainLayout, Explore, Library, Review, DeckDetail
-- [ ] Quiz: session, submit, XP *(Sprint 5)*
-- [ ] AI Generate + `async_jobs` polling *(Sprint 6)*
+- [ ] Study Modes *(Sprint 5)* — 4 modes: Flashcard, Quiz MCQ, Learn, Spell — dynamic questions, `/api/v1/study`
 - [ ] Progress: heatmap, streak, stats, scheduler 00:01 *(Sprint 5)*
 - [ ] Leaderboard Redis ZSET *(Sprint 5)*
 - [x] Xử lý lỗi tập trung `@ControllerAdvice`
@@ -734,6 +733,7 @@ lumotus/
 - [x] Flashcard Review: flip 3D (CSS; Framer Motion tùy chọn), Again/Hard/Good/Easy, phonetic + ảnh + audio
 - [x] Starred review mode: `?starredOnly=true` + pill «Chỉ sao»
 - [x] **Dark theme UI**: `#1A1520` bg, glass cards, ảnh nền mờ, full-width layout — LandingPage, MainLayout, Explore, Library, Review, DeckDetail
+- [x] **Study Modes UI** *(Sprint 5)* — `/study`, 4 modes (Flashcard, Quiz MCQ, Learn, Spell), config screen, result screen with score ring
 - [ ] Quiz: timer đếm ngược, MCQ / True-False, nộp bài, xem điểm
 - [ ] Trang Progress: heatmap streak calendar (GitHub-style), biểu đồ Chart.js, stats
 - [ ] Leaderboard: bảng xếp hạng avatar + điểm XP
@@ -744,7 +744,7 @@ lumotus/
 - [ ] Responsive: desktop + tablet + mobile *(QA Sprint 6)*
 
 ### Giai đoạn 4 — Kiểm thử và đóng gói
-- [ ] JUnit + MockMvc: tối thiểu 10 test case chính (Auth, Deck, Card, SRS, Quiz)
+- [ ] JUnit + MockMvc: tối thiểu 10 test case chính (Auth, Deck, Card, SRS, Study)
 - [ ] Dockerfile BE: multi-stage build (Maven → JRE 21)
 - [ ] Dockerfile FE: build React → Nginx serve static
 - [ ] `docker-compose.yml` (dev) + `docker-compose.prod.yml` (production)

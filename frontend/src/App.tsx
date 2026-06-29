@@ -11,6 +11,7 @@ import LibraryPage from '@/pages/LibraryPage'
 import ExplorePage from '@/pages/ExplorePage'
 import DeckDetailPage from '@/pages/DeckDetailPage'
 import ReviewPage from '@/pages/ReviewPage'
+import StudyPage from '@/pages/StudyPage'
 import PlaceholderPage from '@/pages/PlaceholderPage'
 import ProfilePage from '@/pages/ProfilePage'
 
@@ -28,6 +29,11 @@ export default function App() {
         {/* Review trước — path cụ thể hơn decks/:deckRef */}
         <Route path="decks/:deckRef/review" element={<MinimalLayout />}>
           <Route index element={<ReviewPage />} />
+        </Route>
+
+        <Route path="decks/:deckRef/study" element={<MinimalLayout />}>
+          <Route index element={<StudyPage />} />
+          <Route path=":mode" element={<StudyPage />} />
         </Route>
 
         <Route element={<MainLayout />}>

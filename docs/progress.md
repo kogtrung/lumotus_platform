@@ -33,25 +33,24 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 4b gần xong — Đang chuyển sang Sprint 5 Quiz & Progress |
+| **Giai đoạn** | Sprint 5 — Study Modes hoàn thiện, chuẩn bị Progress |
 | **Branch** | `develop` |
-| **Sprint đang focus** | UI Dark Theme Sprint (LandingPage, MainLayout, Explore, Library, Review) |
-| **Việc tiếp theo** | Commit Sprint 4b UI changes → Sprint 5 Quiz session |
+| **Sprint đang focus** | Sprint 5: Progress heatmap + streak + Leaderboard ⏳ |
+| **Việc tiếp theo** | Progress heatmap FE + streak scheduler BE + Leaderboard Redis |
 | **Đối chiếu đề tài** | [`spec.md`](spec.md) §8 |
-| **Cập nhật lần cuối** | 2026-06-22 |
+| **Cập nhật lần cuối** | 2026-06-29 |
 
 ### Tóm tắt nhanh
 
-- **Đã ổn định:** Auth, Deck/Card, Import CSV, Media upload, SRS Review + audio, Landing Page UI
-- **Đang tập trung:** Dark theme + full-width layout (LandingPage, MainLayout, Explore, Library, Review, DeckDetail)
-- **Chưa triển khai:** Quiz, Progress/Heatmap/Streak, Leaderboard Redis, Admin — Sprint 5–6
+- **Đã ổn định:** Auth, Deck/Card, Import CSV, Media upload, SRS Review + audio, Study Modes (Flashcard/Quiz/Learn/Spell), session persistence + resume dialog
+- **Đang tập trung:** Sprint 5 Progress heatmap + streak + Leaderboard
+- **Chưa triển khai:** Admin, AI generate, MockMvc tests — Sprint 6
 
 ### Nhánh gợi ý (đợt này)
 
 | Phạm vi | Nhánh |
 |---|---|
-| Refactor UI + đồng bộ Figma | `style/english-learning-ui` |
-| Chỉ cập nhật docs | `docs/ui-refactor-plan` |
+| Progress/Leaderboard | `feature/progress-leaderboard` |
 
 ---
 
@@ -132,10 +131,28 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] `LandingPage` — Section 2 & 3 dark, header scroll links
 - [x] `index.css` — `.review-card-inner` dark glass
 
-### Sprint 5 — Quiz & Progress ⏳
+### Sprint 5 — Study Modes & Progress 🔄
 
-- [ ] Quiz session + `attemptRef` slug
-- [ ] Heatmap, streak, stats, leaderboard Redis
+- [x] Study Modes BE: `StudyMode` enum, `StudyAttempt` in-memory, `QuestionGenerator`, `StudyController`, `StudyService`
+- [x] Study Modes FE: `StudyPage`, `ModeTab`, `QuizView`, `LearnView`, `SpellView`, `/decks/:deckRef/study` route
+- [x] 4 modes: Flashcard (SRS), Quiz (MCQ), Learn (type-answer), Spell (listen + spell)
+- [x] Score + XP: `daily_activity`, `users.xp` update on submit
+- [x] Session persistence: `studySession.ts` — TTL, resume dialog, config per mode
+- [x] StudyPage component extraction: 9 components tách từ StudyPage.tsx
+- [x] Bug fix: FLASHCARD → QUIZ mode switch auto-starts session
+- [x] Quiz: auto-advance ON by default, auto-submit on timeout, prevent answers after expired
+- [x] Quiz: wrong answers improved (Levenshtein distance, different cards)
+- [x] Quiz/Learn/Spell: timer support with `timeLimit` config
+- [x] Learn: direction support (forward/reverse), default reverse (VN → EN)
+- [x] Learn: session persistence (save on mode switch)
+- [x] FlashCard: TTL toggle ON/OFF, default 60 minutes
+- [x] ResumeDialog: close button to dismiss without choosing
+- [x] Result screen: scrollable with `overflow-y-auto`
+- [ ] Heatmap FE (`ProgressPage.tsx`)
+- [ ] Streak scheduler BE (`@Scheduled`)
+- [ ] Leaderboard Redis ZSET BE
+- [ ] Progress API BE: `GET /progress/me`, `GET /progress/leaderboard`
+- [ ] Leaderboard FE page
 
 ### Sprint 6 — AI, Admin & Polish ⏳
 
@@ -150,7 +167,125 @@ Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Ne
 
 ---
 
-### Session 2026-06-22 — Dark Theme UI + Sprint 4b Hoàn thiện
+### Session 2026-06-29 — StudyPage refactor + session persistence + mode switch fix
+
+**Đã làm**
+
+- **Session persistence (`frontend/src/utils/studySession.ts`):**
+  - `StudySession` interface: `deckRef`, `mode`, `config`, `progress` (flashcard/quiz), `sessionCardIds`, `savedAt`
+  - `createSession()` — khởi tạo từ card list
+  - `createQuizSession()` — cho quiz/learn/spell (chỉ lưu attemptId, không card IDs)
+  - `saveSession()` / `loadSession()` / `clearSession()` — localStorage với TTL per-mode
+  - `resolveSessionCards()` — rehydrate session với fresh cards từ API
+  - `mergeRating()` — merge stats vào session
+  - `relativeTime()` — format thời gian "2 giờ trước"
+  - TTL options: 5m, 15m, 30m, 1h, 3h, 6h, 1d, 3d, Never
+  - Config persistence: `loadConfig()` / `saveConfig()` per mode
+- **Resume dialog:**
+  - `ResumeDialog.tsx` — dialog "Tiếp tục phiên học?" với icon mode, thời gian, số thẻ
+  - Nút "Bắt đầu mới" (discard) và "Tiếp tục" (resume)
+  - Cả `ReviewPage` và `StudyPage` đều có resume dialog
+  - Auto-clear session khi không còn cards để resume
+- **StudyPage component extraction:**
+  - Tách 9 components từ StudyPage.tsx (975 dòng → 365 dòng):
+    - `ModeDropdown.tsx` — dropdown chọn mode
+    - `ModeSettings.tsx` — panel cài đặt (shuffle, starred, direction, count, TTL)
+    - `StudyHeader.tsx` — header với progress bar, index, mode dropdown
+    - `StudyConfigView.tsx` — màn hình cấu hình
+    - `ResumeDialog.tsx` — dialog tiếp tục session
+    - `StudyEmptyState.tsx` — khi không có thẻ
+    - `FlashcardResult.tsx` — kết quả flashcard
+    - `QuizResult.tsx` — kết quả quiz/learn/spell
+  - StudyPage.tsx giữ lại: state, mutations, handlers, keyboard shortcuts, mount effect
+- **Bug fix:**
+  - Chuyển FLASHCARD → QUIZ/LEARN/SPELL: trước đây không hiện gì (chỉ reset state); giờ auto-start session mới qua `startMutation`
+  - `startMutation` truyền explicit `mode` qua mutation variables thay vì closure (tránh stale mode)
+- **Quiz UX improvements:**
+  - Auto-advance ON by default (bỏ toggle)
+  - Auto-submit on timeout, disable answers after expired
+  - Wrong answers improved với Levenshtein distance (loại bỏ đáp án quá giống)
+  - Timer support cho Learn/Spell modes
+  - Result screen scrollable với `overflow-y-auto`
+- **Learn mode improvements:**
+  - Direction support (forward/reverse) với backend `QuestionGenerator`
+  - Default direction = reverse (Tiếng Việt → Tiếng Anh)
+  - Session persistence (lưu khi chuyển mode, TTL 24h)
+  - Timer giống Quiz
+- **FlashCard improvements:**
+  - TTL toggle ON/OFF (default 60 phút)
+  - Bỏ starredOnly option (theo yêu cầu user)
+  - Debug logging để kiểm tra số cards
+- **QuestionGenerator improvements:**
+  - Thêm Levenshtein distance check
+  - Wrong answers từ cards khác trong deck
+  - Direction support cho Learn mode (`direction` parameter)
+
+**Chưa xong / blocker**
+
+-
+
+**Next**
+
+- Sprint 5: Progress heatmap + streak scheduler + leaderboard
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Study session + components | `feature/study-session` |
+| Progress/Leaderboard | `feature/progress-leaderboard` |
+
+---
+
+### Session 2026-06-24 — Study Modes: Flashcard/Quiz/Learn/Spell
+
+**Đã làm**
+
+- **Backend (`com.backend.lumotus.study/`, `service/StudyService.java`, `controller/StudyController.java`):**
+  - `StudyMode` enum: FLASHCARD, QUIZ, LEARN, SPELL
+  - `StudyAttempt` in-memory model (ConcurrentHashMap) — lưu questions + answers trong session
+  - `QuestionGenerator` — sinh questions dynamic từ card data theo mode:
+    - FLASHCARD: front→câu hỏi, back→đáp án
+    - QUIZ: front→câu hỏi, back→đáp án đúng, 3 đáp án sai từ cards khác trong deck
+    - LEARN: front→prompt, user nhập back
+    - SPELL: audio_url → phát, user nhập front (case-insensitive)
+  - `StudyService`: POST `/study/{deckRef}/start` (sinh questions), POST `/study/{attemptId}/submit` (tính score+XP), GET `/study/{attemptId}/result`
+  - DTOs: `StartStudyRequest/Response`, `SubmitStudyRequest`, `QuestionResponse`, `StudyResultResponse`, `AnswerDetail`
+  - XP: QUIZ×8, LEARN×10, SPELL×12; update `users.xp` + `daily_activity`
+- **Frontend:**
+  - `StudyPage.tsx` — unified page: config (chọn mode + số câu) → session → result
+  - `ModeTab.tsx` — 4 tab ngang với icon: Layers/Flashcard, FileText/Quiz, Pencil/Learn, Volume2/Spell
+  - `QuizView.tsx` — MCQ 2-col grid, correct=green/wrong=red highlight
+  - `LearnView.tsx` — input text lớn, normalize comparison
+  - `SpellView.tsx` — CardAudioButton + uppercase input
+  - `StudyPage` result: SVG score ring, XP badge, stats breakdown
+  - Route: `/decks/:deckRef/study`
+  - DeckDetailPage: nút "Học" → `/study`, Dashboard JumpBackCard → `/study`
+  - `study.ts` API client, `types/study.ts`
+- **Docs:**
+  - `spec.md` §4 Nhóm 6: Study API + modes; §5.4: Study logic
+  - `flashcard-project-plan.md` §9: Study Modes checklist
+  - `development-plan.md`: Sprint 5 table với status ✅/⏳
+- Build: `npm run build` ✅, `mvn compile` ✅
+
+**Chưa xong / blocker**
+
+- Code chưa commit
+- Streak scheduler backend
+- Progress heatmap + leaderboard
+
+**Next**
+
+- Commit Study Modes
+- Sprint 5: streak scheduler, heatmap, leaderboard Redis, Progress/Leaderboard FE
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Study Modes BE + FE | `feature/quiz-progress` |
+
+---
 
 **Đã làm**
 

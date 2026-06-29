@@ -11,9 +11,9 @@ interface CardAudioButtonProps {
 }
 
 const sizeMap = {
-  sm: { btn: 'h-9 w-9', icon: 'h-4 w-4' },
-  md: { btn: 'h-11 w-11', icon: 'h-5 w-5' },
-  lg: { btn: 'h-14 w-14', icon: 'h-6 w-6' },
+  sm: 'h-4 w-4',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
 }
 
 export default function CardAudioButton({
@@ -26,7 +26,6 @@ export default function CardAudioButton({
   const [playing, setPlaying] = useState(false)
   const [loading, setLoading] = useState(false)
   const hasAudio = !!audioUrl
-  const dims = sizeMap[size]
 
   useEffect(() => {
     const audio = audioRef.current
@@ -80,21 +79,20 @@ export default function CardAudioButton({
         onClick={handlePlay}
         disabled={loading}
         className={cn(
-          'review-audio-btn',
-          dims.btn,
-          playing && 'review-audio-btn--playing',
-          !hasAudio && 'review-audio-btn--empty',
+          'group flex items-center justify-center transition-opacity hover:opacity-80',
+          playing ? 'opacity-100' : 'opacity-90',
+          !hasAudio && 'cursor-default',
           className,
         )}
         aria-label={hasAudio ? (playing ? 'Dừng phát' : 'Phát phát âm') : 'Chưa có audio'}
         title={hasAudio ? 'Phát phát âm' : 'Chưa có audio'}
       >
         {loading ? (
-          <Loader2 className={cn(dims.icon, 'animate-spin')} />
+          <Loader2 className={cn(sizeMap[size], 'animate-spin text-[#F472B6]')} />
         ) : hasAudio ? (
-          <Volume2 className={dims.icon} strokeWidth={2.25} />
+          <Volume2 className={cn(sizeMap[size], playing ? 'text-[#34D399]' : 'text-[#F472B6]', 'transition-colors')} strokeWidth={2.25} />
         ) : (
-          <VolumeX className={dims.icon} strokeWidth={2.25} />
+          <VolumeX className={cn(sizeMap[size], 'text-[#C4B8D9]')} strokeWidth={2.25} />
         )}
       </button>
       {hasAudio && (
