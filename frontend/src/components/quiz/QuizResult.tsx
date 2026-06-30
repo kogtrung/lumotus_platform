@@ -1,5 +1,4 @@
-import { Link } from 'react-router-dom'
-import { Check, X, RotateCcw, Home, ArrowLeft } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import type { Question } from '@/types/study'
 import { cn } from '@/utils/cn'
@@ -13,7 +12,7 @@ interface QuizResultProps {
   onRestart: () => void
 }
 
-export function QuizResult({ deckRef, correct, total, questions, answers, onRestart }: QuizResultProps) {
+export default function QuizResult({ deckRef, correct, total, questions, answers, onRestart }: QuizResultProps) {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
   const isPass = pct >= 70
   const wrongCount = total - correct
@@ -44,7 +43,7 @@ export function QuizResult({ deckRef, correct, total, questions, answers, onRest
         </p>
         {wrongCount > 0 && (
           <p className="mt-2 text-sm text-[#8B7A9E]">
-            {wrongCount} question{wrongCount > 1 ? 's' : ''} to review
+            {wrongCount} câu cần ôn lại
           </p>
         )}
       </div>
@@ -107,17 +106,17 @@ export function QuizResult({ deckRef, correct, total, questions, answers, onRest
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
         <div className="flex gap-2">
           <Button onClick={onRestart} size="lg" className="flex-1">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Study Again
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+            Quiz lại
           </Button>
           <Button to="/" variant="outline" size="lg" className="flex-1">
-            <Home className="mr-2 h-4 w-4" />
-            Home
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+            Trang chủ
           </Button>
         </div>
         <Button to={`/decks/${deckRef}`} variant="ghost" size="sm" className="w-full">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Deck
+          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Về deck
         </Button>
       </div>
     </div>

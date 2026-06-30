@@ -23,15 +23,10 @@ export interface FlashcardProgress {
 export interface QuizProgress {
   attemptId: string
   answeredCount: number
-  /** Full questions to preserve exact order */
   questions: Question[]
-  /** Answers keyed by questionId */
   answers: Record<string, string>
-  /** Indices of answered questions */
   answeredSet: number[]
-  /** Timestamp when session started (for timer restoration) */
   startedAt: number
-  /** Nav index for learn/spell modes */
   navIndex: number
 }
 
@@ -60,19 +55,13 @@ export interface StudySession {
 export interface StudyConfig {
   shuffle: boolean
   count: number
-  direction: 'forward' | 'reverse'
-  starredOnly: boolean
-  /** Minutes for quiz/learn/spell time limit. 0 = no limit. */
-  timeLimit: number
   /** Hours before session is considered stale. 0 = never save. */
   ttlHours: number
 }
 
 export const DEFAULT_CONFIG: Record<StudyMode, StudyConfig> = {
-  FLASHCARD: { shuffle: true,  count: 20, direction: 'forward', starredOnly: false, timeLimit: 0, ttlHours: 1 },
-  QUIZ:      { shuffle: true,  count: 20, direction: 'forward', starredOnly: false, timeLimit: 10, ttlHours: 24 },
-  LEARN:     { shuffle: false, count: 20, direction: 'reverse', starredOnly: false, timeLimit: 0, ttlHours: 24 },
-  SPELL:     { shuffle: false, count: 20, direction: 'forward', starredOnly: false, timeLimit: 0, ttlHours: 24 },
+  FLASHCARD: { shuffle: true, count: 20, ttlHours: 1 },
+  QUIZ:      { shuffle: true, count: 20, ttlHours: 24 },
 }
 
 /* ─── TTL options ───────────────────────────────────────────────── */
@@ -192,8 +181,31 @@ export function clearSession(deckRef: string, mode: StudyMode): void {
  * Clear toàn bộ sessions của một deck (all modes).
  */
 export function clearAllSessions(deckRef: string): void {
-  const modes: StudyMode[] = ['FLASHCARD', 'QUIZ', 'LEARN', 'SPELL']
+  const modes: StudyMode[] = ['FLASHCARD', 'QUIZ']
   modes.forEach((m) => clearSession(deckRef, m))
+}
+
+/**
+ * Scan all localStorage keys to find any active session across all decks.
+ * Returns the first session found, or null.
+ * Uses brute-force scan (keys are deterministic so this is reliable).
+ */
+export function findAnyActiveSession(): { deckRef: string; session: StudySession } | null {
+  try {
+    const keys = Object.keys(localStorage).filter(
+      (k) => k.startsWith('lumotus:study:') && k.includes(':FLASHCARD')
+    )
+    for (const key of keys) {
+      const deckRef = key.replace('lumotus:study:', '').replace(':FLASHCARD', '')
+      const session = loadSession(deckRef, 'FLASHCARD')
+      if (session && !isExpired(session)) {
+        return { deckRef, session }
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -209,7 +221,7 @@ export function loadSessionForMode(deckRef: string, mode: StudyMode): StudySessi
  * Trả về mode đầu tiên tìm được.
  */
 export function findAnySession(deckRef: string): { mode: StudyMode; session: StudySession } | null {
-  const modes: StudyMode[] = ['FLASHCARD', 'QUIZ', 'LEARN', 'SPELL']
+  const modes: StudyMode[] = ['FLASHCARD', 'QUIZ']
   for (const m of modes) {
     const s = loadSession(deckRef, m)
     if (s) return { mode: m, session: s }

@@ -5,7 +5,7 @@ import { Settings2, Shuffle, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { reviewApi } from '@/api/review'
 import { decksApi } from '@/api/decks'
-import Flashcard from '@/components/study/Flashcard'
+import Flashcard from '@/components/flashcard/Flashcard'
 import Button from '@/components/ui/Button'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
@@ -150,7 +150,7 @@ export default function ReviewPage() {
   // ── Init: check for saved session ──────────────────────────
   useEffect(() => {
     if (!dueQuery.data || dueQuery.isLoading) return
-    const saved = loadSession(deckRef)
+    const saved = loadSession(deckRef, 'FLASHCARD')
     if (saved) {
       setSavedSession(saved)
       setShowResume(true)
@@ -165,7 +165,7 @@ export default function ReviewPage() {
     const shuffleOn = localStorage.getItem(SHUFFLE_KEY) !== 'false'
     const selected = shuffleOn ? shuffleArray([...allCards]) : [...allCards]
     const session = createSession(deckRef, 'FLASHCARD', {
-      shuffle: shuffleOn, count: 50, direction: 'forward', starredOnly: false, ttlHours: 0.5,
+      shuffle: shuffleOn, count: 50, ttlHours: 0.5,
     }, selected)
     sessionRef.current = session
     persistSession()
@@ -190,7 +190,7 @@ export default function ReviewPage() {
   }, [savedSession, dueQuery.data])
 
   const handleDiscard = useCallback(() => {
-    clearSession(deckRef)
+    clearSession(deckRef, 'FLASHCARD')
     sessionRef.current = null
     setShowResume(false)
     setSavedSession(null)
@@ -210,7 +210,7 @@ export default function ReviewPage() {
   // ── Clear on completion ─────────────────────────────────────
   useEffect(() => {
     if ((sessionDone || (finished && cards.length > 0)) && sessionRef.current) {
-      clearSession(deckRef)
+      clearSession(deckRef, 'FLASHCARD')
       sessionRef.current = null
     }
   }, [sessionDone, finished, cards.length, deckRef])

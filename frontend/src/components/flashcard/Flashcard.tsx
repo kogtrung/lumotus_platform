@@ -70,9 +70,8 @@ export default function Flashcard({ card, flipped, onFlip }: FlashcardProps) {
         aria-label={flipped ? 'Lật về mặt trước' : 'Lật thẻ'}
       >
         <div className="review-card-track">
-          {/* ── Front Face ── */}
+          {/* Front Face */}
           <div className="review-card-face review-card-front">
-            {/* Row 1: label + audio button (top-right) */}
             <div className="flex w-full items-center justify-between">
               <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(236,72,153,0.2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#EC4899]">
                 <Sparkles className="h-3 w-3" strokeWidth={2.5} />
@@ -89,36 +88,25 @@ export default function Flashcard({ card, flipped, onFlip }: FlashcardProps) {
                     ⭐
                   </span>
                 )}
-                {/* Audio button in top-right corner */}
                 <CardAudioButton audioUrl={card.audioUrl} size="sm" />
               </div>
             </div>
 
-            {/* Row 2: main content — image + word + phonetic */}
             <div className="flex flex-col items-center justify-center gap-3">
               {card.imageUrl && (
-                <img
-                  src={card.imageUrl}
-                  alt=""
-                  className="max-h-32 w-auto shrink-0 rounded-xl object-contain"
-                />
+                <img src={card.imageUrl} alt="" className="max-h-32 w-auto shrink-0 rounded-xl object-contain" />
               )}
               <p className="w-full text-center font-bold leading-tight text-[#F5F0FA] flashcard-front text-4xl sm:text-5xl md:text-6xl">
                 {card.front}
               </p>
               {card.phonetic && (
-                <p className="text-sm italic text-[#EC4899] sm:text-base">
-                  {card.phonetic}
-                </p>
+                <p className="text-sm italic text-[#EC4899] sm:text-base">{card.phonetic}</p>
               )}
             </div>
 
-            {/* Row 3: tap hint (fixed height) */}
             <div className="flex flex-col items-center justify-center gap-1">
               <div className="flex items-center gap-2 text-xs font-semibold text-[#8B7A9E]">
-                <kbd className="rounded-md border border-[#3D3348] bg-[#2D2538] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#F5F0FA] shadow-sm">
-                  Space
-                </kbd>
+                <kbd className="rounded-md border border-[#3D3348] bg-[#2D2538] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#F5F0FA] shadow-sm">Space</kbd>
                 <span>để lật thẻ</span>
               </div>
               <div className="flex gap-1">
@@ -129,9 +117,8 @@ export default function Flashcard({ card, flipped, onFlip }: FlashcardProps) {
             </div>
           </div>
 
-          {/* ── Back Face ── */}
+          {/* Back Face */}
           <div className="review-card-face review-card-back">
-            {/* Row 1: label + audio button */}
             <div className="flex w-full items-center justify-between">
               <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#10B981] to-[#34D399] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                 ✓ Đáp án
@@ -139,29 +126,19 @@ export default function Flashcard({ card, flipped, onFlip }: FlashcardProps) {
               <CardAudioButton audioUrl={card.audioUrl} size="sm" />
             </div>
 
-            {/* Row 2: main content */}
             <div className="flex flex-col items-center justify-center gap-2">
               {card.imageUrl && (
-                <img
-                  src={card.imageUrl}
-                  alt=""
-                  className="max-h-28 w-auto shrink-0 rounded-xl object-contain"
-                />
+                <img src={card.imageUrl} alt="" className="max-h-28 w-auto shrink-0 rounded-xl object-contain" />
               )}
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#8B7A9E] sm:text-sm">
-                {card.front}
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#8B7A9E] sm:text-sm">{card.front}</p>
               <p className="w-full text-center font-extrabold leading-tight text-[#F5F0FA] flashcard-back text-3xl sm:text-4xl md:text-5xl">
                 {card.back}
               </p>
               {card.phonetic && (
-                <p className="text-xs italic text-[#EC4899] sm:text-sm">
-                  {card.phonetic}
-                </p>
+                <p className="text-xs italic text-[#EC4899] sm:text-sm">{card.phonetic}</p>
               )}
             </div>
 
-            {/* Row 3: hint + example (fixed height) */}
             <div className="flex flex-col items-stretch justify-center gap-2 overflow-hidden">
               {card.hint && !showHint ? (
                 <button
@@ -182,9 +159,7 @@ export default function Flashcard({ card, flipped, onFlip }: FlashcardProps) {
               {card.example && (
                 <div className="flex items-start gap-2 rounded-xl border border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.1)] px-3 py-2">
                   <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#10B981]">VD</span>
-                  <p className="text-xs italic leading-relaxed text-[#C4B8D9]">
-                    &ldquo;{card.example}&rdquo;
-                  </p>
+                  <p className="text-xs italic leading-relaxed text-[#C4B8D9]">&ldquo;{card.example}&rdquo;</p>
                 </div>
               )}
             </div>
