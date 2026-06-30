@@ -8,18 +8,22 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
+@Setter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Setter(AccessLevel.NONE)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
@@ -30,4 +34,7 @@ public abstract class BaseEntity {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Explicit getId so subclasses (via @Getter) are unambiguous for Lombok. */
+    public UUID getId() { return id; }
 }

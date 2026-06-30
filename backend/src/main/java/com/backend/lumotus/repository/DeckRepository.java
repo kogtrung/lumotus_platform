@@ -49,6 +49,14 @@ public interface DeckRepository extends JpaRepository<Deck, UUID> {
 
     Optional<Deck> findByOwnerIdAndSlug(UUID ownerId, String slug);
 
+    @Query(
+            """
+            SELECT d FROM Deck d
+            WHERE d.id = :id
+            AND (d.ownerId = :userId OR d.isPublic = true)
+            """)
+    Optional<Deck> findAccessibleById(@Param("id") UUID id, @Param("userId") UUID userId);
+
     boolean existsByOwnerIdAndSlug(UUID ownerId, String slug);
 
     @Query(

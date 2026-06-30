@@ -34,8 +34,6 @@ public class QuestionGenerator {
         return switch (mode) {
             case FLASHCARD -> generateFlashcard(pool.subList(0, size));
             case QUIZ -> generateQuiz(pool.subList(0, size));
-            case LEARN -> generateLearn(pool.subList(0, size));
-            case SPELL -> generateSpell(pool.subList(0, size));
         };
     }
 
@@ -133,50 +131,6 @@ public class QuestionGenerator {
                     cardInfo(card)
             );
         }).toList();
-    }
-
-    private List<QuestionResponse> generateLearn(List<Card> subset) {
-        boolean isReverse = "reverse".equals(direction);
-
-        return subset.stream().map(card -> {
-            // For reverse: front becomes back (question) and back becomes front (answer)
-            String question = isReverse ? card.getBack() : card.getFront();
-            String answer = isReverse ? card.getFront() : card.getBack();
-
-            return new QuestionResponse(
-                    card.getId().toString(),
-                    "LEARN",
-                    question,
-                    card.getPhonetic(),
-                    card.getHint(),
-                    card.getImageUrl(),
-                    card.getAudioUrl(),
-                    answer,
-                    null,
-                    cardInfo(card)
-            );
-        }).toList();
-    }
-
-    private List<QuestionResponse> generateSpell(List<Card> subset) {
-        List<Card> pool = subset.stream()
-                .filter(c -> c.getAudioUrl() != null && !c.getAudioUrl().isBlank())
-                .toList();
-        if (pool.isEmpty()) pool = subset;
-        if (pool.isEmpty()) return List.of();
-
-        return pool.stream().map(card -> new QuestionResponse(
-                card.getId().toString(),
-                "SPELL",
-                card.getFront(),
-                card.getPhonetic(),
-                card.getHint(),
-                card.getImageUrl(),
-                card.getAudioUrl(),
-                card.getFront(),
-                null,
-                cardInfo(card)
-        )).toList();
     }
 
     /**
