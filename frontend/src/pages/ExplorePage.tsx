@@ -1,29 +1,95 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Compass, TrendingUp, Sparkles, X } from 'lucide-react'
+import {
+  Search, Compass, TrendingUp, Sparkles, Trophy, X, Plus, Play, Target, Users,
+} from 'lucide-react'
 import { decksApi } from '@/api/decks'
+import { quizApi } from '@/api/study'
 import { topicsApi } from '@/api/topics'
 import { useAuthStore } from '@/store/authStore'
 import DeckCard from '@/components/deck/DeckCard'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
 import TopicFilter from '@/components/deck/TopicFilter'
 import Button from '@/components/ui/Button'
+import { cn } from '@/utils/cn'
 
-// Mock trending topics for explore page
 const TRENDING_TOPICS = [
-  { name: 'IELTS Vocabulary', count: 156, emoji: '📝' },
-  { name: 'Business English', count: 89, emoji: '💼' },
-  { name: 'TOEFL Prep', count: 67, emoji: '🎓' },
-  { name: 'Daily Conversation', count: 234, emoji: '💬' },
+  { name: 'IELTS Vocabulary', count: 156, color: '#EC4899' },
+  { name: 'Business English', count: 89, color: '#10B981' },
+  { name: 'TOEFL Prep', count: 67, color: '#F97316' },
+  { name: 'Daily Conversation', count: 234, color: '#A78BFA' },
 ]
+
+type ExploreTab = 'decks' | 'quizzes'
+
+function PlayIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
+function MiniQuizCard({ quiz, navigate }: { quiz: any; navigate: ReturnType<typeof useNavigate> }) {
+  const score = quiz.avgScore != null ? Math.round(quiz.avgScore * 100) : null
+  return (
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 transition-all hover:-translate-y-0.5 hover:border-[#EC4899]/30 hover:shadow-lg">
+      {quiz.coverImageUrl && (
+        <div className="relative h-28 overflow-hidden">
+          <img src={quiz.coverImageUrl} alt={quiz.title} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#252030] to-transparent" />
+        </div>
+      )}
+      <div className="flex h-1 w-full bg-gradient-to-r from-[#EC4899] to-[#F97316] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-1 text-sm font-bold text-[#F5F0FA] line-clamp-2 group-hover:text-[#EC4899] transition-colors">
+          {quiz.title}
+        </h3>
+        <div className="mb-auto flex flex-wrap items-center gap-3 text-[10px] text-[#8B7A9E]">
+          <span className="flex items-center gap-1"><Target className="h-3 w-3 text-[#10B981]" />{quiz.questionCount} câu</span>
+          <span className="flex items-center gap-1"><Users className="h-3 w-3 text-[#A78BFA]" />{quiz.attemptCount} lượt</span>
+          {score != null && <span className="text-[#F97316]">{score}% TB</span>}
+        </div>
+        <Button size="sm" className="mt-3 w-full gap-1.5" onClick={() => navigate(`/quiz/play/${quiz.id}`)}>
+          <PlayIcon className="h-3 w-3" /> Chơi
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function SectionTitle({
+  icon: Icon,
+  title,
+  action,
+  accentColor = '#EC4899',
+}: {
+  icon: typeof Compass
+  title: string
+  action?: React.ReactNode
+  accentColor?: string
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <Icon className="w-3.5 h-3.5" style={{ color: accentColor }} strokeWidth={2.5} />
+        <h2 className="text-sm font-semibold text-[#C4B8D9]">{title}</h2>
+      </div>
+      {action}
+    </div>
+  )
+}
 
 export default function ExplorePage() {
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const urlQ = searchParams.get('q') ?? ''
   const [topicSlug, setTopicSlug] = useState<string | null>(null)
   const [localSearch, setLocalSearch] = useState(urlQ)
+  const [tab, setTab] = useState<ExploreTab>('decks')
 
   const { data: topics = [] } = useQuery({
     queryKey: ['topics'],
@@ -34,23 +100,20 @@ export default function ExplorePage() {
     queryKey: ['decks', { mine: false, topicSlug, q: urlQ, page: 0 }],
     queryFn: () =>
       decksApi
-        .list({
-          mine: false,
-          topicSlug: topicSlug ?? undefined,
-          q: urlQ || undefined,
-          page: 0,
-          size: 24,
-        })
+        .list({ mine: false, topicSlug: topicSlug ?? undefined, q: urlQ || undefined, page: 0, size: 24 })
         .then((r) => r.data),
+    enabled: tab === 'decks',
+  })
+
+  const { data: quizData, isLoading: quizLoading } = useQuery({
+    queryKey: ['quizzes', 'explore', urlQ],
+    queryFn: () => quizApi.listExplore({ page: 0, size: 12 }).then((r) => r.data),
+    enabled: tab === 'quizzes',
   })
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    if (localSearch) {
-      setSearchParams({ q: localSearch })
-    } else {
-      setSearchParams({})
-    }
+    setSearchParams(localSearch ? { q: localSearch } : {})
   }
 
   const clearSearch = () => {
@@ -58,204 +121,295 @@ export default function ExplorePage() {
     setSearchParams({})
   }
 
+  const handleTrendingClick = (name: string) => {
+    setLocalSearch(name)
+    setSearchParams({ q: name })
+  }
+
   const totalDecks = data?.totalElements ?? 0
+  const quizzes = quizData?.content ?? []
+  const totalQuizzes = quizData?.totalElements ?? 0
+
+  const handleTabChange = (newTab: ExploreTab) => {
+    setTab(newTab)
+    setLocalSearch('')
+    setSearchParams({})
+    setTopicSlug(null)
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Header with search */}
-      <div className="relative">
-        {/* Background decoration */}
-        <div className="absolute inset-x-0 -top-8 h-40 bg-gradient-to-b from-[rgba(236,72,153,0.08)] to-transparent pointer-events-none" />
-
-        <div className="relative">
-          {/* Title */}
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl">🔍</span>
-            <div>
-              <h1 className="text-2xl font-extrabold text-[#F5F0FA]">Khám phá</h1>
-              <p className="text-[#8B7A9E]">
-                Deck công khai từ cộng đồng — copy về thư viện để học
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* ── Header + Search row ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Compass className="w-4 h-4 text-[#EC4899]" strokeWidth={2.5} />
+            <span className="text-xs font-bold uppercase tracking-widest text-[#EC4899]">Khám phá</span>
           </div>
+          <h1 className="text-xl font-extrabold text-[#F5F0FA] leading-tight">Khám phá nội dung</h1>
+          <p className="text-xs text-[#8B7A9E] mt-0.5">
+            {tab === 'decks' ? 'Copy deck về thư viện để bắt đầu học' : 'Thi đua top với các quiz đã duyệt'}
+          </p>
+        </div>
 
-          {/* Search bar */}
-          <form onSubmit={handleSearch} className="relative max-w-2xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8B7A9E]" />
-            <input
-              type="text"
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder="Tìm kiếm deck..."
-              className="w-full pl-12 pr-24 py-3.5 rounded-2xl bg-[#252030]/80 backdrop-blur-sm border-2 border-[#3D3348] text-base text-[#F5F0FA] placeholder:text-[#8B7A9E] focus:outline-none focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 transition-all shadow-lg"
-            />
-            {localSearch && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className="absolute right-20 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[#2D2538] transition-colors"
-              >
-                <X className="w-4 h-4 text-[#8B7A9E]" />
-              </button>
-            )}
+        {/* Search bar */}
+        <div className="relative w-full max-w-xl shrink-0">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B7A9E] pointer-events-none" />
+          <input
+            type="text"
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch(e as any)}
+            placeholder={tab === 'decks' ? 'Tìm kiếm deck...' : 'Tìm kiếm quiz...'}
+            className="w-full pl-10 pr-10 py-2.5 rounded-xl text-sm bg-[#252030]/70 border border-[#3D3348] text-[#F5F0FA] placeholder:text-[#8B7A9E] focus:outline-none focus:border-[#EC4899] focus:ring-2 focus:ring-[#EC4899]/10 transition-all"
+          />
+          {localSearch && (
             <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-[#EC4899] text-white font-semibold hover:bg-[#DB2777] transition-colors shadow-lg"
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-9 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[#2D2538] transition-colors"
             >
-              Tìm
+              <X className="w-3.5 h-3.5 text-[#8B7A9E]" />
             </button>
-          </form>
-
-          {/* Search result info */}
-          {urlQ && (
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-[#8B7A9E]">
-                Kết quả cho "<span className="font-semibold text-[#F5F0FA]">{urlQ}</span>"
-              </span>
-              <button
-                onClick={clearSearch}
-                className="text-sm text-[#EC4899] hover:underline font-medium"
-              >
-                Xóa bộ lọc
-              </button>
-            </div>
           )}
+          <button
+            type="button"
+            onClick={handleSearch}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1 rounded-lg text-xs font-semibold text-white transition-colors"
+            style={{ background: 'linear-gradient(135deg, #EC4899, #F97316)' }}
+          >
+            Tìm
+          </button>
         </div>
       </div>
 
-      {/* Trending section */}
-      {!urlQ && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#831843] via-[#BE185D] to-[#F97316] p-6 shadow-xl">
-          <div className="absolute -top-1/2 -right-1/4 w-64 h-64 rounded-full bg-[#EC4899]/20 blur-3xl" />
-          <div className="absolute -bottom-1/2 -left-1/4 w-48 h-48 rounded-full bg-[#F97316]/20 blur-3xl" />
+      {/* ── Tab switcher ── */}
+      <div className="flex gap-1 rounded-xl border border-[#3D3348] bg-[#1A1520] p-1 w-fit">
+        <button
+          onClick={() => handleTabChange('decks')}
+          className={cn(
+            'flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200',
+            tab === 'decks'
+              ? 'bg-[#EC4899]/20 text-[#EC4899] shadow-sm'
+              : 'text-[#8B7A9E] hover:text-[#F5F0FA]',
+          )}
+        >
+          <Sparkles className="w-4 h-4" />
+          Deck
+        </button>
+        <button
+          onClick={() => handleTabChange('quizzes')}
+          className={cn(
+            'flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200',
+            tab === 'quizzes'
+              ? 'bg-[#F97316]/20 text-[#F97316] shadow-sm'
+              : 'text-[#8B7A9E] hover:text-[#F5F0FA]',
+          )}
+        >
+          <Trophy className="w-4 h-4" />
+          Quiz
+        </button>
+      </div>
 
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-[#F97316]" />
-              <h2 className="text-lg font-bold text-white">Xu hướng tuần này</h2>
-            </div>
+      {/* ── Search result meta ── */}
+      {urlQ && (
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-[#8B7A9E]">
+            Kết quả cho <span className="font-semibold text-[#F5F0FA]">"{urlQ}"</span>
+            {tab === 'decks' && totalDecks > 0 && ` — ${totalDecks} deck`}
+            {tab === 'quizzes' && totalQuizzes > 0 && ` — ${totalQuizzes} quiz`}
+          </span>
+          <button onClick={clearSearch} className="text-[#EC4899] hover:underline font-medium">
+            Xóa bộ lọc
+          </button>
+        </div>
+      )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {TRENDING_TOPICS.map((topic) => (
-                <button
-                  key={topic.name}
-                  onClick={() => setLocalSearch(topic.name)}
-                  className="group relative overflow-hidden rounded-xl bg-white/10 backdrop-blur-sm p-4 text-left hover:bg-white/20 transition-all"
-                >
-                  <span className="text-2xl mb-2 block">{topic.emoji}</span>
-                  <p className="font-semibold text-white text-sm group-hover:text-white/90">{topic.name}</p>
-                  <p className="text-xs text-white/60">{topic.count} deck</p>
-                  <div className="absolute inset-0 rounded-xl border border-white/10 group-hover:border-white/20 transition-colors" />
-                </button>
-              ))}
-            </div>
+      {/* ── Trending (only when not searching + deck tab) ── */}
+      {!urlQ && tab === 'decks' && (
+        <div className="rounded-xl border p-4 bg-[#252030]/50 backdrop-blur-sm border-[#3D3348]">
+          <SectionTitle icon={TrendingUp} title="Xu hướng tuần này" />
+          <div className="flex flex-wrap gap-2">
+            {TRENDING_TOPICS.map((topic) => (
+              <button
+                key={topic.name}
+                onClick={() => handleTrendingClick(topic.name)}
+                className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold border transition-all duration-150 hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: `${topic.color}15`,
+                  borderColor: `${topic.color}40`,
+                  color: topic.color,
+                }}
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-black">{topic.name[0]}</span>
+                {topic.name}
+                <span className="opacity-60">{topic.count}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Topics filter */}
-      {topics.length > 0 && (
+      {/* ── Topics filter (deck tab only) ── */}
+      {tab === 'decks' && topics.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Compass className="w-5 h-5 text-[#EC4899]" />
-            <h2 className="font-semibold text-[#F5F0FA]">Chủ đề</h2>
-          </div>
+          <SectionTitle icon={Compass} title="Chủ đề" />
           <TopicFilter topics={topics} selectedSlug={topicSlug} onChange={setTopicSlug} />
         </div>
       )}
 
-      {/* Results */}
-      <div>
-        {/* Results header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            {totalDecks > 0 && (
-              <>
-                <Sparkles className="w-5 h-5 text-[#F97316]" />
-                <p className="font-semibold text-[#F5F0FA]">
-                  <span className="text-[#EC4899]">{totalDecks}</span> deck được tìm thấy
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+      {/* ══════════════ DECKS SECTION ══════════════ */}
+      {tab === 'decks' && (
+        <>
+          {/* Results header */}
+          {totalDecks > 0 && (
+            <SectionTitle
+              icon={Sparkles}
+              title={`${totalDecks} deck`}
+              action={<span className="text-xs text-[#8B7A9E] font-normal">Trang {(data?.page ?? 0) + 1}</span>}
+              accentColor="#F97316"
+            />
+          )}
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <DeckGridSkeleton key={i} />
-            ))}
-          </div>
-        )}
+          {/* Loading */}
+          {isLoading && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => <DeckGridSkeleton key={i} />)}
+            </div>
+          )}
 
-        {/* Error */}
-        {isError && (
-          <div className="rounded-2xl bg-[rgba(239,68,68,0.12)] border border-[#3D3348] p-6 text-center">
-            <p className="font-semibold text-[#EF4444]">Không tải được danh sách deck</p>
-            <p className="text-sm text-[#8B7A9E] mt-1">Vui lòng thử lại sau</p>
-          </div>
-        )}
+          {/* Error */}
+          {isError && (
+            <div className="rounded-xl border p-5 text-center bg-[#252030]/50 backdrop-blur-sm border-[#3D3348]">
+              <p className="text-sm font-semibold text-[#EF4444]">Không tải được danh sách deck</p>
+              <p className="text-xs text-[#8B7A9E] mt-1">Vui lòng thử lại sau</p>
+            </div>
+          )}
 
-        {/* Empty */}
-        {!isLoading && !isError && totalDecks === 0 && (
-          <div className="relative overflow-hidden rounded-3xl bg-[#252030]/60 backdrop-blur-sm p-12 text-center border border-[#3D3348]">
-            <div className="absolute -top-1/2 -right-1/2 w-64 h-64 rounded-full bg-[#EC4899]/5 blur-3xl" />
-
-            <div className="relative">
-              <span className="text-5xl mb-4 block">🔍</span>
-              <h2 className="text-xl font-bold text-[#F5F0FA] mb-2">
+          {/* Empty */}
+          {!isLoading && !isError && totalDecks === 0 && (
+            <div className="rounded-xl border p-8 text-center bg-[#252030]/50 backdrop-blur-sm border-[#3D3348]">
+              <span className="text-3xl mb-3 block">🔍</span>
+              <h2 className="text-base font-bold text-[#F5F0FA] mb-1">
                 {urlQ ? 'Không tìm thấy kết quả' : 'Chưa có deck công khai'}
               </h2>
-              <p className="text-[#8B7A9E] mb-6 max-w-md mx-auto">
+              <p className="text-xs text-[#8B7A9E] mb-4 max-w-sm mx-auto">
                 {urlQ
-                  ? `Không có deck nào phù hợp với "${urlQ}". Thử từ khóa khác hoặc xem tất cả deck.`
-                  : 'Hãy tạo deck đầu tiên và bật chế độ Công khai để chia sẻ với cộng đồng.'}
+                  ? `Không có deck nào phù hợp với "${urlQ}".`
+                  : 'Hãy tạo deck đầu tiên và bật chế độ Công khai để chia sẻ.'}
               </p>
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="flex flex-wrap justify-center gap-2">
                 {urlQ ? (
-                  <>
-                    <Button onClick={clearSearch} variant="outline" className="gap-2">
-                      Xem tất cả
-                    </Button>
-                    <Button onClick={() => setLocalSearch('')} className="gap-2">
-                      Tìm lại
-                    </Button>
-                  </>
+                  <Button onClick={clearSearch} variant="outline" size="sm">Xem tất cả</Button>
                 ) : (
-                  <Button variant="outline" className="gap-2">
-                    Tạo deck mới
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Plus className="h-3.5 w-3.5" />Tạo deck mới
                   </Button>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Deck grid */}
-        {!isLoading && !isError && totalDecks > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {data?.content.map((deck) => (
-              <DeckCard
-                key={deck.id}
-                deck={deck}
-                variant="explore"
-                currentUserId={user?.id}
-              />
-            ))}
-          </div>
-        )}
+          {/* Grid */}
+          {!isLoading && !isError && totalDecks > 0 && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {data?.content.map((deck) => (
+                  <DeckCard key={deck.id} deck={deck} variant="explore" currentUserId={user?.id} />
+                ))}
+              </div>
+              {totalDecks > 12 && (
+                <div className="text-center">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    Xem thêm <Sparkles className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
 
-        {/* Load more */}
-        {!isLoading && !isError && totalDecks > 12 && (
-          <div className="mt-8 text-center">
-            <Button variant="outline" className="gap-2">
-              Xem thêm deck
-              <Sparkles className="w-4 h-4" />
-            </Button>
+      {/* ══════════════ QUIZZES SECTION ══════════════ */}
+      {tab === 'quizzes' && (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <SectionTitle
+              icon={Trophy}
+              title={`${totalQuizzes} quiz`}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/quiz/create')}
+                  className="gap-1.5 text-xs"
+                >
+                  <Plus className="h-3 w-3" />Tạo quiz
+                </Button>
+              }
+              accentColor="#F97316"
+            />
           </div>
-        )}
-      </div>
+
+          {/* Loading */}
+          {quizLoading && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
+                  <div className="h-28 rounded-lg bg-[#3D3348] mb-3" />
+                  <div className="h-4 w-3/4 rounded bg-[#3D3348] mb-2" />
+                  <div className="h-4 w-1/2 rounded bg-[#3D3348]" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty */}
+          {!quizLoading && quizzes.length === 0 && (
+            <div className="rounded-xl border p-8 text-center bg-[#252030]/50 backdrop-blur-sm border-[#3D3348]">
+              <span className="text-3xl mb-3 block">🏆</span>
+              <h2 className="text-base font-bold text-[#F5F0FA] mb-1">
+                {urlQ ? 'Không tìm thấy quiz phù hợp' : 'Chưa có quiz nào trong Khám phá'}
+              </h2>
+              <p className="text-xs text-[#8B7A9E] mb-4 max-w-sm mx-auto">
+                {urlQ
+                  ? `Không có quiz nào phù hợp với "${urlQ}".`
+                  : 'Hãy tạo quiz đầu tiên và gửi duyệt để xuất hiện ở đây.'}
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={() => navigate('/quiz/create')} size="sm" className="gap-1.5">
+                  <Plus className="h-3.5 w-3.5" />Tạo quiz
+                </Button>
+                {urlQ && (
+                  <Button onClick={clearSearch} variant="outline" size="sm">Xóa bộ lọc</Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Grid */}
+          {!quizLoading && quizzes.length > 0 && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {quizzes.map((quiz) => (
+                  <MiniQuizCard key={quiz.id} quiz={quiz} navigate={navigate} />
+                ))}
+              </div>
+              <div className="text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/quiz')}
+                  className="gap-1.5"
+                >
+                  <Trophy className="w-3.5 h-3.5" />Xem thêm quiz
+                </Button>
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   )
 }

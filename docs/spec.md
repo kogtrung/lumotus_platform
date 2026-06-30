@@ -464,21 +464,15 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 
 | Method | Endpoint | Body / Params | Mô tả |
 |---|---|---|---|
-| `POST` | `/study/{deckRef}/start` | `{ "mode": "FLASHCARD"|"QUIZ"|"LEARN"|"SPELL", "count": 10, "direction": "forward"|"reverse" }` | Tạo session, trả về questions (direction cho LEARN mode) |
+| `POST` | `/study/{deckRef}/start` | `{ "mode": "FLASHCARD"|"QUIZ", "count": 10, "direction": "forward"|"reverse" }` | Tạo session, trả về questions |
 | `POST` | `/study/{attemptId}/submit` | `{ "answers": [{ "questionId", "selectedAnswer" }] }` | Nộp bài, tính score + XP |
 | `GET` | `/study/{attemptId}/result` | — | Lấy kết quả chi tiết |
 
 **Study modes:**
 - `FLASHCARD` — flip + rate SM-2 (reuse review logic), không nhận XP trong session này
 - `QUIZ` — MCQ: front là câu hỏi, back là đáp án đúng, 3 đáp án sai lấy từ cards khác trong deck (Levenshtein distance loại bỏ đáp án quá giống)
-- `LEARN` — nhập đáp án: front là prompt (hoặc back nếu direction=reverse), user nhập đáp án, so sánh normalized
-- `SPELL` — nghe + nhập: cần card có `audio_url`, user nghe và nhập front
 
 **Question generation:** Sinh từ card data trong memory khi bắt đầu session — không lưu bảng `quiz_questions`. Mỗi lần bắt đầu là quiz mới.
-
-**Direction support (LEARN mode):**
-- `forward`: front → câu hỏi, back → đáp án (EN → VN)
-- `reverse`: back → câu hỏi, front → đáp án (VN → EN)
 
 **Score & XP:**
 
@@ -486,14 +480,12 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 |---|---|---|
 | FLASHCARD | Rate GOOD/EASY (server-side, qua `/review/{cardId}/rate`) | 0 trong session này |
 | QUIZ | `selected == correct` | 8 |
-| LEARN | `normalized(selected) == normalized(correct)` | 10 |
-| SPELL | `normalized(selected) == normalized(front)` | 12 |
 
 #### Nhóm 7: Tiến trình học & Leaderboard (`/api/v1/progress` & `/api/v1/leaderboard`) — *Sprint 5, chưa implement*
 - **`GET /progress/heatmap`**: Lấy dữ liệu hoạt động học hàng ngày để vẽ lịch đóng góp (date & xp_earned).
 - **`GET /progress/streak`**: Lấy thông tin số ngày học liên tiếp hiện tại.
 - **`GET /progress/stats`**: Thống kê số thẻ đã học, đã thuộc, số bài test đã làm.
-- **`GET /leaderboard`**: Top 50 người dùng có XP cao nhất (Được cache trong Redis 60s).
+- **`GET /leaderboard`**: Top 50 người học theo điểm quiz và streak (Được cache trong Redis 60s).
 
 #### Nhóm 8: File Storage Upload (`/api/v1/media`)
 - **`POST /upload`**: Multipart upload lên Cloudinary. Query `folder`: `avatars` | `cards` | `decks` | `audio`. Ảnh: JPEG/PNG/WebP/GIF; audio: MP3/WAV/OGG/WebM.
@@ -629,9 +621,9 @@ Hệ thống duy trì streak (số ngày học liên tiếp) của người dùn
 
 ---
 
-### 5.4. Study Modes — Dynamic Quiz & Flashcard
+### 5.4. Study Modes — Flashcard & Quiz
 
-Hệ thống học tập hợp nhất 4 chế độ (Study Modes), sinh câu hỏi **dynamic** từ card data trong memory — không cần bảng `quiz_questions`.
+Hệ thống học tập hợp nhất 2 chế độ (Study Modes), sinh câu hỏi **dynamic** từ card data trong memory — không cần bảng `quiz_questions`.
 
 #### Khởi tạo session
 
@@ -647,13 +639,11 @@ Hệ thống học tập hợp nhất 4 chế độ (Study Modes), sinh câu h�
 |---|---|---|---|
 | FLASHCARD | `card.front` | `card.back` | — |
 | QUIZ | `card.front` | `card.back` | 3 wrong answers (lấy từ backs khác trong deck, shuffle) |
-| LEARN | `card.front` | `card.back` | — |
-| SPELL | `card.front` (ẩn) | `card.front` | — |
 
 #### Scoring
 
 - **FLASHCARD**: User flip thẻ + rate. Answer gửi lên `/study/{attemptId}/submit` với rating (AGAIN/HARD/GOOD/EASY). Server gọi `ReviewService.rateCard()` để update SM-2 state. XP=0 trong session này (qua rate riêng).
-- **QUIZ/LEARN/SPELL**: `normalized(selected).equals(normalized(correct))`. Normalize = trim + lowercase + normalize quotes.
+- **QUIZ**: `normalized(selected).equals(normalized(correct))`. Normalize = trim + lowercase + normalize quotes.
 
 #### Submit & Result
 
@@ -662,7 +652,7 @@ Hệ thống học tập hợp nhất 4 chế độ (Study Modes), sinh câu h�
 3. Update `users.xp`, `daily_activity`
 4. Trả về result với chi tiết từng câu
 
-> **Lưu ý:** Questions sinh trong memory — không persistent qua server restart. Mỗi session là quiz mới.
+> **Lưu ý:** Questions được sinh **1 lần** khi quiz được tạo và lưu cố định trong `quiz_questions`. Mỗi lần `startQuiz()` chỉ shuffle thứ tự câu hỏi, không tạo mới. Owner có thể replay cùng bộ câu hỏi.
 - Frontend thực hiện cơ chế Polling (gọi định kỳ mỗi 2 giây) tới endpoint `/api/v1/jobs/{jobId}` để cập nhật giao diện người dùng.
 
 ---

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { decksApi } from '@/api/decks'
+import { reviewApi } from '@/api/review'
 import CardFormDialog, { type CardFormData } from '@/components/deck/CardFormDialog'
 import CardGridItem from '@/components/deck/CardGridItem'
 import CardGridSkeleton from '@/components/deck/CardGridSkeleton'
@@ -24,6 +25,7 @@ import CardListPagination from '@/components/deck/CardListPagination'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
 import EditDeckDialog from '@/components/deck/EditDeckDialog'
 import ImportCsvDialog from '@/components/deck/ImportCsvDialog'
+import DeckProgressBar from '@/components/flashcard/DeckProgressBar'
 import Button from '@/components/ui/Button'
 import { inputClass } from '@/components/ui/inputClass'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
@@ -48,7 +50,6 @@ export default function DeckDetailPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [editDeckOpen, setEditDeckOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<Card | null>(null)
-  const [studyModeOpen, setStudyModeOpen] = useState(false)
 
   useEffect(() => {
     setPage(0)
@@ -78,6 +79,13 @@ export default function DeckDetailPage() {
   const totalElements = cardsQuery.data?.totalElements ?? 0
   const totalPages = Math.max(cardsQuery.data?.totalPages ?? 1, 1)
 
+  const progressQuery = useQuery({
+    queryKey: ['deck-progress', deckRef],
+    queryFn: () => reviewApi.getDeckProgress({ deckRef }).then((r) => r.data),
+    enabled: !!deckRef,
+    staleTime: 30_000,
+  })
+
   const refresh = async (options?: { resetPage?: boolean }) => {
     if (options?.resetPage) setPage(0)
     await Promise.all([
@@ -91,7 +99,7 @@ export default function DeckDetailPage() {
     mutationFn: () => decksApi.remove(deckRef),
     onSuccess: () => {
       toast.success('Đã xóa deck')
-      navigate('/library')
+      navigate('/home')
     },
     onError: () => toast.error('Không thể xóa deck'),
   })
@@ -165,7 +173,7 @@ export default function DeckDetailPage() {
     return (
       <div className="py-16 text-center">
         <p className="text-[#EF4444]">Không tìm thấy deck.</p>
-        <Link to="/library" className="mt-4 inline-block text-sm text-[#EC4899]">
+        <Link to="/home" className="mt-4 inline-block text-sm text-[#EC4899]">
           Về trang chủ
         </Link>
       </div>
@@ -176,7 +184,7 @@ export default function DeckDetailPage() {
     <div className="-mx-4 md:mx-0">
       {/* Back nav */}
       <Link
-        to={isOwner ? '/library' : '/explore'}
+        to={isOwner ? '/home' : '/explore'}
         className="inline-flex items-center gap-1.5 px-4 md:px-0 text-sm text-[#8B7A9E] transition-colors hover:text-[#EC4899]"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -241,6 +249,16 @@ export default function DeckDetailPage() {
               </span>
               {!isOwner && deck.ownerUsername && <span>by {deck.ownerUsername}</span>}
             </div>
+
+            {/* Progress bar */}
+            <div className="mt-3 w-full max-w-xs">
+              <DeckProgressBar
+                mastered={progressQuery.data?.masteredCards ?? 0}
+                total={progressQuery.data?.totalCards ?? deck.cardCount}
+                showLabel={true}
+                size="sm"
+              />
+            </div>
           </div>
 
           {/* Action buttons */}
@@ -258,9 +276,19 @@ export default function DeckDetailPage() {
             )}
             {isOwner && (
               <>
-                <Button size="md" onClick={() => setStudyModeOpen(true)}>
+                <Button
+                  size="md"
+                  onClick={() => navigate(`/decks/${deckRef}/flashcard`)}
+                >
                   <Play className="h-4 w-4" strokeWidth={2.5} />
-                  Học
+                  Học Flashcard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => navigate('/quiz')}
+                >
+                  Quiz
                 </Button>
                 <Button variant="outline" size="md" onClick={() => setEditDeckOpen(true)}>
                   <Settings className="h-4 w-4" />
@@ -452,52 +480,6 @@ export default function DeckDetailPage() {
         }}
         onSubmit={(data) => saveCardMutation.mutate(data)}
       />
-
-      {/* Study mode selection popup */}
-      {studyModeOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setStudyModeOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl border border-[#3D3348] bg-[#252030] p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="mb-4 text-center text-xl font-extrabold text-[#F5F0FA]">
-              Chọn chế độ học
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                { mode: 'FLASHCARD', label: 'Flashcard', desc: 'Ôn tập thẻ', icon: '📇' },
-                { mode: 'QUIZ', label: 'Quiz', desc: 'Trắc nghiệm', icon: '📝' },
-                { mode: 'LEARN', label: 'Learn', desc: 'Học gõ đáp án', icon: '✏️' },
-                { mode: 'SPELL', label: 'Spell', desc: 'Nghe và đánh vần', icon: '🎧' },
-              ] as const).map(({ mode, label, desc, icon }) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => {
-                    setStudyModeOpen(false)
-                    navigate(`/decks/${deckRef}/study/${mode.toLowerCase()}`)
-                  }}
-                  className="flex flex-col items-center gap-2 rounded-xl border-2 border-[#3D3348] bg-[#1D1A24] p-4 transition-all hover:border-[#EC4899] hover:bg-[#2D2538]"
-                >
-                  <span className="text-2xl">{icon}</span>
-                  <span className="text-sm font-bold text-[#F5F0FA]">{label}</span>
-                  <span className="text-xs text-[#8B7A9E]">{desc}</span>
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setStudyModeOpen(false)}
-              className="mt-4 w-full rounded-xl py-2 text-sm font-semibold text-[#8B7A9E] transition-colors hover:text-[#F5F0FA]"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

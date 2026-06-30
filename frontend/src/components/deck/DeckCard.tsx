@@ -22,58 +22,55 @@ export default function DeckCard({
   return (
     <article
       className={cn(
-        'lumo-card-hover group relative flex flex-col overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm',
+        'group relative flex flex-col overflow-hidden rounded-xl',
+        'lumo-card lumo-card-hover',
         className,
       )}
     >
-      {/* Gradient accent line on top */}
-      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#EC4899] to-[#F97316] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-      <Link to={`/decks/${deck.slug}`} className="flex flex-1 flex-col p-5">
-        {/* Cover */}
+      <Link to={`/decks/${deck.slug}`} className="flex flex-1 flex-col p-4">
+        {/* Cover thumbnail */}
         {deck.coverImageUrl ? (
-          <div className="relative mb-4 overflow-hidden rounded-xl">
+          <div className="mb-3 overflow-hidden rounded-lg">
             <img
               src={deck.coverImageUrl}
               alt=""
-              className="h-28 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="h-20 w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
           </div>
         ) : (
-          <div className="mb-4 flex h-28 items-center justify-center rounded-xl bg-[#2D2538] transition-transform duration-300 group-hover:scale-105">
-            <Layers className="h-10 w-10 text-[#EC4899]" strokeWidth={1.5} />
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--color-surface-elevated)] transition-transform duration-300 group-hover:scale-105">
+            <Layers className="h-5 w-5 text-[#EC4899]/50" strokeWidth={1.5} />
           </div>
         )}
 
-        {/* Badges */}
-        <div className="mb-3 flex flex-wrap gap-2">
+        {/* Badges row */}
+        <div className="mb-2 flex flex-wrap gap-1.5">
           {variant === 'library' && (
             <>
               {deck.isPublic ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 px-2.5 py-1 text-xs font-semibold text-[#10B981] shadow-sm">
-                  <Globe className="h-3 w-3" />
+                <span className="inline-flex items-center gap-1 rounded-full lumo-badge lumo-badge-success">
+                  <Globe className="h-2.5 w-2.5" />
                   Công khai
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#8B7A9E]/15 px-2.5 py-1 text-xs font-semibold text-[#8B7A9E] shadow-sm">
-                  <Lock className="h-3 w-3" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-elevated)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)]">
+                  <Lock className="h-2.5 w-2.5" />
                   Riêng tư
                 </span>
               )}
             </>
           )}
           {variant === 'explore' && isOwn && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#F59E0B]/15 px-2.5 py-1 text-xs font-semibold text-[#F59E0B] shadow-sm">
+            <span className="inline-flex items-center gap-1 rounded-full lumo-badge lumo-badge-gold">
               Của bạn
             </span>
           )}
-          {deck.topics.slice(0, 2).map((t) => (
+          {deck.topics.slice(0, 1).map((t) => (
             <span
               key={t.id}
-              className="rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
+              className="rounded-full px-2 py-0.5 text-[10px] font-medium"
               style={{
-                backgroundColor: t.colorHex ? `${t.colorHex}22` : 'rgba(167, 139, 250, 0.15)',
+                backgroundColor: t.colorHex ? `${t.colorHex}15` : 'rgba(167, 139, 250, 0.1)',
                 color: t.colorHex ?? '#A78BFA',
               }}
             >
@@ -83,47 +80,44 @@ export default function DeckCard({
         </div>
 
         {/* Title */}
-        <h3 className="line-clamp-2 text-base font-bold text-[#F5F0FA] transition-colors group-hover:text-[#EC4899]">
+        <h3 className="line-clamp-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors group-hover:text-[var(--color-primary)] leading-snug">
           {deck.title}
         </h3>
 
         {/* Owner info (explore only) */}
         {variant === 'explore' && (
-          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[#8B7A9E]">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EC4899]/20">
-              <User className="h-3 w-3 text-[#EC4899]" />
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
+            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-primary-subtle)]">
+              <User className="h-2.5 w-2.5 text-[var(--color-primary)]" />
             </div>
             {deck.ownerUsername}
-          </p>
+          </div>
         )}
 
         {/* Description */}
         {deck.description && (
-          <p className="mt-1.5 line-clamp-2 text-sm text-[#8B7A9E]">
+          <p className="mt-1 line-clamp-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
             {deck.description}
           </p>
         )}
 
-        {/* Meta info */}
-        <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-[#8B7A9E]">
-          <span className="flex items-center gap-1 font-medium">
-            <Layers className="h-3.5 w-3.5" />
+        {/* Meta */}
+        <div className="mt-auto flex items-center gap-3 pt-3 text-[11px] text-[var(--color-text-muted)]">
+          <span className="flex items-center gap-1">
+            <Layers className="h-3 w-3" />
             {deck.cardCount} thẻ
           </span>
           {variant === 'explore' && (
             <>
-              <span className="flex items-center gap-1">
-                <Eye className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1 opacity-70">
+                <Eye className="h-3 w-3" />
                 {deck.viewCount}
               </span>
-              <span className="flex items-center gap-1">
-                <Copy className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1 opacity-70">
+                <Copy className="h-3 w-3" />
                 {deck.copyCount}
               </span>
             </>
-          )}
-          {variant === 'library' && deck.isPublic && (
-            <span className="text-[#EC4899]">Hiển thị trên Khám phá</span>
           )}
         </div>
       </Link>
@@ -132,14 +126,14 @@ export default function DeckCard({
       {variant === 'library' && deck.sourceDeckId && deck.sourceDeckTitle && sourceRef && (
         <Link
           to={`/decks/${sourceRef}`}
-          className="group/sourse flex items-center gap-2 border-t border-[#3D3348] px-5 py-3 text-xs text-[#8B7A9E] transition-all hover:bg-[#2D2538]/50 hover:text-[#EC4899]"
+          className="group/sourse flex items-center gap-2 border-t border-[var(--color-border)] px-4 py-2.5 text-[11px] text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-surface-elevated)]/50 hover:text-[var(--color-primary)]"
         >
-          <GitBranch className="h-3.5 w-3.5 shrink-0" />
+          <GitBranch className="h-3 w-3 shrink-0" />
           <span className="line-clamp-1 flex-1">
             Copy từ {deck.sourceDeckTitle}
             {deck.sourceOwnerUsername ? ` · ${deck.sourceOwnerUsername}` : ''}
           </span>
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform group-hover/sourse:translate-x-1" />
+          <ArrowRight className="h-3 w-3 shrink-0 transition-transform group-hover/sourse:translate-x-1" />
         </Link>
       )}
     </article>

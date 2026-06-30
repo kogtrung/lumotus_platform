@@ -9,11 +9,11 @@ interface TopicFilterProps {
 
 export default function TopicFilter({ topics, selectedSlug, onChange }: TopicFilterProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       <button
         type="button"
         onClick={() => onChange(null)}
-        className={chipClass(!selectedSlug)}
+        className={chipClass(!selectedSlug, '#EC4899')}
       >
         Tất cả
       </button>
@@ -22,10 +22,13 @@ export default function TopicFilter({ topics, selectedSlug, onChange }: TopicFil
           key={topic.id}
           type="button"
           onClick={() => onChange(topic.slug === selectedSlug ? null : topic.slug)}
-          className={chipClass(selectedSlug === topic.slug)}
+          className={chipClass(selectedSlug === topic.slug, topic.colorHex ?? '#A78BFA')}
           style={
-            selectedSlug === topic.slug && topic.colorHex
-              ? { borderColor: topic.colorHex, color: topic.colorHex }
+            selectedSlug === topic.slug
+              ? {
+                  borderColor: `${topic.colorHex ?? '#A78BFA'}50`,
+                  color: topic.colorHex ?? '#A78BFA',
+                }
               : undefined
           }
         >
@@ -37,11 +40,11 @@ export default function TopicFilter({ topics, selectedSlug, onChange }: TopicFil
   )
 }
 
-function chipClass(active: boolean) {
+function chipClass(active: boolean, _color: string) {
   return cn(
-    'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+    'rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-150',
     active
-      ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-      : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]',
+      ? 'border-current bg-[currentColor]/10 text-[currentColor]'
+      : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-secondary)]',
   )
 }

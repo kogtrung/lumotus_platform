@@ -1,0 +1,15 @@
+package com.backend.lumotus.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+import java.util.UUID;
+
+public record CreateQuizRequest(
+    @NotBlank @Size(max = 200) String title,
+    String description,
+    String coverImageUrl,
+    @jakarta.validation.constraints.NotNull UUID deckId,
+    Integer timeLimitSeconds,
+    @jakarta.validation.constraints.NotNull Integer questionCount
+) {}

@@ -1,4 +1,4 @@
-export type StudyMode = 'FLASHCARD' | 'QUIZ' | 'LEARN' | 'SPELL'
+export type StudyMode = 'FLASHCARD' | 'QUIZ'
 
 export interface CardInfo {
   front: string

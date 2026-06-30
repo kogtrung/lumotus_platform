@@ -1,4 +1,4 @@
-import { ArrowRight, Check, BookOpen, Users, Award } from 'lucide-react'
+import { ArrowRight, Check, BookOpen, Users, Award, Menu, X } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
 import {
   motion,
@@ -322,6 +322,7 @@ function Header() {
   const user = useAuthStore((s) => s.user)
   const [overDark, setOverDark] = useState(false)
   const [overLight, setOverLight] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     const heroSection = document.getElementById('hero-section')
@@ -345,25 +346,25 @@ function Header() {
     : 'text-[#C4B8D9] hover:text-[#EC4899]'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-3 pointer-events-none [&>*]:pointer-events-auto">
+    <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 lg:px-8 py-3 pointer-events-none [&>*]:pointer-events-auto safe-area-inset">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <a href="/" className={`flex items-center gap-2 ${textColor} transition-colors duration-200`}>
           <img
             src="/logo.svg"
             alt="Lumotus"
-            className="w-9 h-9 rounded-xl object-contain"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain"
           />
-          <span className="text-lg font-bold drop-shadow-sm">Lumotus</span>
+          <span className="text-base sm:text-lg font-bold drop-shadow-sm">Lumotus</span>
         </a>
 
-        {/* Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
           {NAV_ITEMS.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className={`text-sm transition-colors duration-200 font-medium ${linkColor}`}
+              className={`text-xs sm:text-sm transition-colors duration-200 font-medium ${linkColor}`}
             >
               {item.label}
             </a>
@@ -372,33 +373,95 @@ function Header() {
 
         {/* Auth buttons */}
         <div className="flex items-center gap-2">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            className={`md:hidden flex items-center justify-center w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm ${textColor}`}
+            aria-label="Menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
           {user ? (
             <a
               href="/home"
-              className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+              className="hidden sm:flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200"
             >
               Tiếp tục học
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </a>
           ) : (
             <>
               <a
                 href="/login"
-                className={`text-sm transition-colors duration-200 font-medium ${linkColor}`}
+                className={`hidden sm:block text-xs sm:text-sm transition-colors duration-200 font-medium ${linkColor}`}
               >
                 Đăng nhập
               </a>
               <a
                 href="/register"
-                className="flex items-center gap-1.5 text-white bg-[#EC4899] hover:bg-[#DB2777] rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+                className="hidden sm:flex items-center gap-1.5 text-white bg-[#EC4899] hover:bg-[#DB2777] rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200"
               >
                 Bắt đầu
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </a>
             </>
           )}
         </div>
       </div>
+
+      {/* Mobile menu dropdown */}
+      {mobileOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden absolute top-full left-4 right-4 mt-2 rounded-2xl border border-white/20 bg-[#1A1520]/95 backdrop-blur-xl p-4 space-y-3"
+        >
+          <nav className="flex flex-col gap-3">
+            {NAV_ITEMS.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className={`text-sm font-medium ${linkColor} py-1`}
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <div className="h-px bg-white/10" />
+          <div className="flex flex-col gap-2">
+            {user ? (
+              <a
+                href="/home"
+                className="flex items-center justify-center gap-2 bg-[#EC4899] text-white rounded-full px-4 py-2 text-sm font-semibold"
+                onClick={() => setMobileOpen(false)}
+              >
+                Tiếp tục học
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className={`text-sm font-medium text-center ${linkColor} py-2`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Đăng nhập
+                </a>
+                <a
+                  href="/register"
+                  className="flex items-center justify-center gap-2 bg-[#EC4899] text-white rounded-full px-4 py-2 text-sm font-semibold"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Bắt đầu
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
     </header>
   )
 }
@@ -445,7 +508,7 @@ function HeroSection() {
       {/* Hero content — split layout: giant text left, CTA right */}
       <div
         ref={ref}
-        className="relative h-full flex items-end text-left px-8 md:px-12 lg:px-16 pb-16 md:pb-20"
+        className="relative h-full flex items-end text-left px-5 sm:px-8 md:px-12 lg:px-16 pb-16 md:pb-20 pt-16 sm:pt-20"
       >
         {/* Left: Giant heading */}
         <motion.div
@@ -454,7 +517,7 @@ function HeroSection() {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="flex-1"
         >
-          <h1 className="text-[22vw] sm:text-[18vw] md:text-[14vw] lg:text-[12vw] xl:text-[10vw] font-extrabold leading-[0.88] tracking-tight">
+          <h1 className="text-[20vw] xs:text-[18vw] sm:text-[16vw] md:text-[14vw] lg:text-[12vw] xl:text-[10vw] font-extrabold leading-[0.88] tracking-tight">
             <span className="bg-gradient-to-r from-[#F472B6] via-[#EC4899] to-[#F97316] bg-clip-text text-transparent drop-shadow-lg">
               Lumotus
             </span>
@@ -466,48 +529,48 @@ function HeroSection() {
           initial={{ opacity: 0, x: 30 }}
           animate={isInView ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-start gap-6 max-w-sm md:max-w-md mb-4"
+          className="flex flex-col items-start gap-4 sm:gap-5 md:gap-6 max-w-xs sm:max-w-sm md:max-w-md mb-4"
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-            <span className="relative flex h-2 w-2">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20">
+            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#10B981]" />
             </span>
-            <span className="text-xs sm:text-sm text-white/80">
+            <span className="text-[10px] sm:text-xs md:text-sm text-white/80">
               Hơn <span className="text-white font-semibold">10,000</span> người đang học
             </span>
           </div>
 
           {/* Description */}
-          <p className="text-sm md:text-base text-white/70 leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-white/70 leading-relaxed">
             Học từ vựng mỗi ngày, tích lũy kiến thức, tiến bộ từng bước cùng cộng đồng người học trên toàn thế giới.
           </p>
 
           {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col xs:flex-row sm:flex-row gap-2 sm:gap-3 w-full">
             {user ? (
               <a
                 href="/home"
-                className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
+                className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg w-full xs:w-auto"
                 style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
               >
                 Tiếp tục học tập
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             ) : (
               <>
                 <a
                   href="/register"
-                  className="flex items-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg"
+                  className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg w-full xs:w-auto"
                   style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
                 >
                   Bắt đầu ngay
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </a>
                 <a
                   href="/login"
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20"
+                  className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20 w-full xs:w-auto"
                 >
                   Đăng nhập
                 </a>
@@ -516,14 +579,14 @@ function HeroSection() {
           </div>
 
           {/* Stats row */}
-          <div className="flex items-center gap-5 text-white/60">
+          <div className="flex items-center gap-3 sm:gap-4 md:gap-5 text-white/60">
             {[
               { icon: Users, label: '50K+' },
               { icon: BookOpen, label: '500K+' },
               { icon: Award, label: '5M+' },
             ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-1.5 text-xs sm:text-sm">
-                <Icon className="w-3.5 h-3.5 text-[#EC4899]" />
+              <div key={label} className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs md:text-sm">
+                <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#EC4899]" />
                 <span>{label}</span>
               </div>
             ))}
@@ -533,13 +596,13 @@ function HeroSection() {
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
+        className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : {}}
         transition={{ delay: 1.2 }}
       >
-        <div className="w-5 h-8 rounded-full border-2 border-white/30 flex justify-center pt-1.5">
-          <div className="w-1 h-2 bg-white/50 rounded-full animate-bounce" />
+        <div className="w-4 h-7 sm:w-5 sm:h-8 rounded-full border-2 border-white/30 flex justify-center pt-1 sm:pt-1.5">
+          <div className="w-0.5 h-1.5 sm:w-1 sm:h-2 bg-white/50 rounded-full animate-bounce" />
         </div>
       </motion.div>
     </section>
@@ -553,18 +616,18 @@ function AboutSection() {
     'Lumotus giúp bạn xây dựng thói quen học tập lành mạnh, theo dõi tiến độ với streak, XP và bảng xếp hạng. Mỗi ngày một bước tiến, bạn sẽ ngạc nhiên với những gì mình đạt được.'
 
   return (
-    <section id="about-section" className="relative py-20 md:py-28 px-4 md:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
+    <section id="about-section" className="relative py-16 sm:py-20 md:py-28 px-4 sm:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
       <BotanicalFalling intensity="gentle" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(236,72,153,0.04)] to-transparent pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto text-center">
         {/* Label */}
-        <p className="text-[#EC4899] text-[10px] sm:text-xs uppercase tracking-widest mb-10 md:mb-14 font-semibold">
+        <p className="text-[#EC4899] text-[10px] sm:text-xs uppercase tracking-widest mb-8 sm:mb-10 md:mb-14 font-semibold">
           Về chúng tôi
         </p>
 
         {/* Heading */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-3xl mx-auto leading-[1.25] sm:leading-[1.15] mb-12 md:mb-16 font-extrabold" style={{ color: '#F5F0FA' }}>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl max-w-3xl mx-auto leading-[1.25] sm:leading-[1.15] mb-10 sm:mb-12 md:mb-16 font-extrabold" style={{ color: '#F5F0FA' }}>
           <WordsPullUpMultiStyle
             segments={[
               { text: 'Mỗi ngày', className: '' },
@@ -626,7 +689,7 @@ function FeatureCardVideo() {
   return (
     <motion.div
       ref={ref}
-      className="relative rounded-2xl overflow-hidden"
+      className="relative rounded-xl sm:rounded-2xl overflow-hidden"
       variants={cardVariants}
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
@@ -641,11 +704,11 @@ function FeatureCardVideo() {
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="relative z-10 p-5 sm:p-6 md:p-8 flex flex-col justify-end h-full min-h-[320px] md:min-h-[400px]">
-        <p className="text-base sm:text-lg md:text-xl font-semibold text-white mb-1">
+      <div className="relative z-10 p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col justify-end h-full min-h-[240px] sm:min-h-[280px] md:min-h-[320px] lg:min-h-[400px]">
+        <p className="text-sm sm:text-base md:text-lg font-semibold text-white mb-0.5 sm:mb-1">
           Nền tảng học tập
         </p>
-        <p className="text-xs sm:text-sm text-white/70">
+        <p className="text-[10px] sm:text-xs md:text-sm text-white/70">
           Mọi thứ bạn cần trong một ứng dụng
         </p>
       </div>
@@ -672,7 +735,7 @@ function FeatureCardContent({
   return (
     <motion.div
       ref={ref}
-      className="relative rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col border transition-all duration-300 min-h-[320px] md:min-h-[400px]"
+      className="relative rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col border transition-all duration-300 min-h-[240px] sm:min-h-[280px] md:min-h-[320px] lg:min-h-[400px]"
       style={{
         background: 'rgba(37, 32, 48, 0.7)',
         borderColor: '#3D3348',
@@ -683,26 +746,26 @@ function FeatureCardContent({
       custom={delay}
     >
       {/* Top icon */}
-      <div className="flex items-center gap-2 mb-4 sm:mb-5">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4 md:mb-5">
         <img
           src={iconUrl}
           alt=""
-          className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded object-cover"
+          className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded object-cover"
         />
-        <span className="text-[#EC4899] text-xs font-semibold">{number}</span>
+        <span className="text-[#EC4899] text-[10px] sm:text-xs font-semibold">{number}</span>
       </div>
 
       {/* Title */}
-      <h3 className="text-base sm:text-lg md:text-xl font-bold mb-4 sm:mb-5" style={{ color: '#F5F0FA' }}>
+      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-3 sm:mb-4 md:mb-5" style={{ color: '#F5F0FA' }}>
         {title}
       </h3>
 
       {/* Checklist */}
-      <ul className="space-y-2 sm:space-y-2.5 flex-1">
+      <ul className="space-y-1.5 sm:space-y-2 md:space-y-2.5 flex-1">
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2">
-            <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#EC4899] shrink-0 mt-0.5" />
-            <span className="text-xs sm:text-sm leading-snug" style={{ color: '#C4B8D9' }}>{item}</span>
+            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 text-[#EC4899] shrink-0 mt-0.5" />
+            <span className="text-[10px] sm:text-xs md:text-sm leading-snug" style={{ color: '#C4B8D9' }}>{item}</span>
           </li>
         ))}
       </ul>
@@ -710,10 +773,10 @@ function FeatureCardContent({
       {/* Learn more */}
       <a
         href="#"
-        className="inline-flex items-center gap-1.5 mt-5 text-[#EC4899] text-xs sm:text-sm font-semibold hover:gap-2.5 transition-all duration-200"
+        className="inline-flex items-center gap-1.5 mt-4 sm:mt-5 text-[#EC4899] text-[10px] sm:text-xs md:text-sm font-semibold hover:gap-2.5 transition-all duration-200"
       >
         Tìm hiểu thêm
-        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-[-45deg]" />
+        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 rotate-[-45deg]" />
       </a>
     </motion.div>
   )
@@ -728,16 +791,16 @@ function StatCard({ value, label, delay }: { value: string; label: string; delay
       initial={{ opacity: 0, y: 15 }}
       animate={isIn ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay }}
-      className="rounded-2xl p-5 text-center border"
+      className="rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 text-center border"
       style={{ background: 'rgba(37, 32, 48, 0.7)', borderColor: '#3D3348' }}
     >
       <p
-        className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#EC4899] to-[#F97316] bg-clip-text text-transparent mb-1"
+        className="text-xl sm:text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-[#EC4899] to-[#F97316] bg-clip-text text-transparent mb-0.5 sm:mb-1"
         style={{ fontFamily: 'Literata, serif' }}
       >
         {value}
       </p>
-      <p className="text-xs sm:text-sm font-medium" style={{ color: '#8B7A9E' }}>{label}</p>
+      <p className="text-[10px] sm:text-xs md:text-sm font-medium" style={{ color: '#8B7A9E' }}>{label}</p>
     </motion.div>
   )
 }
@@ -754,20 +817,20 @@ function FeaturesSection() {
   ]
 
   return (
-    <section id="features-section" className="min-h-screen relative py-24 md:py-32 px-4 md:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
+    <section id="features-section" className="min-h-screen relative py-16 sm:py-20 md:py-24 lg:py-32 px-4 sm:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
       <BotanicalFalling intensity="gentle" />
       <div className="absolute inset-0 bg-gradient-to-b from-[rgba(236,72,153,0.04)] via-transparent to-[rgba(249,115,22,0.04)] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Stats highlight strip */}
-        <div ref={headerRef} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 md:mb-16">
+        <div ref={headerRef} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
           {stats.map(({ value, label }, i) => (
             <StatCard key={label} value={value} label={label} delay={i * 0.1} />
           ))}
         </div>
 
         {/* Card grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-3 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
           <FeatureCardVideo />
 
           <FeatureCardContent
@@ -822,12 +885,12 @@ function CTASection() {
   const isInView = useInView(ref, { once: true, margin: '-50px' })
 
   return (
-    <section id="cta-section" className="relative bg-[#0a0614] py-20 md:py-28 px-4 md:px-6 overflow-hidden">
+    <section id="cta-section" className="relative bg-[#0a0614] py-16 sm:py-20 md:py-28 px-4 sm:px-6 overflow-hidden">
       {/* Dark gradient background matching hero overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a0614] via-[#1a0a2e] to-[#2d0a3a]" />
       {/* Decorative blobs */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#EC4899]/10 blur-3xl" />
-      <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-[#F97316]/10 blur-3xl" />
+      <div className="absolute -top-24 sm:-top-32 -right-24 sm:-right-32 w-64 sm:w-72 h-64 sm:h-72 rounded-full bg-[#EC4899]/10 blur-3xl" />
+      <div className="absolute -bottom-24 sm:-bottom-32 -left-24 sm:-left-32 w-56 sm:w-80 h-56 sm:h-80 rounded-full bg-[#F97316]/10 blur-3xl" />
       {/* Soft inner glow */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 
@@ -840,13 +903,13 @@ function CTASection() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
-          <p className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-8 text-sm text-white/80 border border-white/20">
+          <p className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1 sm:py-1.5 mb-6 sm:mb-8 text-xs sm:text-sm text-white/80 border border-white/20">
             <span className="text-white font-semibold">Miễn phí</span> mãi mãi
           </p>
         </motion.div>
 
         <motion.h2
-          className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 leading-tight"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
@@ -859,7 +922,7 @@ function CTASection() {
         </motion.h2>
 
         <motion.p
-          className="text-base md:text-lg text-white/70 mb-10 max-w-xl mx-auto"
+          className="text-sm sm:text-base md:text-lg text-white/70 mb-8 sm:mb-10 max-w-xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -868,7 +931,7 @@ function CTASection() {
         </motion.p>
 
         <motion.div
-          className="flex flex-col sm:flex-row gap-3 justify-center"
+          className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -876,24 +939,24 @@ function CTASection() {
           {user ? (
             <a
               href="/home"
-              className="flex items-center justify-center gap-2 bg-white text-[#EC4899] rounded-full px-8 py-3.5 text-base font-bold hover:bg-white/90 transition-all duration-300 hover:scale-105"
+              className="flex items-center justify-center gap-2 bg-white text-[#EC4899] rounded-full px-6 sm:px-8 py-2.5 sm:py-3.5 text-sm sm:text-base font-bold hover:bg-white/90 transition-all duration-300 hover:scale-105"
             >
               Tiếp tục học tập
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
           ) : (
             <>
               <a
                 href="/register"
-                className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-8 py-3.5 text-base font-bold transition-all duration-300 hover:scale-105 shadow-lg"
+                className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-6 sm:px-8 py-2.5 sm:py-3.5 text-sm sm:text-base font-bold transition-all duration-300 hover:scale-105 shadow-lg"
                 style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
               >
                 Đăng ký miễn phí
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </a>
               <a
                 href="/login"
-                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-8 py-3.5 text-base font-semibold transition-all duration-300 border border-white/30"
+                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-6 sm:px-8 py-2.5 sm:py-3.5 text-sm sm:text-base font-semibold transition-all duration-300 border border-white/30"
               >
                 Đăng nhập
               </a>
@@ -909,16 +972,16 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="bg-[#0F172A] text-white/60 py-12 md:py-16 px-4 md:px-6">
+    <footer className="bg-[#0F172A] text-white/60 py-10 sm:py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <img src="/logo.svg" alt="Lumotus" className="w-8 h-8 object-contain" />
-              <span className="text-base font-bold text-white">Lumotus</span>
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <img src="/logo.svg" alt="Lumotus" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+              <span className="text-sm sm:text-base font-bold text-white">Lumotus</span>
             </div>
-            <p className="text-xs text-white/40 leading-relaxed">
+            <p className="text-[10px] sm:text-xs text-white/40 leading-relaxed">
               Học từ vựng mỗi ngày, tích lũy kiến thức, tiến bộ từng bước.
             </p>
           </div>
@@ -939,11 +1002,11 @@ function Footer() {
             },
           ].map(({ title, links }) => (
             <div key={title}>
-              <p className="text-xs font-semibold text-white/80 uppercase tracking-wider mb-3">{title}</p>
-              <ul className="space-y-2">
+              <p className="text-[10px] sm:text-xs font-semibold text-white/80 uppercase tracking-wider mb-2 sm:mb-3">{title}</p>
+              <ul className="space-y-1.5 sm:space-y-2">
                 {links.map((link) => (
                   <li key={link}>
-                    <a href="#" className="text-xs hover:text-white transition-colors duration-200">
+                    <a href="#" className="text-[10px] sm:text-xs hover:text-white transition-colors duration-200">
                       {link}
                     </a>
                   </li>
@@ -954,16 +1017,16 @@ function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-white/30">
+        <div className="border-t border-white/10 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+          <p className="text-[10px] sm:text-xs text-white/30">
             &copy; {new Date().getFullYear()} Lumotus. Mọi quyền được bảo lưu.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             {['Facebook', 'Twitter', 'Instagram'].map((social) => (
               <a
                 key={social}
                 href="#"
-                className="text-xs text-white/30 hover:text-white transition-colors duration-200"
+                className="text-[10px] sm:text-xs text-white/30 hover:text-white transition-colors duration-200"
               >
                 {social}
               </a>

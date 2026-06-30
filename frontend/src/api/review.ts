@@ -6,16 +6,27 @@ import type {
   StarReviewResponse,
 } from '@/types/review'
 
+export interface DeckProgressResponse {
+  deckId: string
+  totalCards: number
+  learnedCards: number
+  masteredCards: number
+}
+
 export const reviewApi = {
   getDue(params?: { deckRef?: string; deckId?: string; limit?: number; starredOnly?: boolean }) {
-    return axiosClient.get<DueCardsResponse>('/review/due', { params })
+    return axiosClient.get<DueCardsResponse>('/flashcards/due', { params })
+  },
+
+  getDeckProgress(params: { deckRef?: string; deckId?: string }) {
+    return axiosClient.get<DeckProgressResponse>('/flashcards/progress', { params })
   },
 
   rate(cardId: string, rating: ReviewRating) {
-    return axiosClient.post<RateReviewResponse>(`/review/${cardId}/rate`, { rating })
+    return axiosClient.post<RateReviewResponse>(`/flashcards/${cardId}/rate`, { rating })
   },
 
   star(cardId: string, starred?: boolean) {
-    return axiosClient.post<StarReviewResponse>(`/review/${cardId}/star`, starred != null ? { starred } : {})
+    return axiosClient.post<StarReviewResponse>(`/flashcards/${cardId}/star`, starred != null ? { starred } : {})
   },
 }

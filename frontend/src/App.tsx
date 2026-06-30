@@ -7,12 +7,17 @@ import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import LandingPage from '@/pages/LandingPage'
 import DashboardPage from '@/pages/DashboardPage'
-import LibraryPage from '@/pages/LibraryPage'
 import ExplorePage from '@/pages/ExplorePage'
+import ProgressPage from '@/pages/ProgressPage'
 import DeckDetailPage from '@/pages/DeckDetailPage'
 import ReviewPage from '@/pages/ReviewPage'
-import StudyPage from '@/pages/StudyPage'
-import PlaceholderPage from '@/pages/PlaceholderPage'
+import FlashcardPage from '@/pages/FlashcardPage'
+import FlashcardStudyPage from '@/pages/FlashcardStudyPage'
+import QuizPage from '@/pages/QuizPage'
+import QuizPlayPage from '@/pages/QuizPlayPage'
+import QuizCreatePage from '@/pages/QuizCreatePage'
+import QuizLeaderboardPage from '@/pages/QuizLeaderboardPage'
+import QuizDetailPage from '@/pages/QuizDetailPage'
 import ProfilePage from '@/pages/ProfilePage'
 
 export default function App() {
@@ -26,24 +31,36 @@ export default function App() {
       </Route>
 
       <Route element={<PrivateRoute />}>
-        {/* Review trước — path cụ thể hơn decks/:deckRef */}
+        {/* Review = dedicated flashcard review page */}
         <Route path="decks/:deckRef/review" element={<MinimalLayout />}>
           <Route index element={<ReviewPage />} />
         </Route>
 
-        <Route path="decks/:deckRef/study" element={<MinimalLayout />}>
-          <Route index element={<StudyPage />} />
-          <Route path=":mode" element={<StudyPage />} />
+        {/* Flashcard study session */}
+        <Route path="decks/:deckRef/flashcard" element={<MinimalLayout />}>
+          <Route index element={<FlashcardStudyPage />} />
         </Route>
 
         <Route element={<MainLayout />}>
           <Route path="home" element={<DashboardPage />} />
-          <Route path="library" element={<LibraryPage />} />
+          <Route path="flashcard" element={<FlashcardPage />} />
+          <Route path="quiz" element={<QuizPage />} />
+          <Route path="quiz/create" element={<QuizCreatePage />} />
+          <Route path="quiz/detail/:quizId" element={<QuizDetailPage />} />
+          <Route path="quiz/leaderboard/:quizId" element={<QuizLeaderboardPage />} />
           <Route path="explore" element={<ExplorePage />} />
+          <Route path="progress" element={<ProgressPage />} />
           <Route path="decks/:deckRef" element={<DeckDetailPage />} />
-          <Route path="progress" element={<PlaceholderPage title="Tiến độ" />} />
           <Route path="settings" element={<ProfilePage />} />
         </Route>
+
+        {/* Legacy /library routes → /home */}
+        <Route path="library" element={<Navigate to="/home" replace />} />
+        <Route path="library/:rest" element={<Navigate to="/home" replace />} />
+
+        {/* Quiz play session (no layout chrome) */}
+        <Route path="quiz/play/:quizId" element={<QuizPlayPage />} />
+        <Route path="decks/:deckRef/quiz" element={<Navigate to="/quiz" replace />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

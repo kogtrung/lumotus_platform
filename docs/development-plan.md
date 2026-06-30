@@ -221,14 +221,14 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 
 | # | Task | Trạng thái |
 |---|---|---|
-| 1 | `StudyMode` enum (`FLASHCARD`, `QUIZ`, `LEARN`, `SPELL`) | ✅ |
+| 1 | `StudyMode` enum (`FLASHCARD`, `QUIZ`) | ✅ |
 | 2 | `StudyAttempt` in-memory model + `QuestionGenerator` | ✅ |
 | 3 | `StudyController`: `POST /study/{deckRef}/start`, `POST /{attemptId}/submit`, `GET /{attemptId}/result` | ✅ |
-| 4 | Question generation: FLASHCARD (due cards), QUIZ (MCQ), LEARN (type), SPELL (listen) | ✅ |
+| 4 | Question generation: FLASHCARD (due cards), QUIZ (MCQ) | ✅ |
 | 5 | Scoring + XP: `daily_activity`, `users.xp` | ✅ |
 | 6 | Session persistence (frontend `studySession.ts`) — TTL, resume dialog, config per mode | ✅ |
 | 7 | Heatmap + streak scheduler (`@Scheduled`, cron `0 0 * * *`) | ⏳ |
-| 8 | Redis leaderboard: `ZADD` on XP, `ZREVRANGE` top N | ⏳ |
+| 8 | Redis leaderboard: composite score (XP + streak), `ZREVRANGE` top N | ⏳ |
 | 9 | Progress API: `GET /progress/me`, `GET /progress/leaderboard` | ⏳ |
 
 ### Frontend — Study Modes ✅ *(done)*
@@ -238,26 +238,17 @@ Schema đã có `cards.audio_url` (`spec.md` §2.2). Triển khai theo pha — *
 | 1 | `StudyPage.tsx` — unified page: config → session → result | ✅ |
 | 2 | `ModeTab.tsx` — 4 mode tabs with icons | ✅ |
 | 3 | `QuizView.tsx` — MCQ options with correct/wrong highlight | ✅ |
-| 4 | `LearnView.tsx` — type-answer with normalize check | ✅ |
-| 5 | `SpellView.tsx` — audio player + type input | ✅ |
-| 6 | Result screen: score ring SVG, XP, stats breakdown | ✅ |
-| 7 | DeckDetailPage: nút «Học» → `/decks/:deckRef/study` | ✅ |
-| 8 | Dashboard: JumpBackCard link đến `/study` | ✅ |
-| 9 | Session persistence + resume dialog (`ResumeDialog.tsx`) | ✅ |
-| 10 | Component extraction: 9 components tách từ StudyPage (975 → 365 dòng) | ✅ |
-| 11 | Mode switch fix: FLASHCARD → QUIZ auto-starts session | ✅ |
-| 12 | Quiz UX: auto-advance default, timeout auto-submit, wrong answers Levenshtein | ✅ |
-| 13 | Learn UX: direction support (reverse default VN→EN), timer, session persistence | ✅ |
-| 14 | FlashCard: TTL toggle ON/OFF, remove starredOnly, debug logging | ✅ |
+| 4 | `QuizView.tsx` — MCQ options with correct/wrong highlight | ✅ |
+| 5 | Component extraction: 9 components tách từ StudyPage (975 → 365 dòng) | ✅ |
+| 6 | Quiz UX: auto-advance default, timeout auto-submit, wrong answers Levenshtein | ✅ |
 | 15 | `ProgressPage.tsx` — heatmap, streak, stats | ⏳ |
 | 16 | `LeaderboardPage.tsx` — top N by XP | ⏳ |
 
 ### Design — Study UI
 
-- 4 mode tabs: Flashcard (Layers), Quiz (FileText), Learn (Pencil), Spell (Volume2)
+- 2 mode tabs: Flashcard (Layers), Quiz (FileText)
 - Active tab: gradient pink→orange pill + glow shadow
 - Quiz options: 2-col grid, correct=green border, wrong=red border
-- Learn/Spell input: large text input, border-focus pink
 - Result: score ring (SVG circle with gradient), XP badge
 - Session persistence: TTL options (5m → 3d), "Tiếp tục?" dialog, config per mode
 
