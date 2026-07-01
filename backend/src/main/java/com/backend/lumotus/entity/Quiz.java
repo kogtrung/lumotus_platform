@@ -75,6 +75,9 @@ public class Quiz extends BaseEntity {
     @Column(name = "rejection_note", columnDefinition = "TEXT")
     private String rejectionNote;
 
+    @Column(length = 120)
+    private String slug;
+
     public enum QuizStatus {
         DRAFT,     // user-created, not yet submitted for review
         PENDING,   // submitted, awaiting admin approval

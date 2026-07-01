@@ -1,5 +1,6 @@
 package com.backend.lumotus.service;
 
+import com.backend.lumotus.dto.request.AddQuestionRequest;
 import com.backend.lumotus.dto.request.CreateQuizRequest;
 import com.backend.lumotus.dto.request.HeartbeatRequest;
 import com.backend.lumotus.dto.request.ImportQuizRequest;
@@ -114,6 +115,12 @@ public class QuizService {
         quizRepository.delete(quiz);
     }
 
+    // Overloaded for endpoints that pass quizRef as String
+    @Transactional
+    public void deleteQuiz(UserPrincipal principal, String quizRef) {
+        deleteQuiz(principal, UUID.fromString(quizRef));
+    }
+
     @Transactional
     public void updateQuestion(UserPrincipal principal, UUID quizId, UUID questionId, UpdateQuestionRequest request) {
         Quiz quiz = findOwnedQuiz(principal, quizId);
@@ -139,14 +146,104 @@ public class QuizService {
         quizQuestionRepository.save(question);
     }
 
+    // Overloaded for endpoints that pass quizRef as String
+    @Transactional
+    public void updateQuestion(UserPrincipal principal, String quizRef, UUID questionId, UpdateQuestionRequest request) {
+        updateQuestion(principal, UUID.fromString(quizRef), questionId, request);
+    }
+
+    @Transactional
+    public void addQuestion(UserPrincipal principal, UUID quizId, AddQuestionRequest request) {
+        Quiz quiz = findOwnedQuiz(principal, quizId);
+        assertMutable(quiz);
+
+        QuizQuestion question = new QuizQuestion();
+        question.setQuiz(quiz);
+        question.setQuestionText(request.questionText());
+        question.setCorrectAnswer(request.correctAnswer());
+        question.setQuestionType(QuizQuestion.QuestionType.valueOf(request.questionType()));
+        question.setSortOrder(quiz.getQuestions().size());
+
+        if (request.options() != null && !request.options().isEmpty()) {
+            try {
+                question.setOptions(objectMapper.writeValueAsString(request.options()));
+            } catch (Exception ignored) {}
+        }
+
+        quizQuestionRepository.save(question);
+
+        // Update question count
+        quiz.setQuestionCount(quiz.getQuestionCount() + 1);
+        quizRepository.save(quiz);
+    }
+
+    @Transactional
+    public void deleteQuestion(UserPrincipal principal, UUID quizId, UUID questionId) {
+        Quiz quiz = findOwnedQuiz(principal, quizId);
+        assertMutable(quiz);
+
+        QuizQuestion question = quizQuestionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
+
+        if (!question.getQuiz().getId().equals(quizId)) {
+            throw new BadRequestException("Question does not belong to this quiz");
+        }
+
+        quizQuestionRepository.delete(question);
+
+        // Update question count
+        quiz.setQuestionCount(Math.max(0, quiz.getQuestionCount() - 1));
+        quizRepository.save(quiz);
+    }
+
+    // User endpoints that pass quizRef as String
+    @Transactional
+    public QuizDetailResponse addUserQuestion(UserPrincipal principal, String quizRef, AddQuestionRequest request) {
+        addQuestion(principal, UUID.fromString(quizRef), request);
+        return getMyQuiz(principal, quizRef);
+    }
+
+    @Transactional
+    public void deleteUserQuestion(UserPrincipal principal, String quizRef, UUID questionId) {
+        deleteQuestion(principal, UUID.fromString(quizRef), questionId);
+    }
+
+    // Overloaded for admin endpoints (no principal check)
+    public void updateAdminQuestion(String quizRef, UUID questionId, UpdateQuestionRequest request) {
+        UUID quizId = UUID.fromString(quizRef);
+        updateQuestion(null, quizId, questionId, request);
+    }
+
+    public void addQuestion(String quizRef, AddQuestionRequest request) {
+        UUID quizId = UUID.fromString(quizRef);
+        addQuestion(null, quizId, request);
+    }
+
+    public void deleteQuestion(String quizRef, UUID questionId) {
+        UUID quizId = UUID.fromString(quizRef);
+        deleteQuestion(null, quizId, questionId);
+    }
+
     // ============================================================
     // PUBLIC EXPLORE — APPROVED quizzes only
     // ============================================================
 
     @Transactional(readOnly = true)
-    public PageResponse<QuizSummaryResponse> listExploreQuizzes(Pageable pageable) {
-        Page<Quiz> page = quizRepository.findByStatusOrderByCreatedAtDesc(Quiz.QuizStatus.APPROVED, pageable);
+    public PageResponse<QuizSummaryResponse> listExploreQuizzes(Pageable pageable, String sort) {
+        Page<Quiz> page;
+        if ("popular".equals(sort)) {
+            page = quizRepository.findExplorePopular(Quiz.QuizStatus.APPROVED, pageable);
+        } else if ("trending".equals(sort)) {
+            page = quizRepository.findExploreTrending(Quiz.QuizStatus.APPROVED, pageable);
+        } else {
+            page = quizRepository.findExploreNewest(Quiz.QuizStatus.APPROVED, pageable);
+        }
         return PageResponse.from(page, QuizSummaryResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<QuizSummaryResponse> listExploreQuizzes(Pageable pageable) {
+        return listExploreQuizzes(pageable, "newest");
     }
 
     @Transactional(readOnly = true)
@@ -527,9 +624,47 @@ public class QuizService {
         return new ArrayList<>(bestPerUser.values());
     }
 
+    // Overloaded for endpoints that pass quizRef as String
+    @Transactional
+    public QuizDetailResponse updateQuiz(UserPrincipal principal, String quizRef, UpdateQuizRequest request) {
+        return updateQuiz(principal, UUID.fromString(quizRef), request);
+    }
+
+    // Overloaded for endpoints that pass quizRef as String
+    @Transactional
+    public QuizDetailResponse getMyQuiz(UserPrincipal principal, String quizRef) {
+        return getMyQuiz(principal, UUID.fromString(quizRef));
+    }
+
+    @Transactional
+    public StartQuizResponse startQuiz(UserPrincipal principal, String quizRef) {
+        return startQuiz(principal, UUID.fromString(quizRef));
+    }
+
+    public List<QuizLeaderboardEntry> getQuizLeaderboard(String quizRef, int limit) {
+        return getQuizLeaderboard(UUID.fromString(quizRef), limit);
+    }
+
     // ============================================================
     // ADMIN MODERATION
     // ============================================================
+
+    @Transactional(readOnly = true)
+    public PageResponse<QuizSummaryResponse> listAllForAdmin(String status, Pageable pageable) {
+        Quiz.QuizStatus quizStatus = null;
+        if (status != null && !status.isEmpty()) {
+            try {
+                quizStatus = Quiz.QuizStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        Page<Quiz> page = quizRepository.findAllForAdmin(quizStatus, pageable);
+        return PageResponse.from(page, QuizSummaryResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public QuizDetailResponse getExploreQuiz(String quizRef) {
+        return getExploreQuiz(UUID.fromString(quizRef));
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<QuizModerationResponse> listPendingQuizzes(Pageable pageable) {

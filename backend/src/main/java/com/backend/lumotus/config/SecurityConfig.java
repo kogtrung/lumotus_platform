@@ -48,6 +48,9 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/topics", "/api/v1/topics/**")
                         .permitAll()
+                        // Quiz explore - public read-only
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/explore", "/api/v1/quizzes/explore/**")
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))

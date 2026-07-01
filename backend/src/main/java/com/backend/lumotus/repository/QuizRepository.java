@@ -9,13 +9,35 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface QuizRepository extends JpaRepository<Quiz, UUID> {
 
-    // Public explore page: only APPROVED quizzes
-    Page<Quiz> findByStatusOrderByCreatedAtDesc(Quiz.QuizStatus status, Pageable pageable);
+    // Explore: APPROVED + isPublic = true, sort by createdAt DESC
+    @Query("""
+        SELECT q FROM Quiz q
+        WHERE q.status = :status AND q.isPublic = true
+        ORDER BY q.createdAt DESC
+        """)
+    Page<Quiz> findExploreNewest(@Param("status") Quiz.QuizStatus status, Pageable pageable);
+
+    // Explore: APPROVED + isPublic = true, sort by attemptCount DESC
+    @Query("""
+        SELECT q FROM Quiz q
+        WHERE q.status = :status AND q.isPublic = true
+        ORDER BY q.attemptCount DESC NULLS LAST
+        """)
+    Page<Quiz> findExplorePopular(@Param("status") Quiz.QuizStatus status, Pageable pageable);
+
+    // Explore: APPROVED + isPublic = true, sort by avgScore DESC
+    @Query("""
+        SELECT q FROM Quiz q
+        WHERE q.status = :status AND q.isPublic = true
+        ORDER BY q.avgScore DESC NULLS LAST
+        """)
+    Page<Quiz> findExploreTrending(@Param("status") Quiz.QuizStatus status, Pageable pageable);
 
     // User's own quizzes (all statuses)
     Page<Quiz> findByOwnerIdOrderByCreatedAtDesc(UUID ownerId, Pageable pageable);
@@ -38,4 +60,17 @@ public interface QuizRepository extends JpaRepository<Quiz, UUID> {
         ORDER BY q.createdAt DESC
         """)
     Page<Quiz> findPendingForModeration(@Param("status") Quiz.QuizStatus status, Pageable pageable);
+
+    // Admin: list all quizzes (exclude DRAFT)
+    @Query("""
+        SELECT q FROM Quiz q
+        WHERE q.status != 'DRAFT'
+          AND (:status IS NULL OR q.status = :status)
+        ORDER BY q.createdAt DESC
+        """)
+    Page<Quiz> findAllForAdmin(@Param("status") Quiz.QuizStatus status, Pageable pageable);
+
+    Optional<Quiz> findBySlug(String slug);
+
+    Optional<Quiz> findByOwnerIdAndSlug(UUID ownerId, String slug);
 }
