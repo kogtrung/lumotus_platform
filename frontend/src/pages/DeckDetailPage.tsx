@@ -20,6 +20,7 @@ import { decksApi } from '@/api/decks'
 import { reviewApi } from '@/api/review'
 import CardFormDialog, { type CardFormData } from '@/components/deck/CardFormDialog'
 import CardGridItem from '@/components/deck/CardGridItem'
+import DeckTagsManager from '@/components/deck/DeckTagsManager'
 import CardGridSkeleton from '@/components/deck/CardGridSkeleton'
 import CardListPagination from '@/components/deck/CardListPagination'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
@@ -258,6 +259,11 @@ export default function DeckDetailPage() {
                 showLabel={true}
                 size="sm"
               />
+            </div>
+
+            {/* Personal tags */}
+            <div className="mt-3">
+              <DeckTagsManager deckId={deck.id} />
             </div>
           </div>
 

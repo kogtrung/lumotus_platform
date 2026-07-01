@@ -97,6 +97,7 @@ export interface QuizSummary {
   createdAt: string
   quizType?: 'GENERATED' | 'IMPORTED'
   isImmutable?: boolean
+  slug?: string | null
 }
 
 export interface QuizDetailResponse extends QuizSummary {
@@ -130,13 +131,27 @@ export interface LeaderboardEntry {
   bestTimeSeconds: number | null
 }
 
+export interface QuizAttemptSummary {
+  attemptId: string
+  quizId: string | null
+  quizSlug: string | null
+  quizTitle: string | null
+  score: number | null
+  totalQuestions: number | null
+  correctAnswers: number | null
+  xpEarned: number | null
+  timeTakenSeconds: number | null
+  startedAt: string | null
+  finishedAt: string | null
+}
+
 // ============================================================
 // API CLIENT
 // ============================================================
 
 export const quizApi = {
   // --- Explore (public approved quizzes) ---
-  listExplore(params?: { page?: number; size?: number }) {
+  listExplore(params?: { page?: number; size?: number; sort?: string }) {
     return axiosClient.get<{ content: QuizSummary[]; totalElements: number; totalPages: number }>(
       '/quizzes/explore',
       { params }
@@ -215,5 +230,47 @@ export const quizApi = {
   // --- Leaderboard ---
   getLeaderboard(quizId: string, limit = 10) {
     return axiosClient.get<LeaderboardEntry[]>(`/quizzes/${quizId}/leaderboard`, { params: { limit } })
+  },
+
+  // --- Admin ---
+  getAdminQuiz(quizId: string) {
+    return axiosClient.get(`/quizzes/admin/${quizId}`)
+  },
+
+  updateAdminQuiz(quizId: string, payload: Partial<CreateQuizPayload>) {
+    return axiosClient.put(`/quizzes/admin/${quizId}`, payload)
+  },
+
+  updateAdminQuestion(quizId: string, questionId: string, payload: { questionText: string; correctAnswer: string; options: string[]; questionType: string }) {
+    return axiosClient.put(`/quizzes/admin/${quizId}/questions/${questionId}`, payload)
+  },
+
+  addAdminQuestion(quizId: string, payload: { questionText: string; correctAnswer: string; options: string[]; questionType: string }) {
+    return axiosClient.post(`/quizzes/admin/${quizId}/questions`, payload)
+  },
+
+  deleteAdminQuestion(quizId: string, questionId: string) {
+    return axiosClient.delete(`/quizzes/admin/${quizId}/questions/${questionId}`)
+  },
+
+  listAdminAll(params?: { page?: number; size?: number; status?: string }) {
+    return axiosClient.get('/quizzes/admin/all', { params })
+  },
+
+  getPendingCount() {
+    return axiosClient.get<number>('/quizzes/admin/pending/count')
+  },
+
+  moderate(payload: { quizId: string; action: 'APPROVE' | 'REJECT'; rejectionNote?: string }) {
+    return axiosClient.post('/quizzes/admin/moderate', payload)
+  },
+
+  importFromCsv(payload: { csvContent: string; deckId?: string; title?: string }) {
+    return axiosClient.post('/quizzes/admin/import', payload)
+  },
+
+  // --- Global Leaderboard ---
+  getGlobalLeaderboard(limit = 10) {
+    return axiosClient.get<LeaderboardEntry[]>('/progress/leaderboard', { params: { limit } })
   },
 }
