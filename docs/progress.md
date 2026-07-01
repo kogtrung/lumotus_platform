@@ -146,6 +146,12 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] FlashCard: TTL toggle ON/OFF, default 60 minutes
 - [x] ResumeDialog: close button to dismiss without choosing
 - [x] Result screen: scrollable with `overflow-y-auto`
+- [x] Quiz CRUD BE: create/update/delete quiz & questions
+- [x] Quiz Explore: newest/popular/trending + leaderboard
+- [x] Quiz Admin: import CSV, moderate (approve/reject), CRUD questions
+- [x] Quiz slug: `V15__quizzes_add_slug.sql` + `SlugUtils`
+- [x] V16: fix `last_rating` type VARCHAR → SMALLINT
+- [x] Quiz Anti-Cheat Plan: `docs/quiz-anti-cheat-plan.md`
 - [ ] Heatmap FE (`ProgressPage.tsx`)
 - [ ] Streak scheduler BE (`@Scheduled`)
 - [ ] Leaderboard Redis ZSET BE
@@ -162,6 +168,52 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-07-02 — Quiz CRUD + Admin Moderation + Anti-Cheat Plan
+
+**Đã làm**
+
+- **Quiz CRUD BE (`QuizService.java`, `QuizController.java`):**
+  - User: create quiz, update quiz, delete quiz, add/update/delete questions
+  - Public: explore (newest/popular/trending), leaderboard
+  - Session: start, submit, resume, heartbeat, active sessions
+  - Admin: import CSV, list pending, moderate (approve/reject), CRUD questions
+- **Quiz slug (`V15__quizzes_add_slug.sql`):**
+  - Thêm cột `slug` VARCHAR(120) cho bảng `quizzes`
+  - Backfill: slugify title + hậu tố id ngắn
+  - Index `idx_quizzes_slug`
+- **SlugUtils.java:**
+  - Map thủ công dấu tiếng Việt (NFD không xử lý đúng hết)
+  - `isUuid()`, `isValidSlug()`, `slugify()`
+- **V16__fix_last_rating_type.sql:**
+  - Sửa `user_card_review.last_rating` từ VARCHAR → SMALLINT
+  - Handle legacy 'GOOD' → '3'
+- **Quiz Anti-Cheat Plan (`docs/quiz-anti-cheat-plan.md`):**
+  - Rate limiting & cooldown (5 attempts/quiz/day, 10 min cooldown)
+  - Bot detection (answer timing analysis)
+  - Browser/tab focus tracking
+  - IP-based rate limiting
+  - Question delivery isolation
+  - Admin moderation & flagged attempts dashboard
+
+**Chưa xong / blocker**
+
+-
+
+**Next**
+
+- Sprint 5: Progress heatmap + streak scheduler + Leaderboard Redis
+- Quiz Anti-Cheat: Phase 1 implementation
+
+**Nhánh gợi ý**
+
+| Phạm vi | Nhánh |
+|---|---|
+| Quiz CRUD + Admin | `feature/quiz-crud` |
+| Quiz Anti-Cheat | `feature/quiz-anti-cheat` |
+| Progress/Leaderboard | `feature/progress-leaderboard` |
 
 ---
 

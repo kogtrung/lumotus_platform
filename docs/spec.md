@@ -196,22 +196,69 @@ Theo dõi tiến độ tổng thể của User đối với một bộ thẻ c�
 
 ---
 
-#### 9. Bảng `quiz_questions` (Kế thừa `BaseEntity`)
-Danh sách câu hỏi trắc nghiệm được tạo tự động từ các Card trong Deck phục vụ việc kiểm tra.
+#### 9. Bảng `quizzes` (Kế thừa `BaseEntity`)
+|Bộ câu hỏi trắc nghiệm do user tạo hoặc admin import từ CSV. User tạo quiz từ deck ở `DRAFT`; submit lên `PENDING` để admin duyệt → `APPROVED` (Explore) hoặc `REJECTED`.|
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY | |
-| `deck_id` | UUID | FK -> `decks.id`, NOT NULL | Thuộc bộ thẻ nào |
-| `card_id` | UUID | FK -> `cards.id`, NULL | Thẻ gốc tạo nên câu hỏi (để đối chiếu) |
-| `question_type` | VARCHAR(30) | NOT NULL | `MULTIPLE_CHOICE`, `TRUE_FALSE`, `FILL_IN` |
-| `question_text` | TEXT | NOT NULL | Nội dung câu hỏi |
-| `correct_answer` | TEXT | NOT NULL | Đáp án chính xác |
-| `options` | JSONB | NULL | Các đáp án sai/tùy chọn (dạng Array) |
+| `slug` | VARCHAR(120) | NOT NULL, UNIQUE | URL-friendly slug |
+| `title` | VARCHAR(200) | NOT NULL | Tiêu đề |
+| `description` | TEXT | NULL | Mô tả |
+| `cover_image_url` | TEXT | NULL | Ảnh bìa |
+| `deck_id` | UUID | FK -> `decks.id`, NULL | Deck gốc (GENERATED) |
+| `owner_id` | UUID | FK -> `users.id`, NOT NULL | Người tạo |
+| `owner_username` | VARCHAR(100) | NULL | Username người tạo |
+| `status` | VARCHAR(20) | NOT NULL | `DRAFT`, `PENDING`, `APPROVED`, `REJECTED` |
+| `quiz_type` | VARCHAR(20) | NOT NULL | `GENERATED` (từ deck), `IMPORTED` (CSV, admin) |
+| `is_immutable` | BOOLEAN | NOT NULL, DEFAULT FALSE | Khóa sửa; IMPORTED luôn TRUE |
+| `is_public` | BOOLEAN | NOT NULL, DEFAULT FALSE | Hiển thị Explore |
+| `time_limit_seconds` | INT | NULL | Thời gian làm bài (giây) |
+| `question_count` | INT | NOT NULL | Số câu hỏi |
+| `attempt_count` | INT | NOT NULL, DEFAULT 0 | Tổng lượt làm |
+| `avg_score` | DOUBLE | NULL | Điểm TB (cập nhật sau mỗi lượt) |
+| `rejection_note` | TEXT | NULL | Lý do từ chối (admin) |
+
+**Luồng trạng thái:** `DRAFT` → (user submit) → `PENDING` → (admin approve) → `APPROVED` | (admin reject) → `REJECTED`
 
 ---
 
-#### 10. Bảng `quiz_attempts` (Kế thừa `BaseEntity`)
+#### 10. Bảng `quiz_questions` (Kế thừa `BaseEntity`)
+|Danh sách câu hỏi — được tạo khi user tạo quiz từ deck hoặc import CSV. Mỗi quiz có N câu hỏi cố định; `startQuiz()` chỉ shuffle thứ tự, không tạo mới.|
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY | |
+| `quiz_id` | UUID | FK -> `quizzes.id`, NOT NULL | Thuộc quiz nào |
+| `card_id` | UUID | FK -> `cards.id`, NULL | Thẻ gốc (GENERATED) |
+| `question_type` | VARCHAR(30) | NOT NULL | `MULTIPLE_CHOICE`, `TRUE_FALSE`, `FILL_IN` |
+| `question_text` | TEXT | NOT NULL | Câu hỏi |
+| `correct_answer` | TEXT | NOT NULL | Đáp án đúng |
+| `options` | TEXT | NULL | JSON array đáp án sai (empty cho FILL_IN) |
+| `sort_order` | INT | NOT NULL, DEFAULT 0 | Thứ tự câu hỏi |
+
+---
+
+#### 11. Bảng `quiz_attempts` (Kế thừa `BaseEntity`)
+|Lịch sử làm bài trắc nghiệm. Mỗi lượt chơi tạo 1 record. Redis lưu session để resume + timer. `score` = `correct_answers / total_questions`.|
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY | |
+| `user_id` | UUID | FK -> `users.id`, NOT NULL | Người làm bài |
+| `quiz_id` | UUID | FK -> `quizzes.id`, NULL | Quiz chơi |
+| `score` | FLOAT | NOT NULL, DEFAULT 0 | Điểm số (0.0 → 1.0) |
+| `total_questions` | INT | NOT NULL | Tổng câu hỏi |
+| `correct_answers` | INT | NOT NULL, DEFAULT 0 | Số câu đúng |
+| `xp_earned` | INT | NOT NULL, DEFAULT 0 | XP nhận được |
+| `time_taken_seconds` | INT | NULL | Thời gian hoàn thành (giây) |
+| `started_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Thời điểm bắt đầu |
+| `finished_at` | TIMESTAMPTZ | NULL | Thời điểm nộp bài |
+
+---
+
+#### 12. Bảng `quiz_answers` (Kế thừa `BaseEntity`)
+|Chi tiết câu trả lời của người dùng trong mỗi câu hỏi của lượt kiểm tra.|
 Lịch sử làm bài trắc nghiệm của người dùng.
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
@@ -314,9 +361,10 @@ CREATE INDEX idx_users_last_study ON users(last_study_date) WHERE is_active = TR
 CREATE INDEX idx_daily_activity_user_date ON daily_activity(user_id, activity_date DESC);
 
 -- Quiz
-CREATE INDEX idx_quiz_questions_deck ON quiz_questions(deck_id);
+CREATE INDEX idx_quizzes_slug ON quizzes(slug);
+CREATE INDEX idx_quiz_questions_quiz ON quiz_questions(quiz_id);
 CREATE INDEX idx_quiz_attempts_user ON quiz_attempts(user_id, started_at DESC);
-CREATE INDEX idx_quiz_attempts_deck ON quiz_attempts(deck_id);
+CREATE INDEX idx_quiz_attempts_quiz ON quiz_attempts(quiz_id);
 CREATE INDEX idx_quiz_answers_attempt ON quiz_answers(attempt_id);
 
 -- Async jobs: user poll & cleanup
@@ -460,26 +508,58 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - **`POST /{cardId}/rate`**: Gửi đánh giá AGAIN / HARD / GOOD / EASY (SM-2).
 - **`POST /{cardId}/star`**: Đánh dấu / bỏ sao thẻ.
 
-#### Nhóm 6: Học tập & Quiz (`/api/v1/study`) — *Sprint 5, implement dynamic*
+#### Nhóm 6: Quiz — CRUD, Explore & Play (`/api/v1/quizzes`)
 
-| Method | Endpoint | Body / Params | Mô tả |
-|---|---|---|---|
-| `POST` | `/study/{deckRef}/start` | `{ "mode": "FLASHCARD"|"QUIZ", "count": 10, "direction": "forward"|"reverse" }` | Tạo session, trả về questions |
-| `POST` | `/study/{attemptId}/submit` | `{ "answers": [{ "questionId", "selectedAnswer" }] }` | Nộp bài, tính score + XP |
-| `GET` | `/study/{attemptId}/result` | — | Lấy kết quả chi tiết |
-
-**Study modes:**
-- `FLASHCARD` — flip + rate SM-2 (reuse review logic), không nhận XP trong session này
-- `QUIZ` — MCQ: front là câu hỏi, back là đáp án đúng, 3 đáp án sai lấy từ cards khác trong deck (Levenshtein distance loại bỏ đáp án quá giống)
-
-**Question generation:** Sinh từ card data trong memory khi bắt đầu session — không lưu bảng `quiz_questions`. Mỗi lần bắt đầu là quiz mới.
-
-**Score & XP:**
-
-| Mode | Đúng khi | XP/câu |
+**Explore (public):**
+| Method | Endpoint | Mô tả |
 |---|---|---|
-| FLASHCARD | Rate GOOD/EASY (server-side, qua `/review/{cardId}/rate`) | 0 trong session này |
-| QUIZ | `selected == correct` | 8 |
+| `GET` | `/explore?sort=newest|popular|trending` | Danh sách quiz APPROVED (phân trang) |
+| `GET` | `/explore/{quizRef}` | Chi tiết quiz APPROVED |
+
+**My Quizzes (user):**
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/me` | Quiz của tôi (tất cả status) |
+| `POST` | `/` | Tạo quiz từ deck (`DRAFT`) |
+| `GET` | `/me/{quizRef}` | Chi tiết quiz của tôi |
+| `PUT` | `/{quizRef}` | Cập nhật quiz |
+| `DELETE` | `/{quizRef}` | Xóa quiz |
+| `POST` | `/{quizRef}/questions` | Thêm câu hỏi |
+| `PUT` | `/{quizRef}/questions/{questionId}` | Sửa câu hỏi |
+| `DELETE` | `/{quizRef}/questions/{questionId}` | Xóa câu hỏi |
+| `POST` | `/submit-review` | Gửi quiz lên duyệt (DRAFT → PENDING) |
+
+**Play:**
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST` | `/{quizRef}/start` | Bắt đầu làm quiz, trả về attemptId + questions |
+| `POST` | `/submit` | Nộp bài: `{ attemptId, answers, timeTakenSeconds }` |
+| `GET` | `/resume/{attemptId}` | Resume session đang dở |
+| `POST` | `/session/heartbeat` | Gửi heartbeat để extend session |
+| `GET` | `/me/active-sessions` | Lấy các session đang dở |
+| `GET` | `/attempts/{attemptId}` | Kết quả lượt chơi |
+| `GET` | `/attempts` | Lịch sử lượt chơi |
+| `GET` | `/{quizRef}/leaderboard` | Bảng xếp hạng quiz (top 50) |
+
+**Admin Moderation:**
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST` | `/admin/import` | Import quiz từ CSV |
+| `GET` | `/admin/pending` | Quiz đang chờ duyệt |
+| `GET` | `/admin/pending/count` | Số quiz chờ duyệt |
+| `POST` | `/admin/moderate` | Duyệt/từ chối quiz |
+| `GET` | `/admin/all` | Tất cả quiz (ADMIN) |
+| `GET` | `/admin/{quizRef}` | Chi tiết quiz (ADMIN) |
+| `PUT` | `/admin/{quizRef}` | Cập nhật quiz (ADMIN) |
+| `PUT` | `/admin/{quizRef}/questions/{questionId}` | Sửa câu hỏi (ADMIN) |
+| `POST` | `/admin/{quizRef}/questions` | Thêm câu hỏi (ADMIN) |
+| `DELETE` | `/admin/{quizRef}/questions/{questionId}` | Xóa câu hỏi (ADMIN) |
+
+**Notes:**
+- `quizRef` = UUID hoặc slug
+- Quiz APPROVED mới nhận XP và xuất hiện trên leaderboard
+- Owner làm quiz không nhận XP (self-study)
+- Redis lưu session để resume + timer enforcement
 
 #### Nhóm 7: Tiến trình học & Leaderboard (`/api/v1/progress` & `/api/v1/leaderboard`) — *Sprint 5, chưa implement*
 - **`GET /progress/heatmap`**: Lấy dữ liệu hoạt động học hàng ngày để vẽ lịch đóng góp (date & xp_earned).
@@ -621,39 +701,40 @@ Hệ thống duy trì streak (số ngày học liên tiếp) của người dùn
 
 ---
 
-### 5.4. Study Modes — Flashcard & Quiz
+### 5.4. Quiz System — CRUD, Play & Leaderboard
 
-Hệ thống học tập hợp nhất 2 chế độ (Study Modes), sinh câu hỏi **dynamic** từ card data trong memory — không cần bảng `quiz_questions`.
+Quiz là hệ thống câu hỏi trắc nghiệm persistent. Khác với Study Modes (in-memory), Quiz tạo câu hỏi cố định được lưu vào `quiz_questions` khi quiz được tạo.
 
-#### Khởi tạo session
+#### Tạo Quiz
 
-1. User chọn mode + số câu (default 10)
-2. Server lấy cards từ `cards` table, shuffle, chọn N cards
-3. `QuestionGenerator` tạo questions theo mode
-4. Questions + answers lưu trong `StudyAttempt` (in-memory, `ConcurrentHashMap`)
-5. Trả về `attemptId` + questions
+1. User tạo quiz từ deck (chọn deck + title + questionCount)
+2. Server tạo `Quiz` record ở status `DRAFT`
+3. Server sinh N câu hỏi từ cards trong deck (shuffle, pick N)
+4. Questions + wrong options được lưu vào `quiz_questions`
+5. User có thể chỉnh sửa/xóa/thêm questions (nếu không phải `IMPORTED`)
+6. User submit → status `PENDING` → admin approve (`APPROVED`) hoặc reject (`REJECTED`)
 
-#### Question generation per mode
+#### Làm Quiz (Play)
 
-| Mode | Front (prompt) | Correct | Options |
-|---|---|---|---|
-| FLASHCARD | `card.front` | `card.back` | — |
-| QUIZ | `card.front` | `card.back` | 3 wrong answers (lấy từ backs khác trong deck, shuffle) |
+1. `POST /quizzes/{quizRef}/start` — tạo `QuizAttempt`, shuffle questions, trả về list
+2. User làm bài (MCQ, FILL_IN, TRUE_FALSE)
+3. `POST /quizzes/submit` — nộp bài
+4. Server validate: ownership, duplicate submit, time limit (Redis)
+5. Tính score, XP (chỉ quiz APPROVED + không phải owner), update leaderboard
+6. Trả về result với chi tiết từng câu
 
-#### Scoring
+#### Scoring & XP
 
-- **FLASHCARD**: User flip thẻ + rate. Answer gửi lên `/study/{attemptId}/submit` với rating (AGAIN/HARD/GOOD/EASY). Server gọi `ReviewService.rateCard()` để update SM-2 state. XP=0 trong session này (qua rate riêng).
-- **QUIZ**: `normalized(selected).equals(normalized(correct))`. Normalize = trim + lowercase + normalize quotes.
+- `score = correctAnswers / totalQuestions` (0.0 → 1.0)
+- `xpEarned = correct * 10 + (perfect ? 20 : 0)`
+- XP chỉ khi: quiz `APPROVED` + không phải owner + competitive play
 
-#### Submit & Result
+#### Quiz Anti-Cheat (Planned)
 
-1. Server gọi `activeAttempts.remove(attemptId)` (idempotent — submit 1 lần)
-2. Tính score = correct/total, XP = correct * xpPerQuestion
-3. Update `users.xp`, `daily_activity`
-4. Trả về result với chi tiết từng câu
-
-> **Lưu ý:** Questions được sinh **1 lần** khi quiz được tạo và lưu cố định trong `quiz_questions`. Mỗi lần `startQuiz()` chỉ shuffle thứ tự câu hỏi, không tạo mới. Owner có thể replay cùng bộ câu hỏi.
-- Frontend thực hiện cơ chế Polling (gọi định kỳ mỗi 2 giây) tới endpoint `/api/v1/jobs/{jobId}` để cập nhật giao diện người dùng.
+- Rate limiting: max 5 attempts/quiz/ngày, 10 min cooldown
+- Bot detection: answer timing analysis (< 2s/câu = suspicious)
+- Redis session: timer enforcement phía server
+- Xem `docs/quiz-anti-cheat-plan.md` chi tiết
 
 ---
 
@@ -740,7 +821,7 @@ volumes:
 ## 8. Đối chiếu yêu cầu đề tài ban đầu
 
 > Ma trận này căn theo đề cương: học từ vựng theo bộ thẻ + quiz ngắn + SRS.  
-> **Cập nhật:** 2026-06-29 · Chi tiết sprint: [`development-plan.md`](development-plan.md) · Tiến độ code: [`progress.md`](progress.md)
+> **Cập nhật:** 2026-07-02 · Chi tiết sprint: [`development-plan.md`](development-plan.md) · Tiến độ code: [`progress.md`](progress.md)
 
 **Ký hiệu:** ✅ Đã có (code/docs) · ⚠️ Một phần · ❌ Chưa · 📋 Chỉ có trong spec/roadmap
 
