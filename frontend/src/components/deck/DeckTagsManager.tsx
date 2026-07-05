@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Tag, X } from 'lucide-react'
 import { deckTagsApi } from '@/api/deckTags'
 import { cn } from '@/utils/cn'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 
 interface DeckTagsManagerProps {
   deckId: string
@@ -25,12 +25,12 @@ export default function DeckTagsManager({ deckId, className }: DeckTagsManagerPr
     mutationFn: (newTags: string[]) => deckTagsApi.updateTags(deckId, newTags),
     onSuccess: (response) => {
       queryClient.setQueryData(['deck-tags', deckId], response.data)
-      toast.success('Đã cập nhật tags')
+      lumotoast.success('Đã cập nhật tags')
       setNewTag('')
       setIsAdding(false)
     },
     onError: () => {
-      toast.error('Lỗi khi cập nhật tags')
+      lumotoast.error('Lỗi khi cập nhật tags')
     },
   })
 
@@ -40,7 +40,7 @@ export default function DeckTagsManager({ deckId, className }: DeckTagsManagerPr
       queryClient.invalidateQueries({ queryKey: ['deck-tags', deckId] })
     },
     onError: () => {
-      toast.error('Lỗi khi xóa tag')
+      lumotoast.error('Lỗi khi xóa tag')
     },
   })
 
@@ -48,11 +48,11 @@ export default function DeckTagsManager({ deckId, className }: DeckTagsManagerPr
     const tag = newTag.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
     if (!tag) return
     if (tags.includes(tag)) {
-      toast.error('Tag đã tồn tại')
+      lumotoast.error('Tag đã tồn tại')
       return
     }
     if (tag.length > 50) {
-      toast.error('Tag quá dài (tối đa 50 ký tự)')
+      lumotoast.error('Tag quá dài (tối đa 50 ký tự)')
       return
     }
     updateMutation.mutate([...tags, tag])

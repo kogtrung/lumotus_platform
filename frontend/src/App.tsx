@@ -10,13 +10,12 @@ import LandingPage from '@/pages/LandingPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ExplorePage from '@/pages/ExplorePage'
 import ProgressPage from '@/pages/ProgressPage'
+import LeaderboardPage from '@/pages/LeaderboardPage'
 import DeckDetailPage from '@/pages/DeckDetailPage'
-import ReviewPage from '@/pages/ReviewPage'
 import FlashcardPage from '@/pages/FlashcardPage'
 import FlashcardStudyPage from '@/pages/FlashcardStudyPage'
 import QuizPage from '@/pages/QuizPage'
 import QuizPlayPage from '@/pages/QuizPlayPage'
-import QuizCreatePage from '@/pages/QuizCreatePage'
 import QuizLeaderboardPage from '@/pages/QuizLeaderboardPage'
 import QuizDetailPage from '@/pages/QuizDetailPage'
 import QuizHistoryPage from '@/pages/QuizHistoryPage'
@@ -26,6 +25,7 @@ import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminDeckManagement from '@/pages/admin/AdminDeckManagement'
 import AdminQuizManagement from '@/pages/admin/AdminQuizManagement'
 import AdminQuizEditPage from '@/pages/admin/AdminQuizEditPage'
+import AdminQuizHistory from '@/pages/admin/AdminQuizHistory'
 import AdminTopicManagement from '@/pages/admin/AdminTopicManagement'
 import AdminUsers from '@/pages/admin/AdminUsers'
 
@@ -40,11 +40,6 @@ export default function App() {
       </Route>
 
       <Route element={<PrivateRoute />}>
-        {/* Review = dedicated flashcard review page */}
-        <Route path="decks/:deckRef/review" element={<MinimalLayout />}>
-          <Route index element={<ReviewPage />} />
-        </Route>
-
         {/* Flashcard study session */}
         <Route path="decks/:deckRef/flashcard" element={<MinimalLayout />}>
           <Route index element={<FlashcardStudyPage />} />
@@ -56,11 +51,11 @@ export default function App() {
           <Route path="flashcard" element={<FlashcardPage />} />
           <Route path="quiz" element={<QuizPage />} />
           <Route path="quiz/history" element={<QuizHistoryPage />} />
-          <Route path="quiz/create" element={<QuizCreatePage />} />
           <Route path="quiz/detail/:quizRef" element={<QuizDetailPage />} />
-          <Route path="quiz/leaderboard/:quizRef" element={<QuizLeaderboardPage />} />
+          <Route path="quiz/leaderboard" element={<QuizLeaderboardPage />} />
           <Route path="explore" element={<ExplorePage />} />
           <Route path="progress" element={<ProgressPage />} />
+          <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="decks/:deckRef" element={<DeckDetailPage />} />
           <Route path="settings" element={<ProfilePage />} />
         </Route>
@@ -71,6 +66,7 @@ export default function App() {
           <Route path="admin/decks" element={<AdminDeckManagement />} />
           <Route path="admin/quizzes" element={<AdminQuizManagement />} />
           <Route path="admin/quizzes/:quizRef" element={<AdminQuizEditPage />} />
+          <Route path="admin/quiz-history" element={<AdminQuizHistory />} />
           <Route path="admin/topics" element={<AdminTopicManagement />} />
           <Route path="admin/users" element={<AdminUsers />} />
         </Route>
@@ -81,6 +77,7 @@ export default function App() {
 
         {/* Quiz play session (no layout chrome) */}
         <Route path="quiz/play/:quizRef" element={<QuizPlayPage />} />
+        <Route path="quiz/result/:attemptId" element={<QuizPlayPage />} />
         <Route path="decks/:deckRef/quiz" element={<Navigate to="/quiz" replace />} />
       </Route>
 

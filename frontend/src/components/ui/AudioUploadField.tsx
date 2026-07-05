@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Loader2, Music, Play, X } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { mediaApi } from '@/api/media'
 import { getApiErrorMessage } from '@/utils/apiError'
 import { cn } from '@/utils/cn'
@@ -20,16 +20,16 @@ export default function AudioUploadField({ label, value, onChange, className }: 
   const handleFile = async (file: File | null) => {
     if (!file) return
     if (!file.type.startsWith('audio/')) {
-      toast.error('Chỉ chấp nhận file âm thanh')
+      lumotoast.error('Chỉ chấp nhận file âm thanh')
       return
     }
     setUploading(true)
     try {
       const res = await mediaApi.upload(file, 'audio')
       onChange(res.data.url)
-      toast.success('Đã tải audio lên')
+      lumotoast.success('Đã tải audio lên')
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Không thể tải audio'))
+      lumotoast.error(getApiErrorMessage(err, 'Không thể tải audio'))
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''

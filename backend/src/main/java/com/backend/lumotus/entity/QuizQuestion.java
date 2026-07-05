@@ -4,8 +4,6 @@ import com.backend.lumotus.entity.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "quiz_questions")
 @Getter

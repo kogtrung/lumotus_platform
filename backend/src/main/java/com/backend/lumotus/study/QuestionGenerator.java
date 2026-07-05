@@ -13,17 +13,11 @@ public class QuestionGenerator {
     private final List<Card> cards;
     private final StudyMode mode;
     private final int count;
-    private final String direction;
 
     public QuestionGenerator(List<Card> cards, StudyMode mode, int count) {
-        this(cards, mode, count, "forward");
-    }
-
-    public QuestionGenerator(List<Card> cards, StudyMode mode, int count, String direction) {
         this.cards = cards;
         this.mode = mode;
         this.count = count;
-        this.direction = direction != null ? direction : "forward";
     }
 
     public List<QuestionResponse> generate() {

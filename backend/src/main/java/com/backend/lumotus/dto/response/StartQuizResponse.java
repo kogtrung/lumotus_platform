@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record StartQuizResponse(
         UUID attemptId,
-        String deckTitle,
+        String quizTitle,
         int totalQuestions,
         Integer timeLimitSeconds,
         long startedAtEpochSecond,

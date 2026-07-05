@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import toast from 'react-hot-toast'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { lumotoast } from '@/components/ui/Toast'
 import { X } from 'lucide-react'
 import { reviewApi } from '@/api/review'
 import { decksApi } from '@/api/decks'
@@ -33,6 +33,7 @@ export default function FlashcardStudyPage() {
   const { deckRef = '' } = useParams<{ deckRef: string }>()
   const navigate = useNavigate()
 
+  const queryClient = useQueryClient()
   const sessionRef = useRef<StudySession | null>(null)
   const [phase, setPhase] = useState<SessionPhase>('config')
 
@@ -93,14 +94,16 @@ export default function FlashcardStudyPage() {
         return next
       })
       if (data.xpEarned > 0) {
-        toast.success(`+${data.xpEarned} XP`, {
-          duration: 1500,
-          style: { background: '#252030', color: '#F5F0FA' },
-        })
+        lumotoast.success(`+${data.xpEarned} XP`, 1500)
       }
+      // Refresh streak/XP on dashboard and progress page
+      queryClient.invalidateQueries({ queryKey: ['progress', 'me'] })
+      queryClient.invalidateQueries({ queryKey: ['stats', 'dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['stats', 'weekly'] })
+      queryClient.invalidateQueries({ queryKey: ['stats', 'activity'] })
       dueQuery.refetch()
     },
-    onError: () => toast.error('Failed to submit rating'),
+    onError: () => lumotoast.error('Failed to submit rating'),
   })
 
   // Handlers

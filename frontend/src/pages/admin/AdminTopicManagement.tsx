@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Tag,
@@ -7,13 +7,12 @@ import {
   Trash2,
   RefreshCw,
   X,
-  Palette,
   Hash,
 } from 'lucide-react'
 import { topicsApi, type CreateTopicPayload, type UpdateTopicPayload } from '@/api/topics'
 import type { Topic } from '@/types/deck'
-import { cn } from '@/utils/cn'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 // ============================================================
 // Topic Card
@@ -115,187 +114,154 @@ function TopicDialog({
   const [sortOrder, setSortOrder] = useState(topic?.sortOrder?.toString() ?? '0')
   const [autoSlug, setAutoSlug] = useState(!topic)
 
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handler)
+      document.body.style.overflow = ''
+    }
+  }, [open, onClose])
+
   if (!open) return null
 
   const handleNameChange = (value: string) => {
     setName(value)
     if (autoSlug && !topic) {
-      // Auto-generate slug from name
-      setSlug(
-        value
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-      )
+      setSlug(value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-'))
     }
   }
 
   const handleSave = () => {
-    if (!name.trim()) {
-      toast.error('Vui lòng nhập tên topic')
-      return
-    }
-    if (!slug.trim()) {
-      toast.error('Vui lòng nhập slug')
-      return
-    }
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-      toast.error('Slug phải là kebab-case (viết thường, dùng dấu gạch ngang)')
-      return
-    }
-    if (colorHex && !/^#[0-9A-Fa-f]{6}$/.test(colorHex)) {
-      toast.error('Màu phải là #RRGGBB')
-      return
-    }
-
-    onSave({
-      name: name.trim(),
-      slug: slug.trim(),
-      description: description.trim() || undefined,
-      icon: icon.trim() || undefined,
-      colorHex: colorHex || undefined,
-      sortOrder: parseInt(sortOrder) || 0,
-    })
+    if (!name.trim()) { lumotoast.error('Vui lòng nhập tên topic'); return }
+    if (!slug.trim()) { lumotoast.error('Vui lòng nhập slug'); return }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) { lumotoast.error('Slug phải là kebab-case (viết thường, dùng dấu gạch ngang)'); return }
+    if (colorHex && !/^#[0-9A-Fa-f]{6}$/.test(colorHex)) { lumotoast.error('Màu phải là #RRGGBB'); return }
+    onSave({ name: name.trim(), slug: slug.trim(), description: description.trim() || undefined, icon: icon.trim() || undefined, colorHex: colorHex || undefined, sortOrder: parseInt(sortOrder) || 0 })
   }
 
   const isEditing = !!topic
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">
-            {isEditing ? 'Sửa Topic' : 'Tạo Topic mới'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-all hover:bg-gray-200 hover:text-gray-900"
-          >
-            <X className="h-5 w-5" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(10, 8, 20, 0.85)', backdropFilter: 'blur(4px)' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#3D3348] bg-[#1F1A28] shadow-2xl animate-dialog-in">
+        {/* Gradient accent bar */}
+        <div className="h-0.5 w-full shrink-0 bg-gradient-to-r from-[#EC4899] to-[#F97316]" />
+
+        <div className="flex shrink-0 items-center justify-between border-b border-[#3D3348] px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(236,72,153,0.3)] bg-[rgba(236,72,153,0.1)]">
+              <Tag className="h-5 w-5 text-[#EC4899]" strokeWidth={2.25} />
+            </div>
+            <h2 className="text-base font-extrabold text-[#F5F0FA]">{isEditing ? 'Sửa Topic' : 'Tạo Topic mới'}</h2>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8B7A9E] transition-all hover:bg-[#252030] hover:text-[#F5F0FA]">
+            <X className="h-5 w-5" strokeWidth={2.25} />
           </button>
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="space-y-4 px-5 py-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Tên <span className="text-red-500">*</span>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">
+              Tên <span className="text-rose-400">*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="VD: IELTS Vocabulary"
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#EC4899]/50 focus:outline-none"
+              className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
-              Slug <span className="text-red-500">*</span>
-              <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-500">
-                <input
-                  type="checkbox"
-                  checked={autoSlug}
-                  onChange={(e) => setAutoSlug(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-gray-300"
-                  disabled={isEditing}
-                />
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">
+                Slug <span className="text-rose-400">*</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-xs text-[#8B7A9E]">
+                <input type="checkbox" checked={autoSlug} onChange={(e) => setAutoSlug(e.target.checked)} disabled={isEditing} className="h-3.5 w-3.5 rounded border-[#3D3348] accent-pink-500" />
                 Tự động
               </label>
-            </label>
+            </div>
             <input
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="ielts-vocabulary"
               disabled={isEditing}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#EC4899]/50 focus:outline-none disabled:bg-gray-100"
+              className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none disabled:bg-[#1A1520] disabled:opacity-60"
             />
-            <p className="mt-1 text-xs text-gray-400">Kebab-case: chữ thường, dùng dấu gạch ngang</p>
+            <p className="mt-1 text-[11px] text-[#8B7A9E]/60">Kebab-case: chữ thường, dùng dấu gạch ngang</p>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-600">Mô tả</label>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Mô tả</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Mô tả topic..."
               rows={2}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#EC4899]/50 focus:outline-none"
+              className="w-full resize-none rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Icon */}
             <div>
-              <label className="block text-sm font-medium text-gray-600">Icon (emoji)</label>
-              <input
-                type="text"
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                placeholder="📚"
-                className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#EC4899]/50 focus:outline-none"
-              />
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Icon (emoji)</label>
+              <input type="text" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="📚"
+                className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none" />
             </div>
-
             {/* Sort Order */}
             <div>
-              <label className="block text-sm font-medium text-gray-600">Thứ tự</label>
-              <input
-                type="number"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                placeholder="0"
-                className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#EC4899]/50 focus:outline-none"
-              />
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Thứ tự</label>
+              <input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} placeholder="0"
+                className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none" />
             </div>
           </div>
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-gray-600">Màu</label>
-            <div className="mt-1 flex items-center gap-3">
-              <div className="relative">
-                <Palette className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={colorHex}
-                  onChange={(e) => setColorHex(e.target.value)}
-                  placeholder="#EC4899"
-                  className="w-36 rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-gray-900 placeholder-gray-400 focus:border-[#EC4899]/50 focus:outline-none"
-                />
-              </div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Màu</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={colorHex}
+                onChange={(e) => setColorHex(e.target.value)}
+                placeholder="#EC4899"
+                className="flex-1 rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none"
+              />
               <input
                 type="color"
                 value={colorHex}
                 onChange={(e) => setColorHex(e.target.value)}
-                className="h-10 w-16 cursor-pointer rounded-lg border border-gray-200"
+                className="h-11 w-16 cursor-pointer rounded-xl border border-[#3D3348] bg-transparent"
               />
             </div>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#3D3348] px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition-all hover:bg-gray-200"
+            className="rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm font-semibold text-[#8B7A9E] transition-all hover:border-[#3D3348] hover:bg-[#2D2538] hover:text-[#F5F0FA]"
           >
             Hủy
           </button>
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className={cn(
-              'rounded-lg bg-[#EC4899] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#EC4899]/80',
-              isLoading && 'cursor-not-allowed opacity-60'
-            )}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#EC4899] to-[#F472B6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? 'Đang lưu...' : isEditing ? 'Lưu thay đổi' : 'Tạo Topic'}
+            {isLoading ? (
+              <><span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Đang lưu...</>
+            ) : isEditing ? 'Lưu thay đổi' : 'Tạo Topic'}
           </button>
         </div>
       </div>
@@ -311,7 +277,12 @@ export default function AdminTopicManagement() {
   const queryClient = useQueryClient()
   const [showDialog, setShowDialog] = useState(false)
   const [editingTopic, setEditingTopic] = useState<Topic | undefined>()
-  const [dialogLoading, setDialogLoading] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    title: string
+    body?: string
+    onConfirm: () => void
+  }>({ open: false, title: '', body: '', onConfirm: () => {} })
 
   // Fetch topics
   const {
@@ -328,12 +299,12 @@ export default function AdminTopicManagement() {
   const createMutation = useMutation({
     mutationFn: (data: CreateTopicPayload) => topicsApi.create(data),
     onSuccess: () => {
-      toast.success('Tạo topic thành công')
+      lumotoast.success('Tạo topic thành công')
       queryClient.invalidateQueries({ queryKey: ['admin', 'topics'] })
       setShowDialog(false)
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Lỗi khi tạo topic')
+      lumotoast.error(err?.response?.data?.message || 'Lỗi khi tạo topic')
     },
   })
 
@@ -342,25 +313,25 @@ export default function AdminTopicManagement() {
     mutationFn: ({ ref, data }: { ref: string; data: UpdateTopicPayload }) =>
       topicsApi.update(ref, data),
     onSuccess: () => {
-      toast.success('Cập nhật topic thành công')
+      lumotoast.success('Cập nhật topic thành công')
       queryClient.invalidateQueries({ queryKey: ['admin', 'topics'] })
       setShowDialog(false)
       setEditingTopic(undefined)
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Lỗi khi cập nhật topic')
+      lumotoast.error(err?.response?.data?.message || 'Lỗi khi cập nhật topic')
     },
   })
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (ref: string) => rawTopicsApi.delete(ref),
+    mutationFn: (ref: string) => topicsApi.delete(ref),
     onSuccess: () => {
-      toast.success('Xóa topic thành công')
+      lumotoast.success('Xóa topic thành công')
       queryClient.invalidateQueries({ queryKey: ['admin', 'topics'] })
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Lỗi khi xóa topic')
+      lumotoast.error(err?.response?.data?.message || 'Lỗi khi xóa topic')
     },
   })
 
@@ -370,9 +341,12 @@ export default function AdminTopicManagement() {
   }
 
   const handleDelete = (topic: Topic) => {
-    if (confirm(`Xóa topic "${topic.name}"? Hành động không thể hoàn tác.`)) {
-      deleteMutation.mutate(topic.slug)
-    }
+    setConfirmDialog({
+      open: true,
+      title: `Xóa topic "${topic.name}"?`,
+      body: 'Hành động không thể hoàn tác.',
+      onConfirm: () => deleteMutation.mutate(topic.slug),
+    })
   }
 
   const handleSave = (data: CreateTopicPayload | UpdateTopicPayload) => {
@@ -466,6 +440,23 @@ export default function AdminTopicManagement() {
         topic={editingTopic}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
+
+      {/* Confirm Dialog */}
+      {confirmDialog.open && (
+        <ConfirmDialog
+          open={confirmDialog.open}
+          title={confirmDialog.title}
+          body={confirmDialog.body}
+          confirmLabel="Xóa"
+          cancelLabel="Hủy"
+          danger
+          onConfirm={() => {
+            confirmDialog.onConfirm()
+            setConfirmDialog((p) => ({ ...p, open: false }))
+          }}
+          onCancel={() => setConfirmDialog((p) => ({ ...p, open: false }))}
+        />
+      )}
     </div>
   )
 }

@@ -9,7 +9,8 @@ public record CreateQuizRequest(
     @NotBlank @Size(max = 200) String title,
     String description,
     String coverImageUrl,
-    @jakarta.validation.constraints.NotNull UUID deckId,
+    UUID deckId,
     Integer timeLimitSeconds,
-    @jakarta.validation.constraints.NotNull Integer questionCount
+    Integer questionCount,
+    String quizType  // Optional: "GENERATED" (default) or "IMPORTED"
 ) {}

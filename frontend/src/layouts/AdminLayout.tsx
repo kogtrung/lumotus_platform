@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/authStore'
 interface NavItem {
   label: string
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   color: string
 }
 

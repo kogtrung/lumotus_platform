@@ -1,11 +1,12 @@
 import React from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   BookOpen, Flame, Star, Target, TrendingUp, Trophy, Zap,
 } from 'lucide-react'
 import { decksApi } from '@/api/decks'
+import { progressApi } from '@/api/progress'
 import { reviewApi } from '@/api/review'
-import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
@@ -134,72 +135,207 @@ function DeckProgressRow({ deck, index }: { deck: any; index: number }) {
   )
 }
 
-// ─── Weekly heatmap strip ─────────────────────────────────────────────────────
+// ─── Heatmap ─────────────────────────────────────────────────────────────────
 
-function HeatmapStrip({ streak }: { streak: number }) {
-  // Generate last 30 days
-  const days = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (29 - i))
-    return d
-  })
+const HEATMAP_COLORS = [
+  '#2D2538',
+  '#9be9a8',
+  '#40c463',
+  '#30a14e',
+  '#216e39',
+]
+
+function HeatmapStrip({ data, streak }: {
+  data: { date: string; cards: number; quizzes: number; xp: number }[] | undefined
+  streak: number
+}) {
+  const currentYear = new Date().getFullYear()
+  const today = new Date()
+  const [selectedYear, setSelectedYear] = React.useState(currentYear)
+
+  const yearData = data?.filter(d => d.date.startsWith(String(selectedYear)))
+  const maxXp = yearData && yearData.length > 0 ? Math.max(...yearData.map(d => d.xp), 1) : 1
+  const map = new Map((yearData ?? []).map(d => [d.date, d]))
+
+  // Build weeks grid (columns = weeks, rows = days Mon-Sun)
+  // Jan 1 may not be Monday, so days before it in week 1 are empty
+  const weeks: { date: Date; dateStr: string }[][] = []
+
+  const yearStart = new Date(selectedYear, 0, 1)
+  const dayOfWeek = yearStart.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+
+  // Jan 1 is Monday (1) -> firstWeek starts with Jan 1
+  // Jan 1 is Tue-Sat -> Sun-Mon before it are empty
+  // Jan 1 is Sun (0) -> only Sun before it is empty
+  const emptyDays = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : dayOfWeek
+
+  // Create first week with empty placeholders
+  const firstWeek: { date: Date; dateStr: string }[] = []
+  for (let i = 0; i < emptyDays; i++) {
+    firstWeek.push({ date: new Date(0), dateStr: '' })
+  }
+  for (let i = 0; i < 7 - emptyDays; i++) {
+    const d = new Date(yearStart)
+    d.setDate(yearStart.getDate() + i)
+    firstWeek.push({ date: d, dateStr: d.toISOString().split('T')[0] })
+  }
+  weeks.push(firstWeek)
+
+  // Build remaining weeks
+  let currentDate = new Date(yearStart)
+  currentDate.setDate(yearStart.getDate() + (7 - emptyDays))
+  const yearEnd = new Date(selectedYear, 11, 31)
+  const endDate = selectedYear === currentYear ? today : yearEnd
+
+  while (currentDate <= endDate) {
+    const week: { date: Date; dateStr: string }[] = []
+    for (let d = 0; d < 7; d++) {
+      if (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0]
+        week.push({ date: new Date(currentDate), dateStr })
+      } else {
+        week.push({ date: new Date(0), dateStr: '' })
+      }
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    weeks.push(week)
+  }
+
+  const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', '']
+  const years = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3]
+
+  const getMonthLabel = (weekIdx: number) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const week = weeks[weekIdx]
+    const firstDay = week.find(d => d.dateStr)?.date
+    if (!firstDay || firstDay.getFullYear() !== selectedYear) return null
+    const month = firstDay.getMonth()
+    const prevWeek = weeks[weekIdx - 1]
+    const prevMonth = prevWeek?.find(d => d.dateStr)?.date?.getMonth()
+    if (weekIdx === 0 || prevMonth !== month) {
+      return months[month]
+    }
+    return null
+  }
 
   return (
-    <div className="rounded-xl sm:rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-3 sm:p-4 md:p-5">
-      <div className="mb-2 sm:mb-3 flex items-center justify-between">
-        <p className="text-xs sm:text-sm font-bold text-[#F5F0FA]">30 ngày gần nhất</p>
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-[#8B7A9E]">
-          <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#EF4444]" />
+    <div className="rounded-xl sm:rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4 sm:p-5 md:p-6">
+      <div className="mb-3 sm:mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <p className="text-sm sm:text-base font-bold text-[#F5F0FA]">Contribution</p>
+          <div className="flex gap-1">
+            {years.map(year => (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                className={`px-2 py-0.5 text-[11px] sm:text-xs rounded transition-colors ${
+                  year === selectedYear
+                    ? 'bg-[#EC4899] text-white'
+                    : 'text-[#8B7A9E] hover:text-[#F5F0FA]'
+                }`}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+          <Link
+            to="/leaderboard"
+            className="text-[11px] sm:text-xs font-semibold text-[#EC4899] hover:text-[#F97316] transition-colors"
+          >
+            Xem bảng xếp hạng →
+          </Link>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#8B7A9E]">
+          <Flame className="h-3.5 w-3.5 text-[#EF4444]" />
           {streak} ngày streak
         </div>
       </div>
-      <div className="flex gap-0.5 sm:gap-1 overflow-x-auto pb-1">
-        {days.map((d, i) => {
-          // Simulate activity (1-4 intensity based on day of week)
-          const intensity = Math.random() > 0.3 ? Math.ceil(Math.random() * 4) : 0
-          const colors = [
-            'rgba(236,72,153,0.1)',
-            'rgba(236,72,153,0.25)',
-            'rgba(236,72,153,0.5)',
-            'rgba(236,72,153,0.8)',
-          ]
-          const isToday = i === days.length - 1
-          return (
-            <div
-              key={i}
-              title={d.toLocaleDateString('vi')}
-              className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 shrink-0 rounded-sm sm:rounded-md transition-transform hover:scale-110"
-              style={{
-                backgroundColor: intensity > 0 ? colors[intensity - 1] : '#2D2538',
-                border: isToday ? '2px solid #EC4899' : '1px solid transparent',
-              }}
-            />
-          )
-        })}
+
+      {/* Heatmap grid */}
+      <div className="overflow-x-auto">
+        <div className="flex gap-1.5">
+          {/* Day labels */}
+          <div className="flex flex-col gap-1.5 mr-2 pt-5">
+            {dayLabels.map((label, i) => (
+              <div key={i} className="h-[14px] w-8 flex items-center">
+                {label && (
+                  <span className="text-[10px] text-[#8B7A9E]">{label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Month labels + Weeks */}
+          <div className="flex flex-col">
+            {/* Month labels row */}
+            <div className="flex gap-1.5 mb-1.5 h-5">
+              {weeks.map((week, weekIdx) => {
+                const label = getMonthLabel(weekIdx)
+                return (
+                  <div key={weekIdx} className="h-full w-[14px]">
+                    {label && (
+                      <span className="text-[10px] text-[#8B7A9E] whitespace-nowrap">{label}</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Weeks grid */}
+            <div className="flex gap-1.5">
+              {weeks.map((week, weekIdx) => (
+                <div key={weekIdx} className="flex flex-col gap-1.5">
+                  {week.map((day, dayIdx) => {
+                    if (!day.dateStr) {
+                      return <div key={dayIdx} className="h-[14px] w-[14px]" />
+                    }
+                    const entry = map.get(day.dateStr)
+                    const xp = entry?.xp ?? 0
+                    const intensity = xp > 0 ? Math.max(1, Math.ceil((xp / maxXp) * 4)) : 0
+                    const isToday = day.dateStr === today.toISOString().split('T')[0]
+
+                    return (
+                      <div
+                        key={dayIdx}
+                        title={`${day.date.toLocaleDateString('vi')}: ${xp} XP · ${entry?.cards ?? 0} thẻ · ${entry?.quizzes ?? 0} quiz`}
+                        className="h-[14px] w-[14px] transition-transform hover:scale-125 cursor-pointer"
+                        style={{
+                          backgroundColor: HEATMAP_COLORS[intensity],
+                          border: isToday ? '1.5px solid #EC4899' : '1px solid rgba(139, 122, 158, 0.2)',
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[10px] text-[#8B7A9E]">
-        <span>Ít</span>
-        {colors.map((c, i) => (
-          <div key={i} className="h-2 w-2 sm:h-3 sm:w-3 rounded-sm" style={{ backgroundColor: c }} />
+
+      {/* Legend */}
+      <div className="mt-3 flex items-center justify-end gap-1.5 text-[11px] text-[#8B7A9E]">
+        <span>Less</span>
+        {HEATMAP_COLORS.map((c, i) => (
+          <div key={i} className="h-[14px] w-[14px]" style={{ backgroundColor: c }} />
         ))}
-        <span>Nhiều</span>
+        <span>More</span>
       </div>
     </div>
   )
 }
 
-const colors = [
-  'rgba(236,72,153,0.1)',
-  'rgba(236,72,153,0.25)',
-  'rgba(236,72,153,0.5)',
-  'rgba(236,72,153,0.8)',
-]
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ProgressPage() {
-  const user = useAuthStore((s) => s.user)
+  // Real progress data from API
+  const { data: progressData } = useQuery({
+    queryKey: ['progress', 'me'],
+    queryFn: () => progressApi.getMyProgress().then((r) => r.data),
+    staleTime: 60_000,
+  })
 
+  // My decks
   const { data: decksData } = useQuery({
     queryKey: ['decks', { mine: true, page: 0, size: 50 }],
     queryFn: () => decksApi.list({ mine: true, page: 0, size: 50 }).then((r) => r.data),
@@ -219,6 +355,12 @@ export default function ProgressPage() {
   const totalCards = decks.reduce((s, d) => s + (d.cardCount ?? 0), 0)
   const totalLearned = deckProgressQueries.reduce((s, q) => s + (q.data?.learnedCards ?? 0), 0)
   const totalMastered = deckProgressQueries.reduce((s, q) => s + (q.data?.masteredCards ?? 0), 0)
+
+  const xp = progressData?.xp ?? 0
+  const streak = progressData?.streak ?? 0
+  const rank = progressData?.rank ?? null
+  const totalParticipants = progressData?.totalParticipants ?? 0
+  const heatmap = progressData?.heatmap
 
   return (
     <div className="space-y-4 sm:space-y-6 md:space-y-8">
@@ -241,40 +383,45 @@ export default function ProgressPage() {
         <div className="absolute -top-1/2 -right-1/4 w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-[#EC4899]/25 blur-3xl" />
         <div className="absolute -bottom-1/2 -left-1/4 w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-[#F97316]/20 blur-3xl" />
         <div className="relative flex flex-wrap items-center justify-between gap-4 sm:gap-5 md:gap-6">
+          {/* Streak */}
           <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
             <div className="relative">
               <div className="flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center rounded-lg sm:rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
                 <Flame className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-white fill-white/30" />
               </div>
-              {user?.streak && user.streak >= 7 && (
+              {streak >= 7 && (
                 <span className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 animate-bounce rounded-full bg-[#EF4444] px-1.5 py-0.5 text-[10px] sm:text-xs font-bold text-white shadow-lg">
                   🔥
                 </span>
               )}
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">{user?.streak ?? 0}</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">{streak}</p>
               <p className="text-white/70 text-xs sm:text-sm">Ngày streak</p>
             </div>
           </div>
 
+          {/* XP */}
           <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
             <div className="flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center rounded-lg sm:rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
               <Star className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-yellow-300 fill-yellow-300/30" />
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">{user?.xp?.toLocaleString() ?? 0}</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">{xp.toLocaleString()}</p>
               <p className="text-white/70 text-xs sm:text-sm">XP tổng cộng</p>
             </div>
           </div>
 
+          {/* Rank */}
           <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
             <div className="flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center rounded-lg sm:rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
               <Trophy className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-pink-200" />
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">#{127}</p>
-              <p className="text-white/70 text-xs sm:text-sm">Học sinh</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+                {rank != null ? `#${rank}` : '—'}
+              </p>
+              <p className="text-white/70 text-xs sm:text-sm">/{totalParticipants} học sinh</p>
             </div>
           </div>
         </div>
@@ -284,13 +431,13 @@ export default function ProgressPage() {
           <div className="h-1.5 sm:h-2 rounded-full bg-white/20">
             <div
               className="h-full rounded-full bg-white transition-all duration-1000"
-              style={{ width: `${Math.min(((user?.streak ?? 0) / 30) * 100, 100)}%` }}
+              style={{ width: `${Math.min((streak / 30) * 100, 100)}%` }}
             />
           </div>
           <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-white/60">
-            {(user?.streak ?? 0) >= 30
+            {streak >= 30
               ? '🎉 Mục tiêu 30 ngày hoàn thành!'
-              : `${30 - (user?.streak ?? 0)} ngày nữa để đạt mốc 30 ngày`}
+              : `${30 - streak} ngày nữa để đạt mốc 30 ngày`}
           </p>
         </div>
       </div>
@@ -304,7 +451,7 @@ export default function ProgressPage() {
       </div>
 
       {/* ── Heatmap ── */}
-      <HeatmapStrip streak={user?.streak ?? 0} />
+      <HeatmapStrip data={heatmap} streak={streak} />
 
       {/* ── Deck progress list ── */}
       {decks.length > 0 && (

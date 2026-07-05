@@ -45,18 +45,22 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private Role role = Role.USER;
 
     @Column(nullable = false)
+    @Builder.Default
     private int xp = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private int streak = 0;
 
     @Column(name = "last_study_date")
     private LocalDate lastStudyDate;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private boolean active = true;
 
     @Enumerated(EnumType.STRING)

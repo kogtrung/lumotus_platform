@@ -15,6 +15,10 @@ export default function PrivateRoute() {
   }
 
   if (!user) {
+    // Save intended destination to sessionStorage before redirecting to login
+    // This persists across page refreshes unlike React Router state
+    const fromPath = location.pathname + location.search
+    sessionStorage.setItem('pending_quiz_play', fromPath)
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

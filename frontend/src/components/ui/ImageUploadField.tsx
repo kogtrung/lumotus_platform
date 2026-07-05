@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { ImagePlus, Loader2, X } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { mediaApi, type MediaFolder } from '@/api/media'
 import { getApiErrorMessage } from '@/utils/apiError'
 import { cn } from '@/utils/cn'
@@ -26,16 +26,16 @@ export default function ImageUploadField({
   const handleFile = async (file: File | null) => {
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      toast.error('Chỉ chấp nhận file ảnh')
+      lumotoast.error('Chỉ chấp nhận file ảnh')
       return
     }
     setUploading(true)
     try {
       const res = await mediaApi.upload(file, folder)
       onChange(res.data.url)
-      toast.success('Đã tải ảnh lên')
+      lumotoast.success('Đã tải ảnh lên')
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Không thể tải ảnh'))
+      lumotoast.error(getApiErrorMessage(err, 'Không thể tải ảnh'))
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''

@@ -130,7 +130,7 @@ public class AsyncJobService {
     }
 
     private List<Map<String, String>> generateCardsWithAi(String topic, int count, String language) {
-        // TODO: In production, call OpenAI/Claude API here
+        // In production, replace this stub with an OpenAI/Claude API call.
         // For now, return sample cards
         List<Map<String, String>> cards = new ArrayList<>();
 

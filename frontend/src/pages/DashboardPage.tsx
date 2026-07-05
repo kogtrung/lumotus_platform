@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQueryClient, useQueries, useQuery } from '@tanstack/react-query'
 import {
   BarElement,
   CategoryScale,
@@ -17,12 +17,13 @@ import { Bar, Line } from 'react-chartjs-2'
 import {
   AlertTriangle, BookOpen, ChevronRight, Compass, FileUp, Flame,
   Globe, Layers, List, Lock, Play, Plus, Search,
-  Sparkles, Star, Zap,
+  Sparkles, Star, Trophy, Zap,
 } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { quizApi } from '@/api/study'
 import { reviewApi } from '@/api/review'
 import { statsApi } from '@/api/stats'
+import { progressApi } from '@/api/progress'
 import CreateDeckDialog from '@/components/deck/CreateDeckDialog'
 import ImportCsvDialog from '@/components/deck/ImportCsvDialog'
 import DeckCard from '@/components/deck/DeckCard'
@@ -80,8 +81,9 @@ function useAnimatedCounter(end: number, duration = 1500, delay = 0) {
 
 // ─── Streak banner ──────────────────────────────────────────────────────────
 
-function StreakBanner({ streak, xp }: { streak: number; xp: number }) {
+function StreakBanner({ streak, xp, rank, totalParticipants }: { streak: number; xp: number; rank: number | null; totalParticipants: number }) {
   const { count: streakCount, ref: streakRef } = useAnimatedCounter(streak, 1000, 0)
+  const { count: xpCount } = useAnimatedCounter(xp, 1200, 100)
 
   return (
     <div
@@ -114,8 +116,20 @@ function StreakBanner({ streak, xp }: { streak: number; xp: number }) {
             <Star className="h-7 w-7 text-yellow-300 fill-yellow-300/40" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-white">{xp.toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-white">{xpCount.toLocaleString()}</p>
             <p className="text-xs text-white/70">XP tổng cộng</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
+            <Trophy className="h-7 w-7 text-yellow-300" />
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-white">
+              {rank != null ? `#${rank}` : '—'}
+            </p>
+            <p className="text-xs text-white/70">/{totalParticipants} học sinh</p>
           </div>
         </div>
 
@@ -317,22 +331,47 @@ function FlashcardSessionBanner({
 // ─── Active quiz session banner ────────────────────────────────────────────────
 
 function QuizSessionBanner({
-  quizId,
   attemptId: _attemptId,
+  quizSlug,
   quizTitle,
-  timeRemaining,
+  timeRemaining: _timeRemaining,
   onDismiss,
 }: {
-  quizId: string
   attemptId: string
+  quizSlug: string | null
   quizTitle: string
   timeRemaining: number | null
   onDismiss: () => void
 }) {
   const navigate = useNavigate()
 
-  const m = timeRemaining !== null ? Math.floor(timeRemaining / 60) : null
-  const s = timeRemaining !== null ? timeRemaining % 60 : null
+  // Countdown: start from the initial remaining time, tick every second.
+  // Sync with server time on each parent re-render (parent refetches every 60s).
+  const [displaySeconds, setDisplaySeconds] = useState(_timeRemaining ?? null)
+
+  useEffect(() => {
+    // Re-sync whenever server time updates
+    if (_timeRemaining !== null) {
+      setDisplaySeconds(_timeRemaining)
+    }
+  }, [_timeRemaining])
+
+  useEffect(() => {
+    if (displaySeconds === null || displaySeconds <= 0) return
+    const id = setInterval(() => {
+      setDisplaySeconds((prev) => {
+        if (prev === null || prev <= 1) { clearInterval(id); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, []) // run once on mount
+
+  const m = displaySeconds !== null ? Math.floor(displaySeconds / 60) : null
+  const s = displaySeconds !== null ? displaySeconds % 60 : null
+
+  // Resume via slug if available, otherwise slug is null (rare edge case)
+  const resumeRef = quizSlug ?? _attemptId
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-[#F97316]/40 bg-gradient-to-r from-[#7C2D12]/90 via-[#C2410C]/70 to-[#F97316]/50 p-4 shadow-lg">
@@ -351,7 +390,7 @@ function QuizSessionBanner({
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold text-white">🎯 Đang làm Quiz</p>
-              {timeRemaining !== null && (
+              {displaySeconds !== null && (
                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold text-white">
                   {m}:{s != null ? s.toString().padStart(2, '0') : '00'}
                 </span>
@@ -372,7 +411,7 @@ function QuizSessionBanner({
           <Button
             size="sm"
             className="gap-1.5 bg-white/20 text-white hover:bg-white/30 border border-white/30"
-            onClick={() => navigate(`/quiz/play/${quizId}`)}
+            onClick={() => navigate(`/quiz/play/${resumeRef}`)}
           >
             <Play className="h-3.5 w-3.5" />
             Tiếp tục
@@ -719,26 +758,36 @@ export default function DashboardPage() {
   // Active flashcard session (localStorage)
   const [activeFlashcardSession, setActiveFlashcardSession] = useState<{ deckRef: string; session: StudySession } | null>(null)
   // Active quiz sessions (from API)
-  const [activeQuizSession, setActiveQuizSession] = useState<{ attemptId: string; quizId: string; quizTitle: string; timeRemaining: number | null } | null>(null)
+  const [activeQuizSession, setActiveQuizSession] = useState<{
+    attemptId: string; quizId: string; quizSlug: string | null
+    quizTitle: string; timeRemaining: number | null
+  } | null>(null)
 
   useEffect(() => {
     setActiveFlashcardSession(findAnyActiveSession())
   }, [])
 
   // Fetch active quiz sessions from API
+  const qc = useQueryClient()
   const { data: activeQuizSessions } = useQuery({
     queryKey: ['quiz', 'active-sessions'],
     queryFn: () => quizApi.getActiveSessions().then((r) => r.data),
-    refetchInterval: 60_000, // refresh every minute
+    refetchInterval: 15_000, // refresh every 15s so session banner disappears quickly
+    refetchOnWindowFocus: true,
   })
+
+  // Track dismissal so useEffect doesn't re-show banner after user dismissed
+  const quizBannerDismissedRef = useRef(false)
 
   // Pick first active quiz session for banner (show only one at a time)
   useEffect(() => {
+    if (quizBannerDismissedRef.current) return
     if (activeQuizSessions && activeQuizSessions.length > 0) {
       const s = activeQuizSessions[0]
       setActiveQuizSession({
         attemptId: s.attemptId,
         quizId: s.quizId ?? '',
+        quizSlug: s.quizSlug ?? null,
         quizTitle: s.quizTitle ?? 'Quiz',
         timeRemaining: s.remainingSeconds >= 0 ? s.remainingSeconds : null,
       })
@@ -754,9 +803,24 @@ export default function DashboardPage() {
     }
   }
 
-  const handleDismissQuizSession = () => {
-    setActiveQuizSession(null)
-  }
+  const handleDismissQuizSession = useCallback(async () => {
+    if (!activeQuizSession?.attemptId) {
+      setActiveQuizSession(null)
+      return
+    }
+
+    try {
+      await quizApi.quitSession(activeQuizSession.attemptId)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      quizBannerDismissedRef.current = true
+      setActiveQuizSession(null)
+      qc.invalidateQueries({ queryKey: ['quiz', 'active-sessions'] })
+      qc.invalidateQueries({ queryKey: ['quiz', 'attempts'] })
+      qc.invalidateQueries({ queryKey: ['quiz', 'me'] })
+    }
+  }, [activeQuizSession, qc])
 
   // Open create dialog from ?create=1
   useEffect(() => {
@@ -792,6 +856,13 @@ export default function DashboardPage() {
   const { data: activityData } = useQuery({
     queryKey: ['stats', 'activity', 30],
     queryFn: () => statsApi.getActivity({ days: 30 }).then((r) => r.data),
+  })
+
+  // Real progress data (for rank)
+  const { data: progressData } = useQuery({
+    queryKey: ['progress', 'me'],
+    queryFn: () => progressApi.getMyProgress().then((r) => r.data),
+    staleTime: 60_000,
   })
 
   const myDecks = data?.content ?? []
@@ -831,7 +902,12 @@ export default function DashboardPage() {
 
       <div className="relative z-10 space-y-10">
         {/* ── Streak banner ── */}
-        <StreakBanner streak={user?.streak ?? 0} xp={user?.xp ?? 0} />
+        <StreakBanner
+          streak={progressData?.streak ?? user?.streak ?? 0}
+          xp={progressData?.xp ?? user?.xp ?? 0}
+          rank={progressData?.rank ?? null}
+          totalParticipants={progressData?.totalParticipants ?? 0}
+        />
 
         {/* ── Active sessions ── */}
         {(activeFlashcardSession || activeQuizSession) && (
@@ -850,8 +926,8 @@ export default function DashboardPage() {
               )}
               {activeQuizSession && (
                 <QuizSessionBanner
-                  quizId={activeQuizSession.quizId}
                   attemptId={activeQuizSession.attemptId}
+                  quizSlug={activeQuizSession.quizSlug}
                   quizTitle={activeQuizSession.quizTitle}
                   timeRemaining={activeQuizSession.timeRemaining}
                   onDismiss={handleDismissQuizSession}

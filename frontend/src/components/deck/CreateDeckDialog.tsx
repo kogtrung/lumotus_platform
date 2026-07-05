@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { Check, FileText, Globe, Hash, Layers, Lock, Sparkles, Tag, X } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { topicsApi } from '@/api/topics'
@@ -60,12 +60,12 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
       }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['decks'] })
-      toast.success('Đã tạo deck')
+      lumotoast.success('Đã tạo deck')
       reset()
       onClose()
       onCreated?.(res.data.slug)
     },
-    onError: (err) => toast.error(getApiErrorMessage(err, 'Không thể tạo deck')),
+    onError: (err) => lumotoast.error(getApiErrorMessage(err, 'Không thể tạo deck')),
   })
 
   useEffect(() => {
@@ -73,8 +73,12 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    document.addEventListener('keydown', handler)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handler)
+      document.body.style.overflow = ''
+    }
   }, [open, onClose])
 
   if (!open) return null
@@ -98,15 +102,15 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-        aria-label="Đóng"
-      />
-
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      style={{ background: 'rgba(10, 8, 20, 0.85)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="lumo-modal relative z-10 flex max-h-[95vh] w-full max-w-md flex-col overflow-hidden animate-modal-in sm:rounded-2xl sm:shadow-2xl">
+        {/* Gradient accent bar */}
+        <div className="h-0.5 w-full shrink-0 bg-gradient-to-r from-[#EC4899] to-[#F97316]" />
+
         <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-subtle)] to-[var(--color-accent-warm)] shadow-sm">
@@ -117,7 +121,7 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
             aria-label="Đóng"
           >
             <X className="h-5 w-5" strokeWidth={2.25} />

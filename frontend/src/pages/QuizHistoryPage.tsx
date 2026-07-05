@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   History, Trophy, Clock, Target, Zap, ChevronLeft, ChevronRight,
-  CheckCircle, Timer, TrendingUp,
+  CheckCircle, Timer, TrendingUp, Play,
 } from 'lucide-react'
 import { quizApi, QuizAttemptSummary } from '@/api/study'
 import Button from '@/components/ui/Button'
@@ -57,12 +57,11 @@ export default function QuizHistoryPage() {
             label="Điểm TB"
             value={
               attempts.filter(a => a.score != null).length > 0
-                ? `${Math.round(
-                    attempts
-                      .filter(a => a.score != null)
-                      .reduce((sum, a) => sum + (a.score ?? 0), 0) /
-                      attempts.filter(a => a.score != null).length * 100
-                  )}%`
+                ? (attempts
+                    .filter(a => a.score != null)
+                    .reduce((sum, a) => sum + (a.score ?? 0), 0) /
+                    attempts.filter(a => a.score != null).length * 10
+                  ).toFixed(1)
                 : '—'
             }
             color="#10B981"
@@ -72,7 +71,7 @@ export default function QuizHistoryPage() {
             label="Điểm cao nhất"
             value={
               attempts.filter(a => a.score != null).length > 0
-                ? `${Math.round(Math.max(...attempts.filter(a => a.score != null).map(a => a.score ?? 0)) * 100)}%`
+                ? (Math.max(...attempts.filter(a => a.score != null).map(a => a.score ?? 0)) * 10).toFixed(1)
                 : '—'
             }
             color="#F97316"
@@ -98,7 +97,8 @@ export default function QuizHistoryPage() {
               <AttemptCard
                 key={attempt.attemptId}
                 attempt={attempt}
-                onClick={() => navigate(`/quiz/play/${attempt.quizSlug || attempt.quizId}`)}
+                onViewResult={() => navigate(`/quiz/result/${attempt.attemptId}`)}
+                onReplay={() => navigate(`/quiz/play/${attempt.quizSlug || attempt.quizId}`)}
               />
             ))}
           </div>
@@ -156,13 +156,16 @@ function StatCard({
 
 function AttemptCard({
   attempt,
-  onClick,
+  onViewResult,
+  onReplay,
 }: {
   attempt: QuizAttemptSummary
-  onClick: () => void
+  onViewResult: () => void
+  onReplay: () => void
 }) {
-  const score = attempt.score != null ? Math.round(attempt.score * 100) : null
-  const isPassing = score !== null && score >= 70
+  const score = attempt.score != null ? (attempt.score * 10).toFixed(1) : null
+  const scoreNum = score !== null ? parseFloat(score) : null
+  const isPassing = scoreNum !== null && scoreNum >= 7
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—'
@@ -184,10 +187,7 @@ function AttemptCard({
   }
 
   return (
-    <div
-      onClick={onClick}
-      className="group flex items-center gap-4 rounded-xl border border-[#3D3348] bg-[#252030]/60 p-4 cursor-pointer transition-all hover:border-[#EC4899]/30 hover:bg-[#252030]/80"
-    >
+    <div className="flex items-center gap-4 rounded-xl border border-[#3D3348] bg-[#252030]/60 p-4">
       {/* Score indicator */}
       <div className={cn(
         'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold',
@@ -195,12 +195,12 @@ function AttemptCard({
           ? 'bg-emerald-500/20 text-emerald-400'
           : 'bg-red-500/20 text-red-400',
       )}>
-        {score !== null ? `${score}%` : '?'}
+        {score !== null ? score : '?'}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-semibold text-[#F5F0FA] group-hover:text-[#EC4899] transition-colors">
+        <h3 className="truncate text-sm font-semibold text-[#F5F0FA]">
           {attempt.quizTitle || 'Quiz không tên'}
         </h3>
 
@@ -230,10 +230,14 @@ function AttemptCard({
         </div>
       </div>
 
-      {/* Action */}
-      <div className="shrink-0">
-        <Button size="sm" variant="ghost" className="text-[#8B7A9E] hover:text-[#EC4899]">
+      {/* Actions */}
+      <div className="shrink-0 flex flex-col gap-2">
+        <Button size="sm" variant="ghost" className="text-[#8B7A9E] hover:text-[#EC4899] min-w-[80px]" onClick={onViewResult}>
           Xem lại
+        </Button>
+        <Button size="sm" className="min-w-[80px]" onClick={onReplay}>
+          <Play className="mr-1 h-3 w-3" />
+          Làm lại
         </Button>
       </div>
     </div>

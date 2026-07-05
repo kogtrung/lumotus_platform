@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { authApi } from '@/api/auth'
 import ImageUploadField from '@/components/ui/ImageUploadField'
 import { inputClass } from '@/components/ui/inputClass'
@@ -40,9 +40,9 @@ export default function ProfilePage() {
         avatarUrl: avatarUrl ?? undefined,
       })
       setAuth(accessToken, res.data)
-      toast.success('Đã cập nhật hồ sơ')
+      lumotoast.success('Đã cập nhật hồ sơ')
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Không thể cập nhật'))
+      lumotoast.error(getApiErrorMessage(err, 'Không thể cập nhật'))
     } finally {
       setSaving(false)
     }

@@ -4,9 +4,7 @@ import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.entity.DailyActivity;
 import com.backend.lumotus.entity.User;
 import com.backend.lumotus.repository.DailyActivityRepository;
-import com.backend.lumotus.repository.QuizAttemptRepository;
 import com.backend.lumotus.repository.UserRepository;
-import com.backend.lumotus.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -25,7 +21,6 @@ import java.util.UUID;
 public class StatsService {
 
     private final DailyActivityRepository dailyActivityRepository;
-    private final QuizAttemptRepository quizAttemptRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)

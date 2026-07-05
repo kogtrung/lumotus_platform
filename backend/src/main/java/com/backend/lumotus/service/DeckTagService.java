@@ -3,7 +3,6 @@ package com.backend.lumotus.service;
 import com.backend.lumotus.dto.request.UpdateDeckTagsRequest;
 import com.backend.lumotus.dto.response.DeckTagsResponse;
 import com.backend.lumotus.entity.DeckTag;
-import com.backend.lumotus.exception.ForbiddenException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
 import com.backend.lumotus.repository.DeckRepository;
 import com.backend.lumotus.repository.DeckTagRepository;

@@ -1,14 +1,6 @@
 package com.backend.lumotus.controller;
 
-import com.backend.lumotus.dto.request.CreateQuizRequest;
-import com.backend.lumotus.dto.request.HeartbeatRequest;
-import com.backend.lumotus.dto.request.ImportQuizRequest;
-import com.backend.lumotus.dto.request.AddQuestionRequest;
-import com.backend.lumotus.dto.request.ModerateQuizRequest;
-import com.backend.lumotus.dto.request.SubmitForReviewRequest;
-import com.backend.lumotus.dto.request.SubmitQuizRequest;
-import com.backend.lumotus.dto.request.UpdateQuestionRequest;
-import com.backend.lumotus.dto.request.UpdateQuizRequest;
+import com.backend.lumotus.dto.request.*;
 import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.security.UserPrincipal;
 import com.backend.lumotus.service.QuizService;
@@ -36,17 +28,16 @@ public class QuizController {
     private final QuizService quizService;
 
     // ============================================================
-    // PUBLIC EXPLORE — browse & play approved quizzes
+    // PUBLIC EXPLORE — browse & play APPROVED quizzes
     // ============================================================
 
     @GetMapping("/explore")
     public ResponseEntity<PageResponse<QuizSummaryResponse>> listExploreQuizzes(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "newest") String sort,
             @PageableDefault(size = 20) Pageable pageable) {
-        // Ignore Pageable's sort - we use custom sort logic based on 'sort' param
-        // to avoid conflict with repository's ORDER BY
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        return ResponseEntity.ok(quizService.listExploreQuizzes(sortedPageable, sort));
+        return ResponseEntity.ok(quizService.listExploreQuizzes(sortedPageable, sort, principal));
     }
 
     @GetMapping("/explore/{quizRef}")
@@ -55,84 +46,7 @@ public class QuizController {
     }
 
     // ============================================================
-    // MY QUIZZES — user's own quizzes
-    // ============================================================
-
-    @GetMapping("/me")
-    public ResponseEntity<PageResponse<QuizSummaryResponse>> listMyQuizzes(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(quizService.listMyQuizzes(principal, pageable));
-    }
-
-    @PostMapping
-    public ResponseEntity<QuizDetailResponse> createQuiz(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @Valid @RequestBody CreateQuizRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(quizService.createQuiz(principal, request));
-    }
-
-    @GetMapping("/me/{quizRef}")
-    public ResponseEntity<QuizDetailResponse> getMyQuiz(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef) {
-        return ResponseEntity.ok(quizService.getMyQuiz(principal, quizRef));
-    }
-
-    @PutMapping("/{quizRef}")
-    public ResponseEntity<QuizDetailResponse> updateQuiz(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @Valid @RequestBody UpdateQuizRequest request) {
-        return ResponseEntity.ok(quizService.updateQuiz(principal, quizRef, request));
-    }
-
-    @PutMapping("/{quizRef}/questions/{questionId}")
-    public ResponseEntity<Void> updateQuestion(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @PathVariable UUID questionId,
-            @Valid @RequestBody UpdateQuestionRequest request) {
-        quizService.updateQuestion(principal, quizRef, questionId, request);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/{quizRef}/questions")
-    public ResponseEntity<QuizDetailResponse> addQuestion(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @Valid @RequestBody AddQuestionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(quizService.addUserQuestion(principal, quizRef, request));
-    }
-
-    @DeleteMapping("/{quizRef}/questions/{questionId}")
-    public ResponseEntity<Void> deleteQuestion(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @PathVariable UUID questionId) {
-        quizService.deleteUserQuestion(principal, quizRef, questionId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{quizRef}")
-    public ResponseEntity<Void> deleteQuiz(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef) {
-        quizService.deleteQuiz(principal, quizRef);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/submit-review")
-    public ResponseEntity<QuizSummaryResponse> submitForReview(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @Valid @RequestBody SubmitForReviewRequest request) {
-        return ResponseEntity.ok(quizService.submitForReview(principal, request));
-    }
-
-    // ============================================================
-    // PLAY — start / submit
+    // PLAY — start / auto-save / submit
     // ============================================================
 
     @PostMapping("/{quizRef}/start")
@@ -140,6 +54,43 @@ public class QuizController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String quizRef) {
         return ResponseEntity.ok(quizService.startQuiz(principal, quizRef));
+    }
+
+    /**
+     * Auto-save an answer during quiz play.
+     * Called debounced from frontend when user selects an answer.
+     */
+    @PostMapping("/sessions/{attemptId}/answer")
+    public ResponseEntity<Void> saveAnswer(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID attemptId,
+            @Valid @RequestBody SaveAnswerRequest request) {
+        quizService.saveAnswer(principal, attemptId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Sync offline answers when coming back online.
+     */
+    @PostMapping("/sessions/{attemptId}/sync")
+    public ResponseEntity<Void> syncOfflineAnswers(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID attemptId,
+            @Valid @RequestBody SyncAnswersRequest request) {
+        quizService.syncOfflineAnswers(principal, attemptId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Mark a question as skipped (timeout).
+     */
+    @PostMapping("/sessions/{attemptId}/skip")
+    public ResponseEntity<Void> skipQuestion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID attemptId,
+            @Valid @RequestBody SkipQuestionRequest request) {
+        quizService.skipQuestion(principal, attemptId, request);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/submit")
@@ -170,8 +121,15 @@ public class QuizController {
         return ResponseEntity.ok(quizService.getActiveSessions(principal));
     }
 
+    @PostMapping("/quit/{attemptId}")
+    public ResponseEntity<QuizResultResponse> quitQuiz(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID attemptId) {
+        return ResponseEntity.ok(quizService.quitQuiz(principal, attemptId));
+    }
+
     // ============================================================
-    // RESULTS
+    // RESULTS & HISTORY
     // ============================================================
 
     @GetMapping("/attempts/{attemptId}")
@@ -192,6 +150,12 @@ public class QuizController {
     // LEADERBOARD
     // ============================================================
 
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<GlobalQuizLeaderboardEntry>> getGlobalQuizLeaderboard(
+            @RequestParam(defaultValue = "20") int limit) {
+        return ResponseEntity.ok(quizService.getGlobalQuizLeaderboard(Math.min(limit, 100)));
+    }
+
     @GetMapping("/{quizRef}/leaderboard")
     public ResponseEntity<List<QuizLeaderboardEntry>> getLeaderboard(
             @PathVariable String quizRef,
@@ -200,7 +164,105 @@ public class QuizController {
     }
 
     // ============================================================
-    // ADMIN MODERATION
+    // ADMIN: QUIZ MANAGEMENT
+    // ============================================================
+
+    /**
+     * Create an empty quiz (ADMIN only).
+     */
+    @PostMapping("/admin/empty")
+    public ResponseEntity<QuizDetailResponse> createEmptyQuiz(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CreateQuizRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(quizService.createEmptyQuiz(principal, request));
+    }
+
+    /**
+     * Update a quiz (ADMIN only).
+     */
+    @PutMapping("/admin/{quizRef}")
+    public ResponseEntity<QuizDetailResponse> updateQuiz(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef,
+            @Valid @RequestBody UpdateQuizRequest request) {
+        return ResponseEntity.ok(quizService.updateQuiz(quizRef, request));
+    }
+
+    /**
+     * Delete a quiz (ADMIN only).
+     */
+    @DeleteMapping("/admin/{quizRef}")
+    public ResponseEntity<Void> deleteQuiz(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef) {
+        quizService.deleteQuiz(quizRef);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Publish a quiz to make it available in Explore (ADMIN only).
+     */
+    @PostMapping("/admin/{quizRef}/publish")
+    public ResponseEntity<QuizSummaryResponse> publishQuiz(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef) {
+        return ResponseEntity.ok(quizService.publishQuiz(quizRef));
+    }
+
+    /**
+     * Unpublish a quiz from Explore (ADMIN only).
+     */
+    @PostMapping("/admin/{quizRef}/unpublish")
+    public ResponseEntity<QuizSummaryResponse> unpublishQuiz(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef) {
+        return ResponseEntity.ok(quizService.unpublishQuiz(quizRef));
+    }
+
+    // ============================================================
+    // ADMIN: QUESTION MANAGEMENT
+    // ============================================================
+
+    @GetMapping("/admin/{quizRef}")
+    public ResponseEntity<QuizDetailResponse> getAdminQuizDetail(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef) {
+        return ResponseEntity.ok(quizService.getAdminQuiz(quizRef));
+    }
+
+    @PutMapping("/admin/{quizRef}/questions/{questionId}")
+    public ResponseEntity<Void> updateAdminQuestion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef,
+            @PathVariable UUID questionId,
+            @Valid @RequestBody UpdateQuestionRequest request) {
+        log.info("PUT /admin/{}/questions/{} - request: {}", quizRef, questionId, request);
+        quizService.updateQuestion(quizRef, questionId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/admin/{quizRef}/questions")
+    public ResponseEntity<Void> addAdminQuestion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef,
+            @Valid @RequestBody AddQuestionRequest request) {
+        quizService.addQuestion(quizRef, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/admin/{quizRef}/questions/{questionId}")
+    public ResponseEntity<Void> deleteAdminQuestion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef,
+            @PathVariable UUID questionId) {
+        log.info("DELETE /admin/{}/questions/{}", quizRef, questionId);
+        quizService.deleteQuestion(quizRef, questionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ============================================================
+    // ADMIN: IMPORT & MODERATION
     // ============================================================
 
     @PostMapping("/admin/import")
@@ -209,6 +271,13 @@ public class QuizController {
             @Valid @RequestBody ImportQuizRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(quizService.importFromCsv(principal, request));
+    }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<PageResponse<QuizSummaryResponse>> listAllForAdmin(
+            @RequestParam(required = false) String status,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(quizService.listAllForAdmin(status, pageable));
     }
 
     @GetMapping("/admin/pending")
@@ -227,64 +296,5 @@ public class QuizController {
     @GetMapping("/admin/pending/count")
     public ResponseEntity<Long> countPending() {
         return ResponseEntity.ok(quizService.countPending());
-    }
-
-    @GetMapping("/admin/all")
-    public ResponseEntity<PageResponse<QuizSummaryResponse>> listAllForAdmin(
-            @RequestParam(required = false) String status,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(quizService.listAllForAdmin(status, pageable));
-    }
-
-    // Admin: get quiz detail for editing
-    @GetMapping("/admin/{quizRef}")
-    public ResponseEntity<QuizDetailResponse> getAdminQuizDetail(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef) {
-        UUID quizId = UUID.fromString(quizRef);
-        return ResponseEntity.ok(quizService.getMyQuiz(principal, quizId));
-    }
-
-    // Admin: update quiz
-    @PutMapping("/admin/{quizRef}")
-    public ResponseEntity<QuizDetailResponse> updateAdminQuiz(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @Valid @RequestBody UpdateQuizRequest request) {
-        UUID quizId = UUID.fromString(quizRef);
-        return ResponseEntity.ok(quizService.updateQuiz(principal, quizId, request));
-    }
-
-    // Admin: update question
-    @PutMapping("/admin/{quizRef}/questions/{questionId}")
-    public ResponseEntity<Void> updateAdminQuestion(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @PathVariable UUID questionId,
-            @Valid @RequestBody UpdateQuestionRequest request) {
-        log.info("PUT /admin/{}/questions/{} - request: {}", quizRef, questionId, request);
-        quizService.updateAdminQuestion(quizRef, questionId, request);
-        return ResponseEntity.ok().build();
-    }
-
-    // Admin: add question
-    @PostMapping("/admin/{quizRef}/questions")
-    public ResponseEntity<Void> addAdminQuestion(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @Valid @RequestBody AddQuestionRequest request) {
-        quizService.addQuestion(quizRef, request);
-        return ResponseEntity.ok().build();
-    }
-
-    // Admin: delete question
-    @DeleteMapping("/admin/{quizRef}/questions/{questionId}")
-    public ResponseEntity<Void> deleteAdminQuestion(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String quizRef,
-            @PathVariable UUID questionId) {
-        log.info("DELETE /admin/{}/questions/{}", quizRef, questionId);
-        quizService.deleteQuestion(quizRef, questionId);
-        return ResponseEntity.noContent().build();
     }
 }

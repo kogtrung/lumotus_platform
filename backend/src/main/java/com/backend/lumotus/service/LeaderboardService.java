@@ -45,6 +45,12 @@ public class LeaderboardService {
         }
 
         User user = optUser.get();
+        // Admins do not appear on the leaderboard
+        if (user.getRole() == User.Role.ADMIN) {
+            redis.opsForZSet().remove(GLOBAL_LEADERBOARD_KEY, userId.toString());
+            return;
+        }
+
         double score = calculateCompositeScore(user.getXp(), user.getStreak());
         String member = userId.toString();
 
@@ -158,7 +164,8 @@ public class LeaderboardService {
         redis.delete(GLOBAL_LEADERBOARD_KEY);
 
         for (User user : allUsers) {
-            if (!user.isActive()) continue;
+            // Admins do not appear on the leaderboard
+            if (!user.isActive() || user.getRole() == User.Role.ADMIN) continue;
 
             double score = calculateCompositeScore(user.getXp(), user.getStreak());
             redis.opsForZSet().add(GLOBAL_LEADERBOARD_KEY, user.getId().toString(), score);

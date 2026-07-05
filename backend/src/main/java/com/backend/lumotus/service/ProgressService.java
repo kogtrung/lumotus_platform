@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class ProgressService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Get heatmap data for the last 365 days
-        LocalDate endDate = LocalDate.now();
+        LocalDate endDate = LocalDate.now(ZoneOffset.UTC);
         LocalDate startDate = endDate.minusDays(364);
 
         List<DailyActivity> activities = dailyActivityRepository

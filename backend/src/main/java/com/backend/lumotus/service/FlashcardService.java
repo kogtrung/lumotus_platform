@@ -69,6 +69,7 @@ public class FlashcardService {
     private final DailyActivityRepository dailyActivityRepository;
     private final UserRepository userRepository;
     private final StreakService streakService;
+    private final LeaderboardService leaderboardService;
 
     private final Map<UUID, StudyAttempt> activeAttempts = new ConcurrentHashMap<>();
 
@@ -90,11 +91,9 @@ public class FlashcardService {
             throw new BadRequestException("Deck has no cards");
         }
 
-        int count = request.count() != null ? request.count() : Math.min(10, allCards.size());
-        String direction = request.direction() != null ? request.direction() : "forward";
-
         StudyAttempt attempt = new StudyAttempt(userId, deck.getId(), StudyMode.FLASHCARD);
-        List<QuestionResponse> questions = new QuestionGenerator(allCards, StudyMode.FLASHCARD, count, direction).generate();
+        int count = request.count() != null ? request.count() : Math.min(10, allCards.size());
+        List<QuestionResponse> questions = new QuestionGenerator(allCards, StudyMode.FLASHCARD, count).generate();
 
         for (QuestionResponse q : questions) {
             attempt.addQuestion(q.questionId(), q.correctAnswer(), q.cardInfo());
@@ -361,8 +360,11 @@ public class FlashcardService {
         activity.setXpEarned(activity.getXpEarned() + xpEarned);
         dailyActivityRepository.save(activity);
 
-        // Update streak if threshold reached
+        // Update streak if threshold reached (>= 10 cards OR 1 quiz)
         streakService.recordStudyActivity(userId);
+
+        // Update global leaderboard score
+        leaderboardService.updateUserScore(userId);
     }
 
     private Map<UUID, Card> loadCards(List<UserCardReview> reviews) {

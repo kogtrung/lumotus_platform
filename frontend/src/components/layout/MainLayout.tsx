@@ -6,6 +6,7 @@ import {
   Home,
   Plus,
   Trophy,
+  Medal,
 } from 'lucide-react'
 import { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react'
 import LumotusLogo from '@/components/brand/LumotusLogo'
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/flashcard', label: 'Flashcard', icon: BookOpen },
   { to: '/quiz', label: 'Quiz', icon: FileQuestion },
   { to: '/progress', label: 'Tiến độ', icon: Trophy },
+  { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Medal },
 ] as const
 
 // ─── Browser-style tab ─────────────────────────────────────────────────────────

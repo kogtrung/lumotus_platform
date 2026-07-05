@@ -27,11 +27,28 @@ public record QuizDetailResponse(
     List<QuizQuestionResponse> questions
 ) {
     /**
-     * Build response. Questions are only included for GENERATED quizzes.
-     * IMPORTED quizzes: questions = null (don't reveal answers before playing).
+     * Build response. Questions are included for:
+     * - GENERATED quizzes (always)
+     * - User-imported quizzes (isImmutable=false, owner can edit)
+     * - Admin-imported quizzes (isImmutable=true, immutable but visible)
+     * 
+     * Questions are hidden for OTHER USERS' APPROVED quizzes (anti-cheat).
      */
-    public static QuizDetailResponse from(Quiz quiz, List<QuizQuestionResponse> questions) {
-        boolean includeQuestions = quiz.getQuizType() == Quiz.QuizType.GENERATED;
+    public static QuizDetailResponse from(Quiz quiz, List<QuizQuestionResponse> questions, UUID requestingUserId) {
+        boolean includeQuestions;
+        
+        if (quiz.getQuizType() == Quiz.QuizType.GENERATED) {
+            // GENERATED: always show questions
+            includeQuestions = true;
+        } else if (!quiz.getIsImmutable()) {
+            // User-imported (editable): owner can see questions
+            includeQuestions = quiz.getOwnerId().equals(requestingUserId);
+        } else {
+            // Admin-imported (immutable): only show questions if user owns it
+            includeQuestions = quiz.getOwnerId().equals(requestingUserId);
+        }
+        
+        int qCount = questions != null ? questions.size() : (quiz.getQuestionCount() != null ? quiz.getQuestionCount() : 0);
         return new QuizDetailResponse(
             quiz.getId(),
             quiz.getTitle(),
@@ -45,7 +62,36 @@ public record QuizDetailResponse(
             quiz.getStatus().name(),
             quiz.getRejectionNote(),
             quiz.getTimeLimitSeconds(),
-            quiz.getQuestionCount(),
+            qCount,
+            quiz.getAttemptCount(),
+            quiz.getAvgScore(),
+            quiz.getCreatedAt(),
+            quiz.getUpdatedAt(),
+            includeQuestions ? questions : null
+        );
+    }
+    
+    /**
+     * Backward-compatible: shows questions for GENERATED or immutable (admin) quizzes.
+     * Use the overload with requestingUserId for user-imported quizzes.
+     */
+    public static QuizDetailResponse from(Quiz quiz, List<QuizQuestionResponse> questions) {
+        boolean includeQuestions = quiz.getIsImmutable() || quiz.getQuizType() == Quiz.QuizType.GENERATED;
+        int qCount = questions != null ? questions.size() : (quiz.getQuestionCount() != null ? quiz.getQuestionCount() : 0);
+        return new QuizDetailResponse(
+            quiz.getId(),
+            quiz.getTitle(),
+            quiz.getDescription(),
+            quiz.getCoverImageUrl(),
+            quiz.getDeck() != null ? quiz.getDeck().getId() : null,
+            quiz.getDeck() != null ? quiz.getDeck().getTitle() : null,
+            quiz.getOwnerId(),
+            quiz.getOwnerUsername(),
+            quiz.getIsPublic(),
+            quiz.getStatus().name(),
+            quiz.getRejectionNote(),
+            quiz.getTimeLimitSeconds(),
+            qCount,
             quiz.getAttemptCount(),
             quiz.getAvgScore(),
             quiz.getCreatedAt(),
