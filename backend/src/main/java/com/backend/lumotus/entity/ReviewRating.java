@@ -15,4 +15,13 @@ public enum ReviewRating {
     public int quality() {
         return quality;
     }
+
+    public static ReviewRating fromQuality(int quality) {
+        for (ReviewRating rating : values()) {
+            if (rating.quality == quality) {
+                return rating;
+            }
+        }
+        throw new IllegalArgumentException("Unknown review rating quality: " + quality);
+    }
 }

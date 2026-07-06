@@ -1,6 +1,6 @@
 import { GoogleLogin } from '@react-oauth/google'
 import { useLocation, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 
@@ -25,9 +25,9 @@ export default function GoogleLoginButton() {
       setAuth(res.data.accessToken, res.data.user)
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/home'
       navigate(from, { replace: true })
-      toast.success('Đăng nhập Google thành công')
+      lumotoast.success('Đăng nhập Google thành công')
     } catch {
-      toast.error('Đăng nhập Google thất bại')
+      lumotoast.error('Đăng nhập Google thất bại')
     }
   }
 
@@ -38,10 +38,10 @@ export default function GoogleLoginButton() {
           if (res.credential) {
             handleSuccess(res.credential)
           } else {
-            toast.error('Không nhận được credential Google')
+            lumotoast.error('Không nhận được credential Google')
           }
         }}
-        onError={() => toast.error('Đăng nhập Google thất bại')}
+        onError={() => lumotoast.error('Đăng nhập Google thất bại')}
         theme="outline"
         size="large"
         width="360"

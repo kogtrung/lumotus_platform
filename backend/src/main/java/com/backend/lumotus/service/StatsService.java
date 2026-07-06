@@ -4,9 +4,7 @@ import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.entity.DailyActivity;
 import com.backend.lumotus.entity.User;
 import com.backend.lumotus.repository.DailyActivityRepository;
-import com.backend.lumotus.repository.QuizAttemptRepository;
 import com.backend.lumotus.repository.UserRepository;
-import com.backend.lumotus.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -25,7 +21,6 @@ import java.util.UUID;
 public class StatsService {
 
     private final DailyActivityRepository dailyActivityRepository;
-    private final QuizAttemptRepository quizAttemptRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
@@ -66,25 +61,26 @@ public class StatsService {
     }
 
     @Transactional(readOnly = true)
-    public WeeklySummaryResponse getWeeklySummary(UUID userId) {
+    public WeeklySummaryResponse getWeeklySummary(UUID userId, int offset) {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
-        LocalDate weekStart = today.with(DayOfWeek.MONDAY);
+        LocalDate weekStart = today.with(DayOfWeek.MONDAY).minusWeeks(offset);
+        LocalDate weekEnd = offset == 0 ? today : weekStart.plusDays(6);
 
-        int cardsThisWeek = dailyActivityRepository.sumCardsReviewed(userId, weekStart, today);
-        int quizzesThisWeek = dailyActivityRepository.sumQuizTaken(userId, weekStart, today);
-        int xpThisWeek = dailyActivityRepository.sumXpEarned(userId, weekStart, today);
+        int cardsThisWeek = dailyActivityRepository.sumCardsReviewed(userId, weekStart, weekEnd);
+        int quizzesThisWeek = dailyActivityRepository.sumQuizTaken(userId, weekStart, weekEnd);
+        int xpThisWeek = dailyActivityRepository.sumXpEarned(userId, weekStart, weekEnd);
 
-        // Last week
-        LocalDate lastWeekStart = weekStart.minusDays(7);
-        LocalDate lastWeekEnd = weekStart.minusDays(1);
-        int cardsLastWeek = dailyActivityRepository.sumCardsReviewed(userId, lastWeekStart, lastWeekEnd);
-        int quizzesLastWeek = dailyActivityRepository.sumQuizTaken(userId, lastWeekStart, lastWeekEnd);
-        int xpLastWeek = dailyActivityRepository.sumXpEarned(userId, lastWeekStart, lastWeekEnd);
+        // Previous week for comparison
+        LocalDate prevWeekStart = weekStart.minusWeeks(1);
+        LocalDate prevWeekEnd = offset <= 1 ? weekStart.minusDays(1) : prevWeekStart.plusDays(6);
+        int cardsLastWeek = dailyActivityRepository.sumCardsReviewed(userId, prevWeekStart, prevWeekEnd);
+        int quizzesLastWeek = dailyActivityRepository.sumQuizTaken(userId, prevWeekStart, prevWeekEnd);
+        int xpLastWeek = dailyActivityRepository.sumXpEarned(userId, prevWeekStart, prevWeekEnd);
 
-        // Per-day breakdown this week
+        // Per-day breakdown for the selected week
         List<ActivityDayResponse> weekDays = new ArrayList<>();
         LocalDate cursor = weekStart;
-        while (!cursor.isAfter(today)) {
+        while (!cursor.isAfter(weekEnd)) {
             final LocalDate date = cursor;
             var entry = dailyActivityRepository
                     .findByUserIdAndDateRange(userId, date, date)
@@ -117,6 +113,11 @@ public class StatsService {
         int quizzes7d = dailyActivityRepository.sumQuizTaken(userId, start7, end);
         int xp7d = dailyActivityRepository.sumXpEarned(userId, start7, end);
 
+        // Today
+        int cardsToday = dailyActivityRepository.sumCardsReviewed(userId, end, end);
+        int quizzesToday = dailyActivityRepository.sumQuizTaken(userId, end, end);
+        int xpToday = dailyActivityRepository.sumXpEarned(userId, end, end);
+
         // Streak
         int streak = user != null ? user.getStreak() : 0;
         int totalXp = user != null ? user.getXp() : 0;
@@ -126,7 +127,10 @@ public class StatsService {
                 streak,
                 cards7d,
                 quizzes7d,
-                xp7d
+                xp7d,
+                cardsToday,
+                quizzesToday,
+                xpToday
         );
     }
 }

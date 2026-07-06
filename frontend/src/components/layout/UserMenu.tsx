@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { LogOut, Settings, Trophy } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
@@ -99,7 +99,7 @@ export default function UserMenu() {
     }
     clearAuth()
     navigate('/login', { replace: true })
-    toast.success('Đã đăng xuất')
+      lumotoast.success('Đã đăng xuất')
   }
 
   if (!user) return null

@@ -9,12 +9,13 @@ interface QuizViewProps {
   questionIndex: number
   selected: string | null
   answeredSet: Set<number>
+  expiredSet?: Set<number>
   onSelect: (answer: string) => void
   onNavigate: (index: number) => void
   onSubmit: () => void
   submitPending: boolean
   timeRemaining: number | null
-  isExpired?: boolean
+  perQuestionTimer?: boolean
 }
 
 export default function QuizView({
@@ -22,12 +23,13 @@ export default function QuizView({
   questionIndex,
   selected,
   answeredSet,
+  expiredSet = new Set(),
   onSelect,
   onNavigate,
   onSubmit,
   submitPending,
   timeRemaining,
-  isExpired = false,
+  perQuestionTimer = false,
 }: QuizViewProps) {
   const total = questions.length
   const currentQ = questions[questionIndex]
@@ -61,7 +63,11 @@ export default function QuizView({
         {/* Timer */}
         {timeRemaining !== null && (
           <div className="w-full shrink-0 rounded-xl border border-[#3D3348] bg-[#252030] p-3 lg:w-auto">
-            <QuizTimer seconds={timeRemaining} />
+            <QuizTimer
+              seconds={timeRemaining}
+              perQuestion={perQuestionTimer}
+              questionIndex={questionIndex}
+            />
           </div>
         )}
 
@@ -87,6 +93,7 @@ export default function QuizView({
           <div className="flex flex-wrap gap-1 lg:grid lg:grid-cols-5 lg:gap-1">
             {questions.map((q, idx) => {
               const isAnswered = answeredSet.has(idx)
+              const isExpired = expiredSet.has(idx)
               const isCurrent = idx === questionIndex
               return (
                 <button
@@ -97,10 +104,17 @@ export default function QuizView({
                     'flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-all',
                     isCurrent
                       ? 'bg-[#EC4899] text-white ring-1 ring-[#EC4899]'
-                      : isAnswered
-                        ? 'bg-[#10B981] text-white'
-                        : 'bg-[#3D3348] text-[#8B7A9E] hover:bg-[#4A4060] hover:text-[#F5F0FA]',
+                      : isAnswered && !isExpired
+                        ? 'bg-[#10B981] text-white' // Answered: green
+                        : isExpired
+                          ? 'bg-[#F59E0B] text-white' // Timed out (no answer): orange
+                          : 'bg-[#3D3348] text-[#8B7A9E] hover:bg-[#4A4060] hover:text-[#F5F0FA]', // Unanswered: gray
                   )}
+                  title={
+                    isCurrent ? 'Câu hiện tại' :
+                    isAnswered && !isExpired ? 'Đã trả lời' :
+                    isExpired ? 'Hết giờ' : 'Chưa trả lời'
+                  }
                 >
                   {idx + 1}
                 </button>
@@ -184,15 +198,15 @@ export default function QuizView({
           <div className="space-y-2">
             {currentQ.options?.map((option, idx) => {
               const isSelected = selected === option
+              // Strip "A. " prefix if present so we don't duplicate the letter badge
+              const displayText = option.replace(/^[A-D]\.\s*/, '')
               return (
                 <button
                   key={option}
                   type="button"
-                  disabled={isExpired}
                   onClick={() => handleSelect(option)}
                   className={cn(
                     'flex w-full items-center gap-2 rounded-lg border-2 p-2.5 text-left transition-all sm:gap-3 sm:p-3',
-                    isExpired && 'opacity-50 cursor-not-allowed',
                     isSelected
                       ? 'border-[#EC4899] bg-[rgba(236,72,153,0.15)]'
                       : 'border-[#3D3348] bg-[#1D1A24] hover:border-[#4A4060] hover:bg-[#2D2538]',
@@ -207,7 +221,7 @@ export default function QuizView({
                     {String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1 text-sm font-bold text-[#F5F0FA] sm:text-base">
-                    {option}
+                    {displayText}
                   </span>
                 </button>
               )

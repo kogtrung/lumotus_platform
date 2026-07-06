@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { Eye, EyeOff, Sparkles, Check } from 'lucide-react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
@@ -118,12 +118,12 @@ export default function RegisterPage() {
       const res = await authApi.register({ username, email, password })
       setAuth(res.data.accessToken, res.data.user)
       navigate('/home', { replace: true })
-      toast.success('Đăng ký thành công')
+      lumotoast.success('Đăng ký thành công')
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Đăng ký thất bại'
-      toast.error(msg)
+      lumotoast.error(msg)
     } finally {
       setLoading(false)
     }

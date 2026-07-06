@@ -3,7 +3,6 @@ package com.backend.lumotus.dto.response;
 import com.backend.lumotus.entity.QuizAttempt;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 public record QuizAttemptSummaryResponse(

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { Eye, EyeOff, Sparkles } from 'lucide-react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
@@ -37,11 +37,19 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(data)
       setAuth(res.data.accessToken, res.data.user)
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/home'
-      navigate(from, { replace: true })
-      toast.success('Đăng nhập thành công')
+      // Priority: 1) from state (after redirect from protected route), 2) '/quiz/play/' sessionStorage, 3) '/home'
+      const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname
+      const pendingQuiz = sessionStorage.getItem('pending_quiz_play')
+      const redirectTo = fromState
+        || (pendingQuiz && pendingQuiz.startsWith('/quiz/play/') ? pendingQuiz : null)
+        || '/home'
+      if (pendingQuiz?.startsWith('/quiz/play/')) {
+        sessionStorage.removeItem('pending_quiz_play')
+      }
+      navigate(redirectTo, { replace: true })
+      lumotoast.success('Đăng nhập thành công')
     } catch {
-      toast.error('Email hoặc mật khẩu không đúng')
+      lumotoast.error('Email hoặc mật khẩu không đúng')
     } finally {
       setLoading(false)
     }

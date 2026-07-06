@@ -3,7 +3,6 @@ package com.backend.lumotus.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
@@ -36,7 +35,7 @@ public class UserCardReview {
     @Column(name = "next_review_at", nullable = false)
     private Instant nextReviewAt;
 
-    @Column(name = "last_rating", length = 20)
+    @Column(name = "last_rating", columnDefinition = "SMALLINT")
     private ReviewRating lastRating;
 
     @Column(name = "is_starred", nullable = false)

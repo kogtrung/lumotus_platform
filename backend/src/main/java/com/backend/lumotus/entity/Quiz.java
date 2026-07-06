@@ -61,6 +61,9 @@ public class Quiz extends BaseEntity {
     @Builder.Default
     private Integer questionCount = 10;
 
+    @Transient
+    private Integer computedQuestionCount;
+
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<QuizQuestion> questions = new ArrayList<>();
@@ -75,9 +78,20 @@ public class Quiz extends BaseEntity {
     @Column(name = "rejection_note", columnDefinition = "TEXT")
     private String rejectionNote;
 
+    @Column(length = 120)
+    private String slug;
+
+    @Column(name = "xp_base", nullable = false)
+    @Builder.Default
+    private Integer xpBase = 10;
+
+    @Column(name = "xp_bonus", nullable = false)
+    @Builder.Default
+    private Integer xpBonus = 20;
+
     public enum QuizStatus {
-        DRAFT,     // user-created, not yet submitted for review
-        PENDING,   // submitted, awaiting admin approval
+        DRAFT,     // draft (admin only)
+        PENDING,   // submitted for review
         APPROVED,  // visible in public explore page
         REJECTED   // admin rejected
     }
@@ -90,5 +104,9 @@ public class Quiz extends BaseEntity {
     public void addQuestion(QuizQuestion question) {
         questions.add(question);
         question.setQuiz(this);
+    }
+
+    public void setComputedQuestionCount(int count) {
+        this.computedQuestionCount = count;
     }
 }

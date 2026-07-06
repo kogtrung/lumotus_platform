@@ -1,9 +1,13 @@
 package com.backend.lumotus.dto.response;
 
+import java.util.List;
+
 public record AnswerResultDetail(
     String questionId,
     String questionText,
     String correctAnswer,
     String selectedAnswer,
-    Boolean isCorrect
+    boolean correct,
+    List<String> options,
+    String selectedLetter
 ) {}

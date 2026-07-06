@@ -14,12 +14,16 @@ import {
   LayoutGrid,
   List,
   Filter,
+  Trophy,
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
+import ExitConfirmDialog from '@/components/ui/ExitConfirmDialog'
 import { decksApi } from '@/api/decks'
+import { quizApi } from '@/api/study'
 import { reviewApi } from '@/api/review'
 import CardFormDialog, { type CardFormData } from '@/components/deck/CardFormDialog'
 import CardGridItem from '@/components/deck/CardGridItem'
+import DeckTagsManager from '@/components/deck/DeckTagsManager'
 import CardGridSkeleton from '@/components/deck/CardGridSkeleton'
 import CardListPagination from '@/components/deck/CardListPagination'
 import DeckGridSkeleton from '@/components/deck/DeckGridSkeleton'
@@ -50,6 +54,8 @@ export default function DeckDetailPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [editDeckOpen, setEditDeckOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<Card | null>(null)
+  const [confirmDeleteCard, setConfirmDeleteCard] = useState<{ open: boolean; cardId?: string }>({ open: false })
+  const [confirmDeleteDeck, setConfirmDeleteDeck] = useState(false)
 
   useEffect(() => {
     setPage(0)
@@ -86,11 +92,19 @@ export default function DeckDetailPage() {
     staleTime: 30_000,
   })
 
+  const quizzesQuery = useQuery({
+    queryKey: ['deck-quizzes', deck?.id],
+    queryFn: () => deck ? quizApi.listByDeck(deck.id, { page: 0, size: 1 }).then((r) => r.data) : null,
+    enabled: !!deck?.id,
+    staleTime: 30_000,
+  })
+
   const refresh = async (options?: { resetPage?: boolean }) => {
     if (options?.resetPage) setPage(0)
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['deck', deckRef] }),
       queryClient.refetchQueries({ queryKey: ['cards', deckRef] }),
+      queryClient.refetchQueries({ queryKey: ['deck-quizzes', deck?.id] }),
     ])
     queryClient.invalidateQueries({ queryKey: ['decks'] })
   }
@@ -98,19 +112,19 @@ export default function DeckDetailPage() {
   const deleteDeckMutation = useMutation({
     mutationFn: () => decksApi.remove(deckRef),
     onSuccess: () => {
-      toast.success('Đã xóa deck')
+      lumotoast.success('Đã xóa deck')
       navigate('/home')
     },
-    onError: () => toast.error('Không thể xóa deck'),
+    onError: () => lumotoast.error('Không thể xóa deck'),
   })
 
   const copyMutation = useMutation({
     mutationFn: () => decksApi.copy(deckRef),
     onSuccess: (res) => {
-      toast.success('Đã copy deck vào thư viện')
+      lumotoast.success('Đã copy deck vào thư viện')
       navigate(`/decks/${res.data.slug}`)
     },
-    onError: () => toast.error('Không thể copy deck'),
+    onError: () => lumotoast.error('Không thể copy deck'),
   })
 
   const saveCardMutation = useMutation({
@@ -128,26 +142,96 @@ export default function DeckDetailPage() {
         ? decksApi.updateCard(deckRef, editingCard.id, payload)
         : decksApi.addCard(deckRef, payload)
     },
-    onSuccess: async () => {
-      toast.success(editingCard ? 'Đã cập nhật thẻ' : 'Đã thêm thẻ')
+    onMutate: async (data: CardFormData) => {
+      await queryClient.cancelQueries({ queryKey: ['cards', deckRef] })
+      await queryClient.cancelQueries({ queryKey: ['deck', deckRef] })
+      const isNew = !editingCard
+      const tempId = `temp-${Date.now()}`
+      const newCard: Card = {
+        id: tempId,
+        deckId: deck?.id ?? '',
+        front: data.front,
+        back: data.back,
+        phonetic: data.phonetic || null,
+        partOfSpeech: null,
+        hint: data.hint || null,
+        example: data.example || null,
+        imageUrl: data.imageUrl || null,
+        icon: null,
+        audioUrl: data.audioUrl || null,
+        difficulty: null,
+        sortOrder: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      queryClient.setQueryData<{ content: Card[]; totalElements: number; totalPages: number }>(
+        ['cards', deckRef, page, searchQ],
+        (old: any) => {
+          if (!old) return old
+          const content = isNew ? [newCard, ...old.content] : old.content.map((c: Card) => c.id === editingCard?.id ? { ...newCard, id: editingCard.id } : c)
+          return {
+            ...old,
+            content,
+            totalElements: old.totalElements + (isNew ? 1 : 0),
+          }
+        }
+      )
+      queryClient.setQueryData<{ cardCount: number }>(['deck', deckRef], (old: any) => {
+        if (!old) return old
+        return { ...old, cardCount: old.cardCount + (isNew ? 1 : 0) }
+      })
+      return { isNew, tempId }
+    },
+    onSuccess: async (_res, _data, _ctx) => {
+      lumotoast.success(editingCard ? 'Đã cập nhật thẻ' : 'Đã thêm thẻ')
       setCardDialogOpen(false)
       setEditingCard(null)
       if (!editingCard) setPage(0)
       await refresh()
     },
-    onError: () => toast.error('Không thể lưu thẻ'),
+    onError: (_err, _data, _ctx) => {
+      lumotoast.error('Không thể lưu thẻ')
+      // Rollback
+      queryClient.invalidateQueries({ queryKey: ['cards', deckRef] })
+      queryClient.invalidateQueries({ queryKey: ['deck', deckRef] })
+    },
   })
 
   const deleteCardMutation = useMutation({
     mutationFn: (cardId: string) => decksApi.deleteCard(deckRef, cardId),
-    onSuccess: async () => {
-      toast.success('Đã xóa thẻ')
-      await refresh()
+    onMutate: async (cardId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['cards', deckRef] })
+      await queryClient.cancelQueries({ queryKey: ['deck', deckRef] })
+      queryClient.setQueryData<{ content: Card[]; totalElements: number; totalPages: number }>(
+        ['cards', deckRef, page, searchQ],
+        (old: any) => {
+          if (!old) return old
+          return {
+            ...old,
+            content: old.content.filter((c: Card) => c.id !== cardId),
+            totalElements: Math.max(0, old.totalElements - 1),
+          }
+        }
+      )
+      queryClient.setQueryData<{ cardCount: number }>(['deck', deckRef], (old: any) => {
+        if (!old) return old
+        return { ...old, cardCount: Math.max(0, old.cardCount - 1) }
+      })
+      return cardId
+    },
+    onSuccess: async (_data, _cardId, _ctx) => {
+      lumotoast.success('Đã xóa thẻ')
       if (cards.length <= 1 && page > 0) {
         setPage((p) => p - 1)
       }
+      await refresh()
     },
-    onError: () => toast.error('Không thể xóa thẻ'),
+    onError: (_err, _cardId, _ctx) => {
+      lumotoast.error('Không thể xóa thẻ')
+      queryClient.invalidateQueries({ queryKey: ['cards', deckRef] })
+      queryClient.invalidateQueries({ queryKey: ['deck', deckRef] })
+    },
   })
 
   const openAddCard = () => {
@@ -244,6 +328,15 @@ export default function DeckDetailPage() {
             )}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#8B7A9E]">
               <span className="font-semibold text-[#EC4899]">{deck.cardCount} thẻ</span>
+              {quizzesQuery.data && quizzesQuery.data.totalElements > 0 && (
+                <span
+                  className="flex items-center gap-1 cursor-pointer hover:text-[#A78BFA]"
+                  onClick={() => navigate('/quiz')}
+                >
+                  <Trophy className="h-3.5 w-3.5 text-[#A78BFA]" />
+                  <span className="font-semibold text-[#A78BFA]">{quizzesQuery.data.totalElements} quiz</span>
+                </span>
+              )}
               <span>
                 {deck.languageFront.toUpperCase()} → {deck.languageBack.toUpperCase()}
               </span>
@@ -258,6 +351,11 @@ export default function DeckDetailPage() {
                 showLabel={true}
                 size="sm"
               />
+            </div>
+
+            {/* Personal tags */}
+            <div className="mt-3">
+              <DeckTagsManager deckId={deck.id} />
             </div>
           </div>
 
@@ -423,9 +521,7 @@ export default function DeckDetailPage() {
                   card={card}
                   isOwner={!!isOwner}
                   onEdit={() => openEditCard(card)}
-                  onDelete={() => {
-                    if (window.confirm('Xóa thẻ này?')) deleteCardMutation.mutate(card.id)
-                  }}
+                  onDelete={() => setConfirmDeleteCard({ open: true, cardId: card.id })}
                 />
               ))}
             </div>
@@ -454,11 +550,7 @@ export default function DeckDetailPage() {
         deckRef={deckRef}
         onClose={() => setEditDeckOpen(false)}
         onUpdated={() => refresh()}
-        onDelete={() => {
-          if (window.confirm('Xóa deck này? Hành động không thể hoàn tác.')) {
-            deleteDeckMutation.mutate()
-          }
-        }}
+        onDelete={() => setConfirmDeleteDeck(true)}
         deleting={deleteDeckMutation.isPending}
       />
 
@@ -479,6 +571,36 @@ export default function DeckDetailPage() {
           setEditingCard(null)
         }}
         onSubmit={(data) => saveCardMutation.mutate(data)}
+      />
+
+      {/* Delete card confirm */}
+      <ExitConfirmDialog
+        open={confirmDeleteCard.open}
+        title="Xóa thẻ?"
+        body="Hành động này không thể hoàn tác."
+        confirmLabel="Xóa"
+        confirmHint="Thẻ sẽ bị xóa vĩnh viễn"
+        cancelLabel="Hủy"
+        onConfirm={() => {
+          if (confirmDeleteCard.cardId) deleteCardMutation.mutate(confirmDeleteCard.cardId)
+          setConfirmDeleteCard({ open: false })
+        }}
+        onCancel={() => setConfirmDeleteCard({ open: false })}
+      />
+
+      {/* Delete deck confirm */}
+      <ExitConfirmDialog
+        open={confirmDeleteDeck}
+        title="Xóa deck?"
+        body="Hành động này không thể hoàn tác. Tất cả thẻ trong deck cũng sẽ bị xóa."
+        confirmLabel="Xóa deck"
+        confirmHint="Xóa vĩnh viễn — không khôi phục được"
+        cancelLabel="Hủy"
+        onConfirm={() => {
+          setConfirmDeleteDeck(false)
+          deleteDeckMutation.mutate()
+        }}
+        onCancel={() => setConfirmDeleteDeck(false)}
       />
     </div>
   )

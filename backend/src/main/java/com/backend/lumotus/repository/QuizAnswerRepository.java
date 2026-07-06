@@ -11,4 +11,8 @@ import java.util.UUID;
 public interface QuizAnswerRepository extends JpaRepository<QuizAnswer, UUID> {
 
     List<QuizAnswer> findByAttemptId(UUID attemptId);
+
+    void deleteByAttemptId(UUID attemptId);
+
+    void deleteByQuestionId(UUID questionId);
 }

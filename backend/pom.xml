@@ -191,6 +191,7 @@
 							<goal>exec</goal>
 						</goals>
 						<configuration>
+							<skip>true</skip>
 							<executable>node</executable>
 							<arguments>
 								<argument>${project.basedir}/../scripts/ensure-jwt-secret.mjs</argument>

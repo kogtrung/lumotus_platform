@@ -57,6 +57,21 @@ public class FlashcardController {
     // SRS REVIEW (Due cards & Progress)
     // ============================================================
 
+    @GetMapping("/due-count")
+    public ResponseEntity<Integer> getTotalDueCount(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) UUID deckId,
+            @RequestParam(required = false) String deckRef,
+            @RequestParam(defaultValue = "false") boolean starredOnly) {
+        int count;
+        if (deckRef != null && !deckRef.isBlank()) {
+            count = flashcardService.countTotalDueCardsForDeckRef(principal, deckRef, starredOnly);
+        } else {
+            count = flashcardService.countTotalDueCards(principal, deckId, starredOnly);
+        }
+        return ResponseEntity.ok(count);
+    }
+
     @GetMapping("/due")
     public ResponseEntity<DueCardsResponse> getDue(
             @AuthenticationPrincipal UserPrincipal principal,

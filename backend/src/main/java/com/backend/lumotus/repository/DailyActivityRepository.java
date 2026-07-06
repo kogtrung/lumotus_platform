@@ -40,4 +40,23 @@ public interface DailyActivityRepository extends JpaRepository<DailyActivity, Da
             @Param("userId") UUID userId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    // For admin stats
+    @Query("SELECT COUNT(DISTINCT da.id.userId) FROM DailyActivity da " +
+           "WHERE da.id.activityDate BETWEEN :startDate AND :endDate AND da.cardsReviewed > 0")
+    int countActiveUsersOnDate(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(da.cardsReviewed), 0) FROM DailyActivity da " +
+           "WHERE da.id.activityDate BETWEEN :startDate AND :endDate")
+    int sumCardsReviewedAll(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(da.xpEarned), 0) FROM DailyActivity da " +
+           "WHERE da.id.activityDate BETWEEN :startDate AND :endDate")
+    int sumXpEarnedAll(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

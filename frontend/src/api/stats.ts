@@ -27,6 +27,9 @@ export interface DashboardStats {
   cardsLast7Days: number
   quizzesLast7Days: number
   xpLast7Days: number
+  cardsToday: number
+  quizzesToday: number
+  xpToday: number
 }
 
 export const statsApi = {
@@ -38,7 +41,7 @@ export const statsApi = {
     return axiosClient.get<ActivitySummary>('/stats/activity', { params })
   },
 
-  getWeekly() {
-    return axiosClient.get<WeeklySummary>('/stats/weekly')
+  getWeekly(offset = 0) {
+    return axiosClient.get<WeeklySummary>('/stats/weekly', { params: { offset } })
   },
 }

@@ -17,7 +17,9 @@ export const reviewApi = {
   getDue(params?: { deckRef?: string; deckId?: string; limit?: number; starredOnly?: boolean }) {
     return axiosClient.get<DueCardsResponse>('/flashcards/due', { params })
   },
-
+  getDueCount(params?: { deckRef?: string; deckId?: string; starredOnly?: boolean }) {
+    return axiosClient.get<number>('/flashcards/due-count', { params })
+  },
   getDeckProgress(params: { deckRef?: string; deckId?: string }) {
     return axiosClient.get<DeckProgressResponse>('/flashcards/progress', { params })
   },

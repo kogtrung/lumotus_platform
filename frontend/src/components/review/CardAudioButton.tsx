@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Volume2, VolumeX } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { lumotoast } from '@/components/ui/Toast'
 import { cn } from '@/utils/cn'
 
 interface CardAudioButtonProps {
@@ -47,7 +47,7 @@ export default function CardAudioButton({
     event.preventDefault()
 
     if (!hasAudio) {
-      toast('Thẻ chưa có audio', { icon: '🔇', duration: 1800 })
+      lumotoast.info('Thẻ chưa có audio')
       return
     }
 
@@ -66,7 +66,7 @@ export default function CardAudioButton({
       await audio.play()
       setPlaying(true)
     } catch {
-      toast.error('Không phát được audio')
+      lumotoast.error('Không phát được audio')
     } finally {
       setLoading(false)
     }

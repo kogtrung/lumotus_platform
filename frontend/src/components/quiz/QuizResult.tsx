@@ -1,123 +1,354 @@
-import { Check, X } from 'lucide-react'
-import Button from '@/components/ui/Button'
-import type { Question } from '@/types/study'
+import { useMemo, useState } from 'react'
+import { Check, X, Zap, Clock, Target, Timer } from 'lucide-react'
 import { cn } from '@/utils/cn'
+
+type FilterTab = 'all' | 'correct' | 'wrong' | 'skipped'
+
+interface QuizResultDetail {
+  questionId: string
+  questionText: string
+  correctAnswer: string  // Format: "A. going" or "going"
+  selectedAnswer: string | null  // Format: "A. going" or "(bỏ qua)"
+  correct: boolean
+  options?: string[]  // Original options for reference
+  selectedLetter?: string | null  // Just the letter A/B/C/D
+}
 
 interface QuizResultProps {
   deckRef: string
+  quizId?: string | null
+  quizSlug?: string | null
+  totalQuestions?: number
+  timeLimitSeconds?: number | null
   correct: number
   total: number
-  questions: Question[]
-  answers: Record<string, string>
+  xpEarned: number
+  quizTitle: string
+  startedAt: string
+  finishedAt: string
+  details: QuizResultDetail[]
   onRestart: () => void
+  score?: number  // Decimal score from backend (e.g., 0.85)
 }
 
-export default function QuizResult({ deckRef, correct, total, questions, answers, onRestart }: QuizResultProps) {
-  const pct = total > 0 ? Math.round((correct / total) * 100) : 0
-  const isPass = pct >= 70
-  const wrongCount = total - correct
+function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
+  const status: 'correct' | 'wrong' | 'skipped' = d.correct ? 'correct' : d.selectedAnswer && d.selectedAnswer !== '(bỏ qua)' ? 'wrong' : 'skipped'
+
+  // Display answer - backend returns with format "C. washes" or "(bỏ qua)"
+  const displayAnswer = (answer: string | null) => {
+    if (!answer || answer === '(bỏ qua)') return '(Không chọn)'
+    return answer
+  }
+
+  // Extract letter from answer string like "A. going" -> "A"
+  const getLetter = (answer: string | null) => {
+    if (!answer || answer === '(bỏ qua)') return '—'
+    const match = answer.match(/^([A-D])\./)
+    return match ? match[1] : '—'
+  }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6 overflow-y-auto px-4 py-4">
-      {/* Score Header */}
-      <div className="mx-auto w-full max-w-2xl text-center">
-        <div className={cn(
-          'mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full shadow-lg',
-          isPass ? 'bg-[rgba(16,185,129,0.2)]' : 'bg-[rgba(239,68,68,0.2)]'
-        )}>
-          {isPass ? (
-            <Check className="h-10 w-10 text-[#10B981]" strokeWidth={3} />
-          ) : (
-            <X className="h-10 w-10 text-[#EF4444]" strokeWidth={3} />
+    <div
+      className={cn(
+        'flex flex-col rounded-2xl border overflow-hidden',
+        status === 'correct' && 'border-emerald-500/40 bg-emerald-500/5',
+        status === 'wrong' && 'border-red-500/40 bg-red-500/5',
+        status === 'skipped' && 'border-[#8B7A9E]/30 bg-[#8B7A9E]/3'
+      )}
+    >
+      {/* Card header */}
+      <div className={cn(
+        'flex items-center justify-between px-3 py-2 border-b shrink-0',
+        status === 'correct' && 'border-emerald-500/20',
+        status === 'wrong' && 'border-red-500/20',
+        status === 'skipped' && 'border-[#8B7A9E]/20'
+      )}>
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            'flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-bold',
+            status === 'correct' && 'bg-emerald-500/25 text-emerald-400',
+            status === 'wrong' && 'bg-red-500/25 text-red-400',
+            status === 'skipped' && 'bg-[#8B7A9E]/20 text-[#8B7A9E]'
+          )}>
+            {idx + 1}
+          </span>
+          <span className="text-[11px] font-semibold text-[#8B7A9E]">Câu {idx + 1}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {status === 'correct' && (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} /> Đúng
+            </span>
+          )}
+          {status === 'wrong' && (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-red-400">
+              <X className="h-3.5 w-3.5" strokeWidth={3} /> Sai
+            </span>
+          )}
+          {status === 'skipped' && (
+            <span className="text-[10px] font-semibold text-[#8B7A9E]">Bỏ qua</span>
           )}
         </div>
-        <h2 className="text-2xl font-extrabold text-[#F5F0FA]">
-          {isPass ? 'Great job!' : 'Keep practicing!'}
-        </h2>
-        <p className="mt-2 text-lg text-[#8B7A9E]">
-          <span className={cn('font-extrabold', isPass ? 'text-[#10B981]' : 'text-[#EF4444]')}>{correct}</span>
-          <span> / {total} correct</span>
-        </p>
-        <p className={cn('mt-1 text-3xl font-extrabold', isPass ? 'text-[#10B981]' : 'text-[#EF4444]')}>
-          {pct}%
-        </p>
-        {wrongCount > 0 && (
-          <p className="mt-2 text-sm text-[#8B7A9E]">
-            {wrongCount} câu cần ôn lại
-          </p>
+      </div>
+
+      {/* Question text */}
+      <div className="px-3 pt-2.5 pb-2 shrink-0">
+        <p className="text-xs font-semibold leading-snug text-[#F5F0FA] line-clamp-2">{d.questionText || ''}</p>
+      </div>
+
+      {/* Answer rows */}
+      <div className="flex flex-col gap-1.5 px-3 pb-3">
+        {/* Selected answer */}
+        <div className={cn(
+          'flex items-start gap-2 rounded-xl border px-2.5 py-2',
+          status === 'correct' && 'border-emerald-500/50 bg-emerald-500/10',
+          status === 'wrong' && 'border-red-500/50 bg-red-500/10',
+          status === 'skipped' && 'border-[#3D3348]/40 bg-[#3D3348]/15'
+        )}>
+          <span className={cn(
+            'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold',
+            status === 'correct' && 'bg-emerald-500/20 text-emerald-400',
+            status === 'wrong' && 'bg-red-500/20 text-red-400',
+            status === 'skipped' && 'bg-[#8B7A9E]/20 text-[#8B7A9E]'
+          )}>
+            {getLetter(d.selectedAnswer)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-[#8B7A9E]">Đáp án của bạn</p>
+            <p className={cn(
+              'mt-0.5 text-xs leading-snug',
+              status === 'correct' && 'font-semibold text-emerald-300',
+              status === 'wrong' && 'text-red-300',
+              status === 'skipped' && 'italic text-[#8B7A9E]'
+            )}>
+              {displayAnswer(d.selectedAnswer)}
+            </p>
+          </div>
+          {status === 'correct' && <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" strokeWidth={3} />}
+          {status === 'wrong' && <X className="mt-0.5 h-4 w-4 shrink-0 text-red-400" strokeWidth={3} />}
+        </div>
+
+        {/* Correct answer (only show if wrong or skipped) */}
+        {status !== 'correct' && (
+          <div className="flex items-start gap-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-2.5 py-2">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-500/20 text-[10px] font-bold text-emerald-400">
+              {getLetter(d.correctAnswer)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold text-[#8B7A9E]">Đáp án đúng</p>
+              <p className="mt-0.5 text-xs font-semibold leading-snug text-emerald-300">
+                {d.correctAnswer}
+              </p>
+            </div>
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" strokeWidth={3} />
+          </div>
         )}
       </div>
+    </div>
+  )
+}
 
-      {/* Questions Grid */}
-      <div className="w-full">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#8B7A9E]">
-          Question Review
-        </h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {questions.map((q, idx) => {
-            const userAnswer = answers[q.questionId]
-            const isCorrect = userAnswer === q.correctAnswer
+export default function QuizResult({
+  deckRef,
+  correct: _correct,
+  total,
+  xpEarned,
+  quizTitle,
+  startedAt,
+  finishedAt,
+  details,
+  onRestart,
+  totalQuestions,
+  timeLimitSeconds,
+  score,
+}: QuizResultProps) {
+  const [filter, setFilter] = useState<FilterTab>('all')
 
-            return (
-              <div
-                key={q.questionId}
-                className={cn(
-                  'flex flex-col rounded-xl border-2 p-3',
-                  isCorrect
-                    ? 'border-[#10B981] bg-[rgba(16,185,129,0.1)]'
-                    : 'border-[#EF4444] bg-[rgba(239,68,68,0.1)]'
-                )}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#8B7A9E]">#{idx + 1}</span>
-                  <div className={cn(
-                    'flex h-5 w-5 items-center justify-center rounded-full',
-                    isCorrect ? 'bg-[#10B981]' : 'bg-[#EF4444]'
-                  )}>
-                    {isCorrect ? (
-                      <Check className="h-3 w-3 text-white" strokeWidth={3} />
-                    ) : (
-                      <X className="h-3 w-3 text-white" strokeWidth={3} />
-                    )}
-                  </div>
-                </div>
-                <p className="mb-1 text-sm font-bold text-[#F5F0FA] line-clamp-2">{q.front}</p>
-                <p className={cn(
-                  'mt-auto text-xs',
-                  isCorrect ? 'text-[#10B981]' : 'text-[#EF4444]'
-                )}>
-                  {isCorrect ? (
-                    <span className="font-semibold">{userAnswer}</span>
-                  ) : (
-                    <>
-                      <span className="line-through opacity-60">{userAnswer || '(skipped)'}</span>
-                      <span className="mx-1 opacity-40">→</span>
-                      <span className="font-semibold">{q.correctAnswer}</span>
-                    </>
-                  )}
-                </p>
+  const correctCount = details.filter((d) => d.correct).length
+  const wrong = details.filter((d) => d.selectedAnswer && d.selectedAnswer !== '(bỏ qua)' && !d.correct).length
+  const skipped = details.filter((d) => !d.selectedAnswer || d.selectedAnswer === '(bỏ qua)').length
+  const pct = correctCount > 0 ? Math.round((correctCount / total) * 100) : 0
+  const isPass = pct >= 70
+  const answeredCount = details.filter((d) => d.selectedAnswer).length
+  const displayScore = score != null ? (score * 10).toFixed(1) : pct.toString()
+
+  const fmtTime = (iso?: string) => {
+    if (!iso) return '—'
+    return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  }
+  const fmtDuration = (iso1?: string, iso2?: string) => {
+    if (!iso1 || !iso2) return '—'
+    const s = Math.round((new Date(iso2).getTime() - new Date(iso1).getTime()) / 1000)
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  }
+
+  // Filter details based on selected tab
+  const filteredDetails = useMemo(() => {
+    switch (filter) {
+      case 'correct':
+        return details.filter((d) => d.correct)
+      case 'wrong':
+        return details.filter((d) => !d.correct && d.selectedAnswer && d.selectedAnswer !== '(bỏ qua)')
+      case 'skipped':
+        return details.filter((d) => !d.selectedAnswer || d.selectedAnswer === '(bỏ qua)')
+      default:
+        return details
+    }
+  }, [filter, details])
+
+  // Split into 2 columns
+  const leftColumn = useMemo(() => filteredDetails.filter((_, i) => i % 2 === 0), [filteredDetails])
+  const rightColumn = useMemo(() => filteredDetails.filter((_, i) => i % 2 === 1), [filteredDetails])
+
+  return (
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      {/* Fixed Header */}
+      <div className="flex-none border-b border-[#3D3348]/50 bg-[#1D1A24] px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Quiz info */}
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-base font-bold text-[#F5F0FA]">{quizTitle}</h2>
+            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[10px] text-[#8B7A9E]">
+              <span className="flex items-center gap-1">
+                <Target className="h-3 w-3" />{totalQuestions ?? total} câu
+              </span>
+              <span className="flex items-center gap-1">
+                <Check className="h-3 w-3 text-emerald-400" />
+                <span className="text-emerald-400">{answeredCount}</span>
+                <span className="text-[#8B7A9E]">/{total} đã làm</span>
+              </span>
+              {timeLimitSeconds != null && timeLimitSeconds > 0 && (
+                <span className="flex items-center gap-1">
+                  <Timer className="h-3 w-3" />{Math.round(timeLimitSeconds / 60)}p
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />{fmtDuration(startedAt, finishedAt)}
+              </span>
+            </div>
+          </div>
+
+          {/* Center: Score */}
+          <div className={cn(
+            'flex items-center gap-3 rounded-2xl border px-5 py-2',
+            isPass ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-red-500/40 bg-red-500/5'
+          )}>
+            <div className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+              isPass ? 'bg-emerald-500/20' : 'bg-red-500/20'
+            )}>
+              {isPass
+                ? <Check className="h-5 w-5 text-emerald-400" strokeWidth={3} />
+                : <X className="h-5 w-5 text-red-400" strokeWidth={3} />
+              }
+            </div>
+            <div>
+              <p className="text-xl font-extrabold" style={{ color: isPass ? '#10B981' : '#EF4444' }}>
+                {displayScore}
+              </p>
+              <p className="text-[10px] text-[#8B7A9E]">
+                {isPass ? 'Đạt ·' : 'Chưa đạt ·'} {correctCount}/{total} đúng
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Stats + XP + Actions */}
+          <div className="flex items-center gap-4 shrink-0">
+            {/* Stats */}
+            <div className="hidden sm:flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-emerald-400" strokeWidth={3} />
+                <span className="text-sm font-extrabold text-emerald-400">{correctCount}</span>
+                <span className="text-[10px] text-emerald-400/60">đúng</span>
               </div>
-            )
-          })}
+              <div className="flex items-center gap-1.5">
+                <X className="h-3.5 w-3.5 text-red-400" strokeWidth={3} />
+                <span className="text-sm font-extrabold text-red-400">{wrong}</span>
+                <span className="text-[10px] text-red-400/60">sai</span>
+              </div>
+              {skipped > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-extrabold text-[#8B7A9E]">—</span>
+                  <span className="text-[10px] text-[#8B7A9E]/60">bỏ {skipped}</span>
+                </div>
+              )}
+            </div>
+
+            {/* XP Badge */}
+            {xpEarned > 0 && (
+              <div className="flex items-center gap-1.5 rounded-xl border border-[rgba(236,72,153,0.5)] bg-[rgba(236,72,153,0.15)] px-3 py-1.5">
+                <Zap className="h-4 w-4 text-[#EC4899]" />
+                <span className="text-base font-extrabold text-[#EC4899]">+{xpEarned}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
-        <div className="flex gap-2">
-          <Button onClick={onRestart} size="lg" className="flex-1">
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-            Quiz lại
-          </Button>
-          <Button to="/" variant="outline" size="lg" className="flex-1">
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-            Trang chủ
-          </Button>
+      {/* Filter tabs */}
+      <div className="flex-none border-b border-[#3D3348]/50 bg-[#1D1A24] px-4 py-2">
+        <div className="flex items-center gap-1 rounded-xl bg-[#252030] p-1 w-fit">
+          {([
+            { key: 'all', label: 'Tất cả', count: details.length },
+            { key: 'correct', label: 'Đúng', count: correctCount, color: 'emerald' },
+            { key: 'wrong', label: 'Sai', count: wrong, color: 'red' },
+            { key: 'skipped', label: 'Bỏ qua', count: skipped, color: 'gray' },
+          ] as const).map(({ key, label, count, color }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
+                filter === key
+                  ? color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400'
+                  : color === 'red' ? 'bg-red-500/20 text-red-400'
+                  : color === 'gray' ? 'bg-[#3D3348] text-[#F5F0FA]'
+                  : 'bg-[#3D3348] text-[#F5F0FA]'
+                  : 'text-[#8B7A9E] hover:text-[#F5F0FA]'
+              )}
+            >
+              {label}
+              <span className={cn(
+                'rounded px-1.5 py-0.5 text-[10px] font-bold',
+                filter === key
+                  ? color === 'emerald' ? 'bg-emerald-500/30'
+                  : color === 'red' ? 'bg-red-500/30'
+                  : 'bg-[#3D3348]'
+                  : 'bg-[#252030]'
+              )}>
+                {count}
+              </span>
+            </button>
+          ))}
         </div>
-        <Button to={`/decks/${deckRef}`} variant="ghost" size="sm" className="w-full">
-          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Về deck
-        </Button>
+      </div>
+
+      {/* Question grid - 2 columns, scrollable */}
+      <div className="flex flex-1 overflow-y-auto">
+        <div className="flex w-full gap-3 p-4">
+          {/* Left column */}
+          <div className="flex-1 min-w-0 space-y-3">
+            {leftColumn.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-[#8B7A9E]">
+                  {filter === 'all' ? 'Không có câu hỏi' :
+                    filter === 'correct' ? 'Không có câu đúng' :
+                    filter === 'wrong' ? 'Không có câu sai' :
+                    'Không có câu bỏ qua'}
+                </p>
+              </div>
+            ) : leftColumn.map((d, localIdx) => (
+              <QuestionCard key={d.questionId ?? localIdx} d={d} idx={localIdx * 2} />
+            ))}
+          </div>
+
+          {/* Right column */}
+          <div className="flex-1 min-w-0 space-y-3">
+            {rightColumn.map((d, localIdx) => (
+              <QuestionCard key={d.questionId ?? localIdx} d={d} idx={localIdx * 2 + 1} />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

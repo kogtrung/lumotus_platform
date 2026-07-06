@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import {
   BarElement,
   CategoryScale,
@@ -17,12 +17,13 @@ import { Bar, Line } from 'react-chartjs-2'
 import {
   AlertTriangle, BookOpen, ChevronRight, Compass, FileUp, Flame,
   Globe, Layers, List, Lock, Play, Plus, Search,
-  Sparkles, Star, Zap,
+  Sparkles, Star, Trophy, Zap,
 } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { quizApi } from '@/api/study'
 import { reviewApi } from '@/api/review'
 import { statsApi } from '@/api/stats'
+import { progressApi } from '@/api/progress'
 import CreateDeckDialog from '@/components/deck/CreateDeckDialog'
 import ImportCsvDialog from '@/components/deck/ImportCsvDialog'
 import DeckCard from '@/components/deck/DeckCard'
@@ -80,8 +81,9 @@ function useAnimatedCounter(end: number, duration = 1500, delay = 0) {
 
 // ─── Streak banner ──────────────────────────────────────────────────────────
 
-function StreakBanner({ streak, xp }: { streak: number; xp: number }) {
+function StreakBanner({ streak, xp, rank, totalParticipants }: { streak: number; xp: number; rank: number | null; totalParticipants: number }) {
   const { count: streakCount, ref: streakRef } = useAnimatedCounter(streak, 1000, 0)
+  const { count: xpCount } = useAnimatedCounter(xp, 1200, 100)
 
   return (
     <div
@@ -114,8 +116,20 @@ function StreakBanner({ streak, xp }: { streak: number; xp: number }) {
             <Star className="h-7 w-7 text-yellow-300 fill-yellow-300/40" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-white">{xp.toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-white">{xpCount.toLocaleString()}</p>
             <p className="text-xs text-white/70">XP tổng cộng</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
+            <Trophy className="h-7 w-7 text-yellow-300" />
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-white">
+              {rank != null ? `#${rank}` : '—'}
+            </p>
+            <p className="text-xs text-white/70">/{totalParticipants} học sinh</p>
           </div>
         </div>
 
@@ -317,22 +331,47 @@ function FlashcardSessionBanner({
 // ─── Active quiz session banner ────────────────────────────────────────────────
 
 function QuizSessionBanner({
-  quizId,
   attemptId: _attemptId,
+  quizSlug,
   quizTitle,
-  timeRemaining,
+  timeRemaining: _timeRemaining,
   onDismiss,
 }: {
-  quizId: string
   attemptId: string
+  quizSlug: string | null
   quizTitle: string
   timeRemaining: number | null
   onDismiss: () => void
 }) {
   const navigate = useNavigate()
 
-  const m = timeRemaining !== null ? Math.floor(timeRemaining / 60) : null
-  const s = timeRemaining !== null ? timeRemaining % 60 : null
+  // Countdown: start from the initial remaining time, tick every second.
+  // Sync with server time on each parent re-render (parent refetches every 60s).
+  const [displaySeconds, setDisplaySeconds] = useState(_timeRemaining ?? null)
+
+  useEffect(() => {
+    // Re-sync whenever server time updates
+    if (_timeRemaining !== null) {
+      setDisplaySeconds(_timeRemaining)
+    }
+  }, [_timeRemaining])
+
+  useEffect(() => {
+    if (displaySeconds === null || displaySeconds <= 0) return
+    const id = setInterval(() => {
+      setDisplaySeconds((prev) => {
+        if (prev === null || prev <= 1) { clearInterval(id); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, []) // run once on mount
+
+  const m = displaySeconds !== null ? Math.floor(displaySeconds / 60) : null
+  const s = displaySeconds !== null ? displaySeconds % 60 : null
+
+  // Resume via slug if available, otherwise slug is null (rare edge case)
+  const resumeRef = quizSlug ?? _attemptId
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-[#F97316]/40 bg-gradient-to-r from-[#7C2D12]/90 via-[#C2410C]/70 to-[#F97316]/50 p-4 shadow-lg">
@@ -351,7 +390,7 @@ function QuizSessionBanner({
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold text-white">🎯 Đang làm Quiz</p>
-              {timeRemaining !== null && (
+              {displaySeconds !== null && (
                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold text-white">
                   {m}:{s != null ? s.toString().padStart(2, '0') : '00'}
                 </span>
@@ -372,7 +411,7 @@ function QuizSessionBanner({
           <Button
             size="sm"
             className="gap-1.5 bg-white/20 text-white hover:bg-white/30 border border-white/30"
-            onClick={() => navigate(`/quiz/play/${quizId}`)}
+            onClick={() => navigate(`/quiz/play/${resumeRef}`)}
           >
             <Play className="h-3.5 w-3.5" />
             Tiếp tục
@@ -393,26 +432,6 @@ function WeeklyChart({ data }: { data: { days: { date: string; cards: number; qu
     return dt.toLocaleDateString('vi-VN', { weekday: 'short' })
   })
 
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: 'Thẻ ôn',
-        data: data.days.map((d: any) => d.cards),
-        backgroundColor: 'rgba(236,72,153,0.7)',
-        borderRadius: 4,
-        barThickness: 20,
-      },
-      {
-        label: 'Quiz',
-        data: data.days.map((d: any) => d.quizzes * 10), // scale up quizzes
-        backgroundColor: 'rgba(249,115,22,0.7)',
-        borderRadius: 4,
-        barThickness: 20,
-      },
-    ],
-  }
-
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -429,13 +448,53 @@ function WeeklyChart({ data }: { data: { days: { date: string; cards: number; qu
       y: {
         ticks: { color: '#8B7A9E', font: { size: 11 } },
         grid: { color: '#3D3348' },
+        beginAtZero: true,
       },
     },
   }
 
   return (
-    <div className="h-48">
-      <Bar data={chartData} options={options} />
+    <div className="grid gap-4 lg:grid-cols-2">
+      <div className="rounded-xl border border-[#3D3348] bg-[#252030]/60 p-3">
+        <h3 className="mb-2 text-xs font-semibold text-[#F5F0FA]">Thẻ ôn</h3>
+        <div className="h-40">
+          <Bar
+            data={{
+              labels,
+              datasets: [
+                {
+                  label: 'Thẻ',
+                  data: data.days.map((d: any) => d.cards),
+                  backgroundColor: 'rgba(236,72,153,0.7)',
+                  borderRadius: 4,
+                  barThickness: 16,
+                },
+              ],
+            }}
+            options={options}
+          />
+        </div>
+      </div>
+      <div className="rounded-xl border border-[#3D3348] bg-[#252030]/60 p-3">
+        <h3 className="mb-2 text-xs font-semibold text-[#F5F0FA]">Quiz</h3>
+        <div className="h-40">
+          <Bar
+            data={{
+              labels,
+              datasets: [
+                {
+                  label: 'Quiz',
+                  data: data.days.map((d: any) => d.quizzes),
+                  backgroundColor: 'rgba(249,115,22,0.7)',
+                  borderRadius: 4,
+                  barThickness: 16,
+                },
+              ],
+            }}
+            options={options}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -715,30 +774,42 @@ export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [activityDays, setActivityDays] = useState(30)
+  const [weekOffset, setWeekOffset] = useState(0)
 
   // Active flashcard session (localStorage)
   const [activeFlashcardSession, setActiveFlashcardSession] = useState<{ deckRef: string; session: StudySession } | null>(null)
   // Active quiz sessions (from API)
-  const [activeQuizSession, setActiveQuizSession] = useState<{ attemptId: string; quizId: string; quizTitle: string; timeRemaining: number | null } | null>(null)
+  const [activeQuizSession, setActiveQuizSession] = useState<{
+    attemptId: string; quizId: string; quizSlug: string | null
+    quizTitle: string; timeRemaining: number | null
+  } | null>(null)
 
   useEffect(() => {
     setActiveFlashcardSession(findAnyActiveSession())
   }, [])
 
   // Fetch active quiz sessions from API
+  const qc = useQueryClient()
   const { data: activeQuizSessions } = useQuery({
     queryKey: ['quiz', 'active-sessions'],
     queryFn: () => quizApi.getActiveSessions().then((r) => r.data),
-    refetchInterval: 60_000, // refresh every minute
+    refetchInterval: 15_000, // refresh every 15s so session banner disappears quickly
+    refetchOnWindowFocus: true,
   })
+
+  // Track dismissal so useEffect doesn't re-show banner after user dismissed
+  const quizBannerDismissedRef = useRef(false)
 
   // Pick first active quiz session for banner (show only one at a time)
   useEffect(() => {
+    if (quizBannerDismissedRef.current) return
     if (activeQuizSessions && activeQuizSessions.length > 0) {
       const s = activeQuizSessions[0]
       setActiveQuizSession({
         attemptId: s.attemptId,
         quizId: s.quizId ?? '',
+        quizSlug: s.quizSlug ?? null,
         quizTitle: s.quizTitle ?? 'Quiz',
         timeRemaining: s.remainingSeconds >= 0 ? s.remainingSeconds : null,
       })
@@ -754,9 +825,24 @@ export default function DashboardPage() {
     }
   }
 
-  const handleDismissQuizSession = () => {
-    setActiveQuizSession(null)
-  }
+  const handleDismissQuizSession = useCallback(async () => {
+    if (!activeQuizSession?.attemptId) {
+      setActiveQuizSession(null)
+      return
+    }
+
+    try {
+      await quizApi.quitSession(activeQuizSession.attemptId)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      quizBannerDismissedRef.current = true
+      setActiveQuizSession(null)
+      qc.invalidateQueries({ queryKey: ['quiz', 'active-sessions'] })
+      qc.invalidateQueries({ queryKey: ['quiz', 'attempts'] })
+      qc.invalidateQueries({ queryKey: ['quiz', 'me'] })
+    }
+  }, [activeQuizSession, qc])
 
   // Open create dialog from ?create=1
   useEffect(() => {
@@ -785,13 +871,20 @@ export default function DashboardPage() {
   })
 
   const { data: weeklyData } = useQuery({
-    queryKey: ['stats', 'weekly'],
-    queryFn: () => statsApi.getWeekly().then((r) => r.data),
+    queryKey: ['stats', 'weekly', weekOffset],
+    queryFn: () => statsApi.getWeekly(weekOffset).then((r) => r.data),
   })
 
   const { data: activityData } = useQuery({
-    queryKey: ['stats', 'activity', 30],
-    queryFn: () => statsApi.getActivity({ days: 30 }).then((r) => r.data),
+    queryKey: ['stats', 'activity', activityDays],
+    queryFn: () => statsApi.getActivity({ days: activityDays }).then((r) => r.data),
+  })
+
+  // Real progress data (for rank)
+  const { data: progressData } = useQuery({
+    queryKey: ['progress', 'me'],
+    queryFn: () => progressApi.getMyProgress().then((r) => r.data),
+    staleTime: 60_000,
   })
 
   const myDecks = data?.content ?? []
@@ -804,16 +897,13 @@ export default function DashboardPage() {
     [myDecks],
   )
 
-  const dueQueries = useQueries({
-    queries: recentDecks.slice(0, 6).map((deck) => ({
-      queryKey: ['review', 'due', deck.slug],
-      queryFn: () => reviewApi.getDue({ deckRef: deck.slug, limit: 1 }).then((r) => r.data.dueCount),
-      staleTime: 30_000,
-    })),
+  const dueQuery = useQuery({
+    queryKey: ['review', 'due-total'],
+    queryFn: () => reviewApi.getDueCount().then((r) => r.data),
+    staleTime: 30_000,
   })
 
-  const dueCounts = Object.fromEntries(recentDecks.slice(0, 6).map((deck, i) => [deck.slug, dueQueries[i]?.data ?? 0]))
-  const totalDue = Object.values(dueCounts).reduce((a, b) => a + b, 0)
+  const totalDue = typeof dueQuery.data === 'number' ? dueQuery.data : 0
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#1A1520' }}>
@@ -831,7 +921,12 @@ export default function DashboardPage() {
 
       <div className="relative z-10 space-y-10">
         {/* ── Streak banner ── */}
-        <StreakBanner streak={user?.streak ?? 0} xp={user?.xp ?? 0} />
+        <StreakBanner
+          streak={progressData?.streak ?? dashboardStats?.streak ?? user?.streak ?? 0}
+          xp={progressData?.xp ?? dashboardStats?.totalXp ?? user?.xp ?? 0}
+          rank={progressData?.rank ?? null}
+          totalParticipants={progressData?.totalParticipants ?? 0}
+        />
 
         {/* ── Active sessions ── */}
         {(activeFlashcardSession || activeQuizSession) && (
@@ -850,8 +945,8 @@ export default function DashboardPage() {
               )}
               {activeQuizSession && (
                 <QuizSessionBanner
-                  quizId={activeQuizSession.quizId}
                   attemptId={activeQuizSession.attemptId}
+                  quizSlug={activeQuizSession.quizSlug}
                   quizTitle={activeQuizSession.quizTitle}
                   timeRemaining={activeQuizSession.timeRemaining}
                   onDismiss={handleDismissQuizSession}
@@ -863,51 +958,110 @@ export default function DashboardPage() {
 
         {/* ── Quick stats ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <QuickCard icon={BookOpen} value={totalDue || '—'} label="Thẻ đến hạn" color="#EC4899" onClick={() => navigate('/flashcard')} />
+          <QuickCard icon={BookOpen} value={totalDue === 0 ? '—' : totalDue} label="Thẻ đến hạn" color="#EC4899" onClick={() => navigate('/flashcard')} />
           <QuickCard icon={Layers} value={totalDecks} label="Deck của bạn" color="#10B981" />
           <QuickCard icon={Star} value={totalCards} label="Tổng thẻ" color="#F97316" />
-          <QuickCard icon={Zap} value={`+${dashboardStats?.xpLast7Days ?? user?.xp ?? 0}`} label="XP 7 ngày" color="#A78BFA" />
-          <QuickCard icon={Sparkles} value={`${dashboardStats?.quizzesLast7Days ?? 0}`} label="Quiz 7 ngày" color="#06B6D4" />
+          <QuickCard icon={Zap} value={`+${dashboardStats?.xpToday ?? 0}`} label="XP hôm nay" color="#A78BFA" />
+          <QuickCard icon={Sparkles} value={`${dashboardStats?.quizzesToday ?? 0}`} label="Quiz hôm nay" color="#06B6D4" />
         </div>
 
         {/* ── Stats charts ── */}
         <section>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              📊 Hoạt động tuần này
+              📊 Hoạt động
             </h2>
-            {weeklyData && (
-              <div className="flex gap-4 text-xs">
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#EC4899]" /> {weeklyData.thisWeek.cards} thẻ
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#F97316]" /> {weeklyData.thisWeek.quizzes} quiz
-                </span>
-                <span className="flex items-center gap-1 text-[#EC4899] font-semibold">
-                  ⚡ {weeklyData.thisWeek.xp} XP
-                </span>
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              {/* Today's stats */}
+              <div className="flex items-center gap-2 rounded-lg bg-[#EC4899]/20 px-3 py-1.5 text-[#EC4899]">
+                <span className="font-semibold">Hôm nay:</span>
+                <span>{dashboardStats?.cardsToday ?? 0} thẻ</span>
+                <span className="text-white/50">·</span>
+                <span>{dashboardStats?.quizzesToday ?? 0} quiz</span>
+                <span className="text-white/50">·</span>
+                <span>+{dashboardStats?.xpToday ?? 0} XP</span>
               </div>
-            )}
+              {/* Weekly stats */}
+              {weeklyData && (
+                <div className="flex items-center gap-2 text-[#8B7A9E]">
+                  <span className="font-semibold">Tuần:</span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-[#EC4899]" /> {weeklyData.thisWeek.cards} thẻ
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-[#F97316]" /> {weeklyData.thisWeek.quizzes} quiz
+                  </span>
+                  <span className="flex items-center gap-1 text-[#EC4899] font-semibold">
+                    ⚡ {weeklyData.thisWeek.xp} XP
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Weekly bar chart */}
             <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-              <h3 className="mb-3 text-sm font-semibold text-[#F5F0FA]">Tuần này</h3>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-[#F5F0FA]">
+                  {weekOffset === 0 ? 'Hoạt động tuần này' : `Hoạt động tuần trước ${weekOffset}`}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={weekOffset <= 0}
+                    onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-40 hover:text-white"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-xs font-semibold text-[#8B7A9E]">
+                    {weekOffset === 0 ? 'Tuần này' : `Các tuần trước ${weekOffset}`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setWeekOffset((o) => o + 1)}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] hover:text-white"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
               <WeeklyChart data={weeklyData} />
             </div>
 
             {/* XP trend */}
             <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-              <h3 className="mb-3 text-sm font-semibold text-[#F5F0FA]">XP 14 ngày qua</h3>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-[#F5F0FA]">XP 14 ngày qua</h3>
+                <select
+                  value={activityDays}
+                  onChange={(e) => setActivityDays(Number(e.target.value))}
+                  className="h-8 cursor-pointer rounded-lg border border-[#3D3348] bg-[#1A1520] px-2 text-xs font-semibold text-[#8B7A9E]"
+                >
+                  <option value={7}>7 ngày</option>
+                  <option value={14}>14 ngày</option>
+                  <option value={30}>30 ngày</option>
+                </select>
+              </div>
               <XpTrendChart data={activityData} />
             </div>
           </div>
 
           {/* Activity heatmap */}
           <div className="mt-4 rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[#F5F0FA]">Hoạt động 28 ngày</h3>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-[#F5F0FA]">Hoạt động {activityDays} ngày</h3>
+              <select
+                value={activityDays}
+                onChange={(e) => setActivityDays(Number(e.target.value))}
+                className="h-8 cursor-pointer rounded-lg border border-[#3D3348] bg-[#1A1520] px-2 text-xs font-semibold text-[#8B7A9E]"
+              >
+                <option value={14}>14 ngày</option>
+                <option value={30}>30 ngày</option>
+                <option value={60}>60 ngày</option>
+              </select>
+            </div>
             <ActivityHeatmap data={activityData} />
             <div className="mt-2 flex items-center gap-2 text-[10px] text-[#8B7A9E]">
               <span>Ít</span>

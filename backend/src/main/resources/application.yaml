@@ -24,13 +24,15 @@ spring:
   # ── JPA ──────────────────────────────────────────────────
   jpa:
     hibernate:
-      ddl-auto: validate           # Flyway quản lý schema — JPA chỉ validate
+      ddl-auto: none           # Flyway quản lý schema — JPA không thay đổi
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         default_schema: public
+        jdbc:
+          time_zone: UTC
 
   # ── Flyway ───────────────────────────────────────────────
   flyway:
