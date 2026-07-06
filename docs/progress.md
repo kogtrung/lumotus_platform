@@ -33,19 +33,18 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 
 | Mục | Giá trị |
 |---|---|
-| **Giai đoạn** | Sprint 5 — Study Modes refactor, chuẩn bị Progress |
+| **Giai đoạn** | Sprint 6 — AI generate, Admin, Polish |
 | **Branch** | `develop` |
-| **Sprint đang focus** | Sprint 5: Progress heatmap + streak + Leaderboard ⏳ |
-| **Việc tiếp theo** | Progress heatmap FE + streak scheduler BE + Leaderboard Redis |
+| **Sprint đang focus** | Sprint 6: AI generate, Admin UI, MockMvc tests |
+| **Việc tiếp theo** | AI generate deck, Admin dashboard |
 | **Đối chiếu đề tài** | [`spec.md`](spec.md) §8 |
-| **Cập nhật lần cuối** | 2026-07-01 |
+| **Cập nhật lần cuối** | 2026-07-03 |
 
 ### Tóm tắt nhanh
 
 - **Đã ổn định:** Auth, Deck/Card, Import CSV, Media upload, SRS Review + audio, Study Modes (Flashcard/Quiz), session persistence + resume dialog
-- **Đã refactor:** Gỡ bỏ LEARN/SPELL modes — chỉ còn FLASHCARD + QUIZ theo yêu cầu đề tài
-- **Đang tập trung:** Sprint 5 Progress heatmap + streak + Leaderboard (composite: XP + streak)
-- **Chưa triển khai:** Admin, AI generate, MockMvc tests — Sprint 6
+- **Đã hoàn thành Sprint 5:** Progress heatmap 365d, Streak scheduler, Leaderboard Redis ZSET + `/progress/leaderboard` endpoint
+- **Chưa triển khai:** Admin UI, AI generate, MockMvc tests — Sprint 6
 
 ### Nhánh gợi ý (đợt này)
 
@@ -132,7 +131,7 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] `LandingPage` — Section 2 & 3 dark, header scroll links
 - [x] `index.css` — `.review-card-inner` dark glass
 
-### Sprint 5 — Study Modes & Progress 🔄
+### Sprint 5 — Study Modes & Progress ✅
 
 - [x] Study Modes BE: `StudyMode` enum, `StudyAttempt` in-memory, `QuestionGenerator`, `StudyController`, `StudyService`
 - [x] Study Modes FE: `StudyPage`, `ModeTab`, `QuizView`, `FlashCard`, `/decks/:deckRef/study` route
@@ -152,11 +151,11 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 - [x] Quiz slug: `V15__quizzes_add_slug.sql` + `SlugUtils`
 - [x] V16: fix `last_rating` type VARCHAR → SMALLINT
 - [x] Quiz Anti-Cheat Plan: `docs/quiz-anti-cheat-plan.md`
-- [ ] Heatmap FE (`ProgressPage.tsx`)
-- [ ] Streak scheduler BE (`@Scheduled`)
-- [ ] Leaderboard Redis ZSET BE
-- [ ] Progress API BE: `GET /progress/me`, `GET /progress/leaderboard`
-- [ ] Leaderboard FE page
+- [x] Heatmap FE (`ProgressPage.tsx`) — real data từ API
+- [x] Streak scheduler BE (`@Scheduled`) — 01:00 UTC reset
+- [x] Leaderboard Redis ZSET BE — `LeaderboardService` composite score
+- [x] Progress API BE: `GET /progress/me`, `GET /progress/leaderboard`
+- [x] Leaderboard FE page (`/leaderboard`) + nav item
 
 ### Sprint 6 — AI, Admin & Polish ⏳
 
@@ -168,6 +167,69 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-07-03 — Progress heatmap, Streak scheduler, Global Leaderboard
+
+**Đã làm**
+
+- **Backend: LeaderboardService tích hợp Redis ZSET:**
+  - `LeaderboardService.updateUserScore()` — gọi khi user nhận XP (flashcard rate, quiz submit)
+  - `compositeScore = xp * 1000 + streak`; refresh 5 phút
+  - `FlashcardService.upsertDailyActivity()` → gọi `leaderboardService.updateUserScore()`
+  - `QuizService.submitQuiz()` → gọi `leaderboardService.updateUserScore()` khi quiz APPROVED + không phải owner
+- **Backend: StreakService** — đã implement đầy đủ, chạy 01:00 UTC reset streak thủ công
+- **Backend: ProgressService + ProgressController** — `/progress/me`, `/progress/leaderboard`, `/progress/heatmap`
+- **Frontend `api/progress.ts`** — API client cho progress/heatmap/leaderboard/dashboard stats
+- **Frontend `ProgressPage.tsx`** — rewrite hoàn toàn:
+  - Heatmap 30 ngày thực từ API (không còn mock Math.random())
+  - Rank thực `#N` từ `/progress/me`
+  - Link đến `/leaderboard`
+- **Frontend `LeaderboardPage.tsx`** — trang global leaderboard mới (podium top 3 + danh sách)
+- **Frontend `App.tsx`** — thêm route `/leaderboard`
+- **Frontend `MainLayout.tsx`** — thêm nav item "Bảng xếp hạng" (Medal icon)
+- **Frontend `DashboardPage.tsx`** — StreakBanner hiển thị rank thực + thêm Trophy icon
+- **Frontend `ExplorePage.tsx`** — global leaderboard sidebar dùng `progressApi.getLeaderboard()`
+- **Frontend `study.ts`** — đổi tên `LeaderboardEntry` → `QuizLeaderboardEntry` (tránh confusion với global leaderboard type)
+- **Fix TypeScript errors pre-existing** — `DeckDetailPage.tsx` (undefined `qc` variable), `QuizDetailPage.tsx` (`canEdit` boolean type), `QuizPlayPage.tsx` (unused import)
+- **Docs sync:**
+  - `spec.md` §4: cập nhật Nhóm 7 Progress/Leaderboard API + status bảng xếp hạng
+  - `flashcard-project-plan.md` §9 + API table: đánh dấu Progress/Leaderboard ✅
+
+**Build:** `npm run build` ✅ (TypeScript pass), `mvn compile` ✅
+
+**Nhánh gợi ý**
+
+|| Phạm vi | Nhánh |
+|---|---|---|
+| Progress/Leaderboard | `feature/progress-leaderboard` |
+
+---
+
+### Session 2026-07-03 (buổi 2) — Admin exclusion, Global Quiz Leaderboard, Streak docs
+
+**Đã làm**
+
+- **Fix: Loại ADMIN khỏi global leaderboard:**
+  - `LeaderboardService.updateUserScore()` — kiểm tra `role == ADMIN` → `ZREM` khỏi Redis
+  - `LeaderboardService.refreshLeaderboard()` — skip user có `role == ADMIN`
+- **Fix: Explore sidebar → "Bảng xếp hạng Quiz" (performance-based):**
+  - Backend: tạo `GlobalQuizLeaderboardEntry` DTO
+  - Backend: thêm `QuizAttemptRepository.findGlobalQuizLeaderboard()` — CTE lấy best attempt per user per quiz
+  - Backend: thêm `QuizService.getGlobalQuizLeaderboard()`
+  - Backend: thêm `GET /quizzes/leaderboard` endpoint
+  - Frontend: `study.ts` thêm `quizApi.getGlobalQuizLeaderboard()`
+  - Frontend: `ExplorePage.tsx` sidebar hiện "avgBestScore + totalAttempts" thay vì XP/streak
+- **Docs: Chi tiết streak flow trong `spec.md` §5.2:**
+  - Điều kiện đạt streak: ≥10 thẻ HOẶC ≥1 quiz mỗi ngày
+  - Logic: distance 0→giữ, 1→tăng, >1→reset về 1
+  - Scheduler 01:00 UTC reset stale streaks + Admin utility `recalculateStreak()`
+  - 4 phần: 5.2.1 Streak, 5.2.2 Progress, 5.2.3 Global Leaderboard, 5.2.4 Global Quiz Leaderboard
+- **Fix pre-existing duplicate `getMyQuiz()` trong QuizService**
+- **Docs sync:** `spec.md` Quiz status ✅, `flashcard-project-plan.md` Study Modes 2 modes ✅
+
+**Build:** `mvn compile` ✅, `npx tsc --noEmit` ✅
 
 ---
 

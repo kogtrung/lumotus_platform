@@ -1,54 +1,55 @@
-# Quiz Anti-Cheat & Fraud Prevention Plan
+# Quiz Anti-Cheat & Chống Gian Lận
 
-> **Document Type:** Technical Design  
-> **Status:** Planning  
-> **Last Updated:** 2026-07-02
-
----
-
-## 1. Current State Analysis
-
-### What's Working ✅
-- Server-side answer validation (never trust client)
-- Quiz attempt ownership verification
-- Redis-backed session timer (prevents client clock manipulation)
-- Best-attempt deduplication for leaderboard (only counts highest score per user)
-- Session resume from Redis
-- Duplicate submit prevention
-
-### Vulnerabilities ❌
-
-| # | Vulnerability | Severity | Impact |
-|---|-------------|----------|--------|
-| 1 | No rate limiting on quiz start | HIGH | Users can spam start quiz sessions |
-| 2 | No attempt cooldown | HIGH | Users can grind leaderboard with many attempts |
-| 3 | No bot-like behavior detection | MEDIUM | Suspiciously fast answers (< 2s per question) |
-| 4 | No browser/tab focus tracking | MEDIUM | Cannot detect multi-tasking cheating |
-| 5 | Full questions sent upfront | MEDIUM | Sophisticated cheaters can scrape all answers |
-| 6 | No IP-based rate limiting | MEDIUM | Multi-account abuse possible |
-| 7 | No captcha after failures | MEDIUM | Brute force on answers |
-| 8 | Client-side answer caching | LOW | localStorage stores correct answers (though not displayed) |
+> **Loại tài liệu:** Thiết kế kỹ thuật
+> **Trạng thái:** Đang lên kế hoạch
+> **Cập nhật lần cuối:** 2026-07-03
 
 ---
 
-## 2. Proposed Anti-Cheat Measures
+## 1. Phân tích hiện trạng
 
-### 2.1 Rate Limiting & Cooldown (Priority: HIGH)
+### Đã hoạt động tốt ✅
 
-#### Quiz Attempt Cooldown
+- Validation đáp án phía server (không bao giờ tin client)
+- Xác minh quyền sở hữu quiz attempt
+- Timer Redis (chống thao túng đồng hồ phía client)
+- Deduplicate best-attempt cho leaderboard (chỉ tính điểm cao nhất mỗi user)
+- Resume session từ Redis
+- Chống duplicate submit
+
+### Lỗ hổng ❌
+
+| # | Lỗ hổng | Mức độ | Tác động |
+|---|----------|--------|----------|
+| 1 | Không giới hạn tốc độ khi start quiz | CAO | User spam session |
+| 2 | Không có cooldown giữa các lần thử | CAO | User grinding leaderboard |
+| 3 | Không phát hiện hành vi bot | TRUNG | Trả lời quá nhanh (< 2s/câu) |
+| 4 | Không theo dõi focus browser/tab | TRUNG | Không phát hiện multi-tasking |
+| 5 | Gửi toàn bộ câu hỏi ngay từ đầu | TRUNG | Cheater lấy trộm đáp án |
+| 6 | Không giới hạn theo IP | TRUNG | Tạo nhiều tài khoản lạm dụng |
+| 7 | Không có captcha sau nhiều lần thất bại | TRUNG | Brute force đáp án |
+| 8 | Cache đáp án phía client | THẤP | localStorage lưu đáp án đúng (dù không hiển thị) |
+
+---
+
+## 2. Các biện pháp chống gian lận đề xuất
+
+### 2.1 Giới hạn tốc độ & Cooldown (Ưu tiên: CAO)
+
+#### Cooldown lần thử quiz
 ```java
-// New table: quiz_attempt_cooldown
-// user_id | quiz_id | last_attempt_at | attempt_count (today)
+// Bảng mới: quiz_attempt_cooldown
+// user_id | quiz_id | last_attempt_at | attempt_count (hôm nay)
 ```
 
-**Rules:**
-- User can start max **5 attempts** per quiz per day
-- Minimum **10 minutes** cooldown between attempts on same quiz
-- Cooldown resets at midnight UTC
+**Quy tắc:**
+- Mỗi user tối đa **5 lần thử** mỗi quiz mỗi ngày
+- Tối thiểu **10 phút** cooldown giữa các lần thử cùng quiz
+- Cooldown reset lúc nửa đêm UTC
 
-**Implementation:**
+**Triển khai:**
 ```java
-// In QuizAttemptRepository
+// Trong QuizAttemptRepository
 @Query("""
     SELECT COUNT(qa) FROM QuizAttempt qa
     WHERE qa.user.id = :userId
@@ -65,67 +66,61 @@ long countRecentAttempts(@Param("userId") UUID userId, @Param("quizId") UUID qui
 Optional<Instant> findLastAttemptTime(@Param("userId") UUID userId, @Param("quizId") UUID quizId);
 ```
 
-#### Global Attempt Limits
-- Max **20 quiz attempts** per day across all quizzes
-- Max **50 quiz attempts** per week
+#### Giới hạn attempt toàn cục
+- Tối đa **20 lần thử quiz** mỗi ngày (tất cả quiz)
+- Tối đa **50 lần thử quiz** mỗi tuần
 
-### 2.2 Bot Detection - Answer Timing Analysis (Priority: HIGH)
+### 2.2 Phát hiện Bot — Phân tích thời gian trả lời (Ưu tiên: CAO)
 
-#### Answer Velocity Check
+#### Kiểm tra tốc độ trả lời
 ```java
 public record AnswerTiming(
     String questionId,
     Instant answeredAt,
-    int timeFromStart  // seconds
+    int timeFromStart  // giây
 ) {}
 
 public record SuspiciousPattern(
-    boolean tooFast,      // < 2s average per question
-    boolean tooConsistent, // variance < 0.5s (robotic)
-    boolean tooPerfect     // 100% correct with < 3s avg
+    boolean tooFast,         // < 2s trung bình/câu
+    boolean tooConsistent,   // variance < 0.5s (máy móc)
+    boolean tooPerfect       // 100% đúng với < 3s trung bình
 ) {}
 ```
 
-**Rules:**
-- Flag if average time per question < 2 seconds consistently
-- Flag if answer timing variance < 0.5s (too robotic)
-- Flag if 100% perfect score with suspiciously fast answers
-- Flagged attempts don't count for leaderboard but still record
+**Quy tắc:**
+- Flag nếu trung bình thời gian/câu < 2 giây liên tục
+- Flag nếu variance thời gian trả lời < 0.5s (quá đều)
+- Flag nếu điểm hoàn hảo + tốc độ đáng ngờ
+- Attempt bị flag không tính vào leaderboard nhưng vẫn ghi nhận
 
-**Implementation:**
+**Triển khai:**
 ```java
-// In QuizService.submitQuiz()
+// Trong QuizService.submitQuiz()
 private SuspiciousPattern analyzeAnswerTiming(
     List<AnswerSubmission> answers,
     int totalQuestions,
     int correctAnswers,
     int timeTakenSeconds
 ) {
-    // Calculate average time per question
     double avgTimePerQuestion = (double) timeTakenSeconds / totalQuestions;
 
-    // Check if too fast
     boolean tooFast = avgTimePerQuestion < 2.0;
-
-    // Calculate variance of answer intervals (simplified)
     boolean tooConsistent = calculateVariance(answerTimings) < 0.5;
-
-    // Perfect score + too fast = suspicious
     boolean tooPerfect = correctAnswers == totalQuestions && avgTimePerQuestion < 3.0;
 
     return new SuspiciousPattern(tooFast, tooConsistent, tooPerfect);
 }
 ```
 
-### 2.3 Browser/Tab Focus Detection (Priority: MEDIUM)
+### 2.3 Theo dõi Focus Browser/Tab (Ưu tiên: TRUNG)
 
-#### Frontend Tracking
+#### Tracking phía Frontend
 ```typescript
-// In QuizPlayPage.tsx
+// Trong QuizPlayPage.tsx
 interface FocusEvent {
   event: 'focus' | 'blur' | 'visibility_hidden' | 'tab_switch'
   timestamp: number
-  duration?: number  // for blur events
+  duration?: number  // cho blur events
 }
 
 const focusEvents: FocusEvent[] = []
@@ -167,77 +162,77 @@ useEffect(() => {
 }, [])
 ```
 
-**Submission Payload:**
+**Payload submit:**
 ```typescript
 interface SubmitQuizPayload {
   attemptId: string
   answers: Answer[]
   timeTakenSeconds: number
   metadata?: {
-    focusLossCount: number      // Number of times tab was hidden
-    totalFocusLossDuration: number  // Total seconds away from tab
-    suspicious: boolean         // Client-side flag (informational only)
+    focusLossCount: number           // Số lần tab bị ẩn
+    totalFocusLossDuration: number   // Tổng giây rời tab
+    suspicious: boolean              // Flag client (chỉ tham khảo)
   }
 }
 ```
 
-**Server-side:**
-- Log focus loss events for audit
-- Flag attempts with > 5 focus losses or > 30s total away time
-- Flagged attempts shown in admin dashboard
+**Phía server:**
+- Log focus loss events để audit
+- Flag attempt nếu > 5 lần mất focus hoặc > 30s tổng thời gian rời tab
+- Attempt bị flag hiển thị trong admin dashboard
 
-### 2.4 IP-Based Rate Limiting (Priority: MEDIUM)
+### 2.4 Giới hạn theo IP (Ưu tiên: TRUNG)
 
-**Implementation:** Use Redis for distributed rate limiting
+**Triển khai:** Dùng Redis cho rate limiting phân tán
 
 ```java
 // Redis key patterns
-quiz:rate:ip:{ipAddress}:day     // Daily attempts per IP
-quiz:rate:ip:{ipAddress}:hour     // Hourly attempts per IP
+quiz:rate:ip:{ipAddress}:day     // Attempts theo IP mỗi ngày
+quiz:rate:ip:{ipAddress}:hour   // Attempts theo IP mỗi giờ
 
-// Limits
-- Max 50 attempts per IP per hour
-- Max 200 attempts per IP per day
-- Max 5 different users from same IP per hour (detects multi-account)
+// Giới hạn
+- Tối đa 50 attempts/IP/giờ
+- Tối đa 200 attempts/IP/ngày
+- Tối đa 5 user khác nhau từ cùng IP/giờ (phát hiện multi-account)
 ```
 
-### 2.5 Question Delivery Isolation (Priority: MEDIUM)
+### 2.5 Cách ly giao câu hỏi (Ưu tiên: TRUNG)
 
-**Current:** All questions sent upfront at quiz start
+**Hiện tại:** Tất cả câu hỏi gửi lên ngay từ đầu khi start
 
-**Proposed:** Progressive question delivery (for high-stakes quizzes)
+**Đề xuất:** Giao câu hỏi tiến bộ (cho quiz quan trọng)
 
 ```java
-// Option A: Progressive delivery (more secure)
+// Option A: Giao câu hỏi tiến bộ (bảo mật hơn)
 @PostMapping("/{quizRef}/question/next")
 public ResponseEntity<QuestionDeliveryResponse> getNextQuestion(
     @AuthenticationPrincipal UserPrincipal principal,
     @PathVariable String quizRef,
     @RequestBody QuestionRequest request  // { attemptId, previousQuestionId }
 ) {
-    // Server fetches next question, never sends all at once
-    // More complex, but more secure
+    // Server fetch câu hỏi tiếp theo, không gửi tất cả cùng lúc
+    // Phức tạp hơn nhưng bảo mật hơn
 }
 
-// Option B: Hash-based verification (simpler)
+// Option B: Xác minh hash (đơn giản hơn)
 @PostMapping("/{quizRef}/verify")
 public ResponseEntity<VerificationResponse> verifyQuizIntegrity(
     @AuthenticationPrincipal UserPrincipal principal,
     @RequestBody VerificationRequest request  // { attemptId, clientHash }
 ) {
-    // Client sends hash of received questions
-    // Server compares with expected hash
-    // Mismatch = cheating detected
+    // Client gửi hash của các câu hỏi nhận được
+    // Server so sánh với hash mong đợi
+    // Khớp = không gian lận
 }
 ```
 
-**Recommendation:** Implement Option B (hash verification) first - less complex, good deterrent.
+**Khuyến nghị:** Triển khai Option B (xác minh hash) trước — ít phức tạp, hiệu quả răn đe.
 
-### 2.6 Admin Moderation & Review (Priority: MEDIUM)
+### 2.6 Kiểm duyệt & Review Admin (Ưu tiên: TRUNG)
 
-#### Flagged Attempts Dashboard
+#### Dashboard attempt bị flag
 ```sql
--- New table: quiz_attempt_flags
+-- Bảng mới: quiz_attempt_flags
 CREATE TABLE quiz_attempt_flags (
     id UUID PRIMARY KEY,
     attempt_id UUID REFERENCES quiz_attempts(id),
@@ -250,45 +245,45 @@ CREATE TABLE quiz_attempt_flags (
 );
 ```
 
-#### Quiz Quality Checks (on submission)
+#### Kiểm tra chất lượng Quiz (khi submit)
 ```java
-// Before publishing to Explore, verify quiz quality
+// Trước khi publish lên Explore, kiểm tra chất lượng quiz
 public record QuizQualityCheck(
-    boolean hasMinQuestions,      // >= 5 questions
-    boolean hasNoDuplicateAnswers, // No same answer for multiple questions
-    boolean hasValidOptions,      // At least 2 options for MCQ
-    boolean hasNoProfanity,       // No profanity in questions
-    boolean hasReasonableDifficulty // Not too easy/hard
+    boolean hasMinQuestions,        // >= 5 câu hỏi
+    boolean hasNoDuplicateAnswers, // Không trùng đáp án
+    boolean hasValidOptions,       // Ít nhất 2 lựa chọn cho MCQ
+    boolean hasNoProfanity,        // Không tục tiểu trong câu hỏi
+    boolean hasReasonableDifficulty // Không quá dễ/khó
 ) {}
 ```
 
 ---
 
-## 3. Implementation Phases
+## 3. Các giai đoạn triển khai
 
-### Phase 1: Immediate (Quick Wins)
-- [ ] Add quiz attempt cooldown (10 min between same quiz)
-- [ ] Add daily attempt limit (5 per quiz, 20 per day total)
-- [ ] Add answer timing analysis
-- [ ] Add flagging for suspicious patterns
+### Giai đoạn 1: Ngay lập tức (Quick Wins)
+- [ ] Thêm quiz attempt cooldown (10 phút giữa cùng quiz)
+- [ ] Thêm giới hạn daily attempt (5/quiz, 20/ngày toàn cục)
+- [ ] Thêm phân tích thời gian trả lời
+- [ ] Thêm flag cho suspicious patterns
 
-### Phase 2: Medium Term
-- [ ] Implement IP-based rate limiting with Redis
-- [ ] Add browser focus tracking
-- [ ] Create admin flagged attempts dashboard
-- [ ] Add hash-based integrity verification
+### Giai đoạn 2: Trung hạn
+- [ ] Triển khai IP rate limiting với Redis
+- [ ] Thêm browser focus tracking
+- [ ] Tạo admin dashboard cho flagged attempts
+- [ ] Thêm xác minh hash-based integrity
 
-### Phase 3: Advanced (Future)
-- [ ] Progressive question delivery
-- [ ] CAPTCHA after consecutive failures
-- [ ] ML-based anomaly detection
-- [ ] Real-time monitoring dashboard
+### Giai đoạn 3: Nâng cao (Tương lai)
+- [ ] Giao câu hỏi tiến bộ
+- [ ] CAPTCHA sau nhiều lần thất bại liên tiếp
+- [ ] ML-based phát hiện bất thường
+- [ ] Dashboard monitoring real-time
 
 ---
 
-## 4. User-Submitted Quiz Moderation
+## 4. Kiểm duyệt Quiz do User tạo
 
-### Quality Gates for Publishing
+### Quality Gates trước khi publish
 
 ```java
 public record ModerationChecklist(
@@ -297,23 +292,23 @@ public record ModerationChecklist(
     List<String> warnings
 ) {}
 
-// Requirements for APPROVED status:
-- Minimum 5 questions
-- No duplicate correct answers
-- At least 2 wrong options per MCQ
-- No profanity detected
-- At least 3 different users have attempted
-- Average score between 20% and 95% (not too easy/hard)
+// Yêu cầu để đạt trạng thái APPROVED:
+- Tối thiểu 5 câu hỏi
+- Không trùng đáp án đúng
+- Ít nhất 2 đáp án sai mỗi MCQ
+- Không có từ tục
+- Ít nhất 3 user khác nhau đã thử
+- Điểm trung bình từ 20% - 95% (không quá dễ/khó)
 ```
 
-### Automated Content Review
+### Tự động kiểm tra nội dung
 ```java
-// Simple profanity filter
+// Filter từ tục đơn giản
 private static final Set<String> PROFANITY_LIST = Set.of(
-    "badword1", "badword2" // expandable
+    "từ_tục_1", "từ_tục_2" // mở rộng khi cần
 );
 
-// Check each question
+// Kiểm tra mỗi câu hỏi
 public boolean containsProfanity(String text) {
     String lower = text.toLowerCase();
     return PROFANITY_LIST.stream().anyMatch(lower::contains);
@@ -322,44 +317,44 @@ public boolean containsProfanity(String text) {
 
 ---
 
-## 5. Monitoring & Alerts
+## 5. Giám sát & Cảnh báo
 
-### Redis Keys for Monitoring
+### Redis Keys cho giám sát
 ```
-quiz:monitor:daily_attempts    // Counter for daily attempts
-quiz:monitor:flagged_attempts   // Counter for flagged attempts
-quiz:monitor:suspicious_ips     // Set of flagged IPs
+quiz:monitor:daily_attempts    // Counter số attempts hàng ngày
+quiz:monitor:flagged_attempts  // Counter attempts bị flag
+quiz:monitor:suspicious_ips    // Set các IP bị flag
 ```
 
-### Alert Thresholds
-- > 100 attempts/hour from single IP → Alert + auto-block
-- > 50% attempts flagged as suspicious → Review anti-cheat rules
-- New quiz with > 100% pass rate → Flag for review
+### Ngưỡng cảnh báo
+- > 100 attempts/giờ từ 1 IP → Cảnh báo + auto-block
+- > 50% attempts bị flag → Review quy tắc anti-cheat
+- Quiz mới với pass rate > 100% → Flag để review
 
 ---
 
-## 6. False Positive Handling
+## 6. Xử lý False Positive
 
-### User Appeal Process
-1. User sees "attempt flagged" message
-2. User can request review via support
-3. Admin reviews timing data + answers
-4. Admin can confirm (invalid score) or dismiss (restore to leaderboard)
+### Quy trình khiếu nại của user
+1. User thấy thông báo "attempt bị flag"
+2. User yêu cầu review qua support
+3. Admin xem lại dữ liệu thời gian + đáp án
+4. Admin xác nhận (vô hiệu điểm) hoặc bác bỏ (khôi phục vào leaderboard)
 
-### Graduated Response
-| Offense | First | Second | Third+ |
-|---------|-------|--------|--------|
-| Fast answers | Warning | 24h ban | 7d ban |
-| Multi-account | 1h ban | 24h ban | Permanent |
-| Scraping | IP block 1h | IP block 24h | IP block permanent |
+### Phản ứng theo mức độ vi phạm
+| Vi phạm | Lần 1 | Lần 2 | Lần 3+ |
+|---------|-------|-------|--------|
+| Trả lời quá nhanh | Cảnh cáo | Cấm 24h | Cấm 7 ngày |
+| Multi-account | Cấm 1h | Cấm 24h | Cấm vĩnh viễn |
+| Scraping | Block IP 1h | Block IP 24h | Block IP vĩnh viễn |
 
 ---
 
-## 7. Technical Notes
+## 7. Ghi chú kỹ thuật
 
-### Redis Rate Limiting Pattern
+### Mẫu Redis Rate Limiting
 ```java
-// Using Redis INCR with TTL
+// Dùng Redis INCR với TTL
 public boolean checkRateLimit(String key, int maxAttempts, Duration window) {
     Long count = redis.opsForValue().increment(key);
     if (count == 1) {
@@ -369,9 +364,9 @@ public boolean checkRateLimit(String key, int maxAttempts, Duration window) {
 }
 ```
 
-### Database Index for Anti-Cheat Queries
+### Database Index cho truy vấn Anti-Cheat
 ```sql
--- Fast lookup for rate limiting
+-- Truy vấn nhanh cho rate limiting
 CREATE INDEX idx_quiz_attempts_user_quiz_day
 ON quiz_attempts(user_id, quiz_id, started_at DESC)
 WHERE started_at > NOW() - INTERVAL '1 day';
@@ -379,22 +374,22 @@ WHERE started_at > NOW() - INTERVAL '1 day';
 
 ---
 
-## 8. Summary
+## 8. Tóm tắt
 
-**Phase 1 Implementation Checklist:**
-1. Add `countRecentAttempts` and `findLastAttemptTime` to `QuizAttemptRepository`
-2. Add cooldown check in `QuizService.startQuiz()`
-3. Add `analyzeAnswerTiming()` method
-4. Add `SuspiciousAttempt` entity and `flagAttempt()` method
-5. Create migration `V17__quiz_anti_cheat.sql`
-6. Update `QuizSummaryResponse` to include `suspicious` flag
+**Checklist triển khai Giai đoạn 1:**
+1. Thêm `countRecentAttempts` và `findLastAttemptTime` vào `QuizAttemptRepository`
+2. Thêm cooldown check trong `QuizService.startQuiz()`
+3. Thêm method `analyzeAnswerTiming()`
+4. Thêm entity `SuspiciousAttempt` và method `flagAttempt()`
+5. Tạo migration `V17__quiz_anti_cheat.sql`
+6. Cập nhật `QuizSummaryResponse` thêm field `suspicious`
 
-**Database Changes Required:**
-- New table `quiz_attempt_flags` (if flagging implemented)
-- New column `quiz_attempts.suspicious = BOOLEAN`
-- New index for rate limiting queries
+**Thay đổi Database cần thiết:**
+- Bảng mới `quiz_attempt_flags` (nếu triển khai flagging)
+- Cột mới `quiz_attempts.suspicious = BOOLEAN`
+- Index mới cho truy vấn rate limiting
 
-**API Changes:**
-- `POST /quizzes/{quizRef}/start` - may throw `QuizCooldownException`
-- `POST /quizzes/submit` - add optional metadata payload
-- `GET /admin/flagged-attempts` - new admin endpoint
+**Thay đổi API:**
+- `POST /quizzes/{quizRef}/start` — có thể throw `QuizCooldownException`
+- `POST /quizzes/submit` — thêm metadata payload tùy chọn
+- `GET /admin/flagged-attempts` — endpoint admin mới

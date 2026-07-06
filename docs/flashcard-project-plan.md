@@ -527,10 +527,9 @@ CREATE TRIGGER trg_cards_sync_total
 ### Progress & Leaderboard
 | Method | Endpoint | Mô tả |
 |---|---|---|
-| GET | `/api/v1/progress/heatmap` | Hoạt động học theo ngày trong năm |
-| GET | `/api/v1/progress/streak` | Streak hiện tại của user |
-| GET | `/api/v1/progress/stats` | Tổng quan: tổng thẻ đã học, quiz đã làm, XP ⭐ MỚI |
-| GET | `/api/v1/leaderboard` | Top 50 người học (cache Redis 60s) |
+| GET | `/api/v1/progress/me` | Progress: XP, streak, heatmap 365d, rank *(Live)* |
+| GET | `/api/v1/progress/leaderboard?limit=50` | Global leaderboard, composite score *(Live)* |
+| GET | `/api/v1/progress/heatmap?year=&month=` | Heatmap cho 1 tháng |
 
 ### Media Upload ⭐ MỚI
 | Method | Endpoint | Mô tả |
@@ -706,9 +705,9 @@ lumotus/
 - [x] SRS Review: due cards, rating SM-2 *(Sprint 4)*
 - [x] Starred card + filter `starredOnly` *(Sprint 4)*
 - [x] **Dark theme UI** *(Sprint 4b)* — `#1A1520` background, glass cards, LandingPage, MainLayout, Explore, Library, Review, DeckDetail
-- [ ] Study Modes *(Sprint 5)* — 4 modes: Flashcard, Quiz MCQ, Learn, Spell — dynamic questions, `/api/v1/study`
-- [ ] Progress: heatmap, streak, stats, scheduler 00:01 *(Sprint 5)*
-- [ ] Leaderboard Redis ZSET *(Sprint 5)*
+- [x] Study Modes *(Sprint 5)* — 2 modes: Flashcard (SRS SM-2), Quiz MCQ — dynamic questions, `/api/v1/study`
+- [x] Progress: heatmap 365d, streak scheduler 01:00 UTC, real-time update *(Sprint 5)*
+- [x] Leaderboard Redis ZSET, composite score XP*1000+streak, refresh 5min, live update on XP *(Sprint 5)*
 - [x] Xử lý lỗi tập trung `@ControllerAdvice`
 - [ ] Swagger/OpenAPI docs đầy đủ *(springdoc có; annotate endpoint — Sprint 6)*
 
@@ -733,10 +732,10 @@ lumotus/
 - [x] Flashcard Review: flip 3D (CSS; Framer Motion tùy chọn), Again/Hard/Good/Easy, phonetic + ảnh + audio
 - [x] Starred review mode: `?starredOnly=true` + pill «Chỉ sao»
 - [x] **Dark theme UI**: `#1A1520` bg, glass cards, ảnh nền mờ, full-width layout — LandingPage, MainLayout, Explore, Library, Review, DeckDetail
-- [x] **Study Modes UI** *(Sprint 5)* — `/study`, 4 modes (Flashcard, Quiz MCQ, Learn, Spell), config screen, result screen with score ring
-- [ ] Quiz: timer đếm ngược, MCQ / True-False, nộp bài, xem điểm
-- [ ] Trang Progress: heatmap streak calendar (GitHub-style), biểu đồ Chart.js, stats
-- [ ] Leaderboard: bảng xếp hạng avatar + điểm XP
+- [x] **Study Modes UI** *(Sprint 5)* — `/study`, 2 modes (Flashcard SRS, Quiz MCQ), config screen, result screen with score ring
+- [x] Quiz: timer đếm ngược, MCQ / True-False, nộp bài, xem điểm
+- [x] Trang Progress: heatmap 365d streak calendar, biểu đồ Chart.js, stats
+- [x] Leaderboard: bảng xếp hạng avatar + điểm XP, `/progress/leaderboard` endpoint
 - [x] Import file UI: upload CSV, report added/updated
 - [ ] AI Generate UI: form chủ đề + số từ, polling progress
 - [ ] Admin: quản lý topic, deck, user, thống kê
