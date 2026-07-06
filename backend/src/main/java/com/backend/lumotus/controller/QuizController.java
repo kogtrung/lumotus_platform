@@ -3,6 +3,7 @@ package com.backend.lumotus.controller;
 import com.backend.lumotus.dto.request.*;
 import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.security.UserPrincipal;
+import com.backend.lumotus.service.QuizCooldownService;
 import com.backend.lumotus.service.QuizService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class QuizController {
 
     private final QuizService quizService;
+    private final QuizCooldownService quizCooldownService;
 
     // ============================================================
     // PUBLIC EXPLORE — browse & play APPROVED quizzes
@@ -54,6 +56,21 @@ public class QuizController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String quizRef) {
         return ResponseEntity.ok(quizService.startQuiz(principal, quizRef));
+    }
+
+    /**
+     * GET /api/v1/quizzes/{quizRef}/cooldown-status
+     * Check cooldown status for the current user on a specific quiz.
+     * Does NOT throw — returns the result so frontend can display countdown.
+     */
+    @GetMapping("/{quizRef}/cooldown-status")
+    public ResponseEntity<CooldownCheckResult> getCooldownStatus(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String quizRef) {
+        // Resolve quizRef to quizId
+        com.backend.lumotus.entity.Quiz quiz = quizService.findQuizByRef(quizRef);
+        CooldownCheckResult result = quizCooldownService.getCooldownStatus(principal.getId(), quiz.getId());
+        return ResponseEntity.ok(result);
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.backend.lumotus.exception;
 
+import com.backend.lumotus.dto.response.CooldownApiError;
+import com.backend.lumotus.dto.response.CooldownCheckResult;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -54,6 +56,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex, HttpServletRequest request) {
         return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(QuizCooldownException.class)
+    public ResponseEntity<CooldownApiError> handleQuizCooldown(QuizCooldownException ex, HttpServletRequest request) {
+        CooldownApiError body = CooldownApiError.from(ex.getResult(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

@@ -32,7 +32,8 @@ public class StatsController {
 
     @GetMapping("/weekly")
     public ResponseEntity<WeeklySummaryResponse> getWeekly(
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(statsService.getWeeklySummary(principal.getId()));
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(defaultValue = "0") int offset) {
+        return ResponseEntity.ok(statsService.getWeeklySummary(principal.getId(), offset));
     }
 }

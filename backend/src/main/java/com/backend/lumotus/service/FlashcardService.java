@@ -196,6 +196,18 @@ public class FlashcardService {
     }
 
     @Transactional(readOnly = true)
+    public int countTotalDueCards(UserPrincipal principal, UUID deckId, boolean starredOnly) {
+        UUID userId = principal.getId();
+        if (deckId != null) {
+            assertOwnedDeck(deckId, userId);
+        }
+        Instant now = Instant.now();
+        long totalDue = reviewRepository.countDueReviews(userId, deckId, now, starredOnly)
+                + (starredOnly ? 0 : countNewCards(userId, deckId));
+        return (int) Math.min(totalDue, Integer.MAX_VALUE);
+    }
+
+    @Transactional(readOnly = true)
     public DueCardsResponse getDueCards(UserPrincipal principal, UUID deckId, int limit, boolean starredOnly) {
         UUID userId = principal.getId();
         if (deckId != null) {
@@ -387,6 +399,12 @@ public class FlashcardService {
         deckRepository
                 .findByIdAndOwnerId(deckId, userId)
                 .orElseThrow(() -> new ForbiddenException("Deck not found or not owned"));
+    }
+
+    @Transactional(readOnly = true)
+    public int countTotalDueCardsForDeckRef(UserPrincipal principal, String deckRef, boolean starredOnly) {
+        Deck deck = resolveOwnedDeck(deckRef, principal.getId());
+        return countTotalDueCards(principal, deck.getId(), starredOnly);
     }
 
     @Transactional(readOnly = true)

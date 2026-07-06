@@ -134,7 +134,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
             SELECT DISTINCT ON (qa2.user_id, qa2.quiz_id)
                 qa2.user_id,
                 qa2.quiz_id,
-                qa2.score        AS best_score,
+                qa2.score               AS best_score,
                 qa2.correct_answers,
                 qa2.time_taken_seconds,
                 ROW_NUMBER() OVER (
@@ -147,17 +147,16 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
         )
         SELECT
             bpq.user_id,
-            bpq.quiz_id,
             u.username,
             COALESCE(u.avatar_url, ''),
-            AVG(bpq.best_score) AS avg_best_score,
-            COUNT(*)                                                      AS total_attempts,
-            SUM(bpq.correct_answers)                                      AS total_correct_answers,
-            SUM(bpq.time_taken_seconds)                                   AS total_time_seconds
+            AVG(bpq.best_score)        AS avg_best_score,
+            COUNT(DISTINCT bpq.quiz_id) AS quizzes_completed,
+            SUM(bpq.correct_answers)   AS total_correct_answers,
+            SUM(bpq.time_taken_seconds) AS total_time_seconds
         FROM best_per_quiz bpq
         INNER JOIN users u ON u.id = bpq.user_id
         WHERE bpq.rn = 1
-        GROUP BY bpq.user_id, bpq.quiz_id, u.username, u.avatar_url
+        GROUP BY bpq.user_id, u.username, u.avatar_url
         ORDER BY AVG(bpq.best_score) DESC, SUM(bpq.correct_answers) DESC
         LIMIT :limit
         """, nativeQuery = true)
@@ -225,9 +224,8 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
         AND qa.quiz.id = :quizId
         AND qa.status = 'COMPLETED'
         ORDER BY qa.finishedAt DESC
-        LIMIT 1
         """)
-    Optional<QuizAttempt> findLastCompletedAttempt(
+    List<QuizAttempt> findLastCompletedAttempt(
             @Param("userId") UUID userId,
             @Param("quizId") UUID quizId);
 

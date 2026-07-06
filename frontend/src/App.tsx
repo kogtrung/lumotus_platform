@@ -28,6 +28,7 @@ import AdminQuizEditPage from '@/pages/admin/AdminQuizEditPage'
 import AdminQuizHistory from '@/pages/admin/AdminQuizHistory'
 import AdminTopicManagement from '@/pages/admin/AdminTopicManagement'
 import AdminUsers from '@/pages/admin/AdminUsers'
+import AdminCooldownConfig from '@/pages/admin/AdminCooldownConfig'
 
 export default function App() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="admin/quiz-history" element={<AdminQuizHistory />} />
           <Route path="admin/topics" element={<AdminTopicManagement />} />
           <Route path="admin/users" element={<AdminUsers />} />
+          <Route path="admin/cooldown" element={<AdminCooldownConfig />} />
         </Route>
 
         {/* Legacy /library routes → /home */}

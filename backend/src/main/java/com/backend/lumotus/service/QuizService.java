@@ -5,6 +5,7 @@ import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.entity.*;
 import com.backend.lumotus.exception.BadRequestException;
 import com.backend.lumotus.exception.ForbiddenException;
+import com.backend.lumotus.exception.QuizCooldownException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
 import com.backend.lumotus.repository.*;
 import com.backend.lumotus.security.UserPrincipal;
@@ -41,6 +42,7 @@ public class QuizService {
     private final QuizSessionService quizSessionService;
     private final StreakService streakService;
     private final LeaderboardService leaderboardService;
+    private final QuizCooldownService quizCooldownService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -331,6 +333,12 @@ public class QuizService {
         // Only APPROVED quizzes can be played
         if (quiz.getStatus() != Quiz.QuizStatus.APPROVED) {
             throw new ResourceNotFoundException("Quiz not found");
+        }
+
+        // --- Cooldown check ---
+        CooldownCheckResult cooldown = quizCooldownService.checkCooldown(principal.getId(), quiz.getId());
+        if (!cooldown.allowed()) {
+            throw new QuizCooldownException(cooldown.message(), cooldown);
         }
 
         // Expire old sessions
@@ -910,7 +918,7 @@ public class QuizService {
         return rows.stream().map(row -> new GlobalQuizLeaderboardEntry(
                 (java.util.UUID) row[0],
                 (String) row[1],
-                row[2] != null ? (String) row[2] : null,
+                !((String) row[2]).isEmpty() ? (String) row[2] : null,
                 row[3] != null ? ((Number) row[3]).doubleValue() : 0.0,
                 row[4] != null ? ((Number) row[4]).intValue() : 0,
                 row[5] != null ? ((Number) row[5]).intValue() : 0,
@@ -1103,6 +1111,19 @@ public class QuizService {
                 ? "Import successful"
                 : "Import completed with " + skipped + " skipped row(s)";
         return ImportQuizResponse.from(quiz, questions, skipped, msg);
+    }
+
+    // ============================================================
+    // PUBLIC HELPERS
+    // ============================================================
+
+    /**
+     * Resolve quizRef (UUID or slug) to Quiz entity.
+     * Used by QuizController for cooldown check.
+     */
+    @Transactional(readOnly = true)
+    public Quiz findQuizByRef(String quizRef) {
+        return findByIdOrSlug(quizRef);
     }
 
     // ============================================================

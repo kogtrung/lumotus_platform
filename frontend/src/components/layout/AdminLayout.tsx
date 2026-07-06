@@ -8,6 +8,7 @@ import {
   Shield,
   Tag,
   History,
+  Clock,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
@@ -17,6 +18,7 @@ const ADMIN_NAV_ITEMS = [
   { to: '/admin/decks', label: 'Quản lý Deck', icon: BookOpen },
   { to: '/admin/quizzes', label: 'Quản lý Quiz', icon: FileQuestion },
   { to: '/admin/quiz-history', label: 'Lịch sử Quiz', icon: History },
+  { to: '/admin/cooldown', label: 'Cài đặt Cooldown', icon: Clock },
   { to: '/admin/topics', label: 'Quản lý Topics', icon: Tag },
   { to: '/admin/users', label: 'Quản lý Users', icon: Users },
 ] as const

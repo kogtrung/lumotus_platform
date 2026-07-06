@@ -34,6 +34,9 @@ export interface DashboardStats {
   cardsLast7Days: number
   quizzesLast7Days: number
   xpLast7Days: number
+  cardsToday: number
+  quizzesToday: number
+  xpToday: number
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────────
@@ -65,13 +68,5 @@ export const progressApi = {
     return axiosClient.get<LeaderboardEntry[]>('/progress/leaderboard', {
       params: { limit },
     })
-  },
-
-  /**
-   * GET /api/v1/stats/dashboard
-   * Quick stats for dashboard: XP, streak, 7-day cards/quizzes/XP.
-   */
-  getDashboard() {
-    return axiosClient.get<DashboardStats>('/stats/dashboard')
   },
 }

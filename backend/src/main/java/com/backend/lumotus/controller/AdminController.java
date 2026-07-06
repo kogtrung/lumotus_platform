@@ -1,9 +1,15 @@
 package com.backend.lumotus.controller;
 
+import com.backend.lumotus.dto.request.BypassCooldownRequest;
+import com.backend.lumotus.dto.request.UpdateCooldownSettingsRequest;
 import com.backend.lumotus.dto.response.AdminStatsResponse;
+import com.backend.lumotus.dto.response.CooldownCheckResult;
+import com.backend.lumotus.dto.response.CooldownSettingsResponse;
 import com.backend.lumotus.dto.response.QuizAttemptAdminResponse;
 import com.backend.lumotus.dto.response.UserAdminResponse;
 import com.backend.lumotus.service.AdminService;
+import com.backend.lumotus.service.QuizCooldownService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +28,7 @@ import java.util.UUID;
 public class AdminController {
 
     private final AdminService adminService;
+    private final QuizCooldownService quizCooldownService;
 
     /**
      * GET /api/v1/admin/stats
@@ -94,5 +101,58 @@ public class AdminController {
             @PathVariable UUID quizId,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(adminService.getQuizAttemptsByQuiz(quizId, pageable));
+    }
+
+    // ============================================================
+    // QUIZ COOLDOWN MANAGEMENT
+    // ============================================================
+
+    /**
+     * GET /api/v1/admin/quiz-cooldown/settings
+     * Get current cooldown settings.
+     */
+    @GetMapping("/quiz-cooldown/settings")
+    public ResponseEntity<CooldownSettingsResponse> getCooldownSettings() {
+        return ResponseEntity.ok(quizCooldownService.getSettings());
+    }
+
+    /**
+     * PUT /api/v1/admin/quiz-cooldown/settings
+     * Update cooldown settings (all fields required).
+     */
+    @PutMapping("/quiz-cooldown/settings")
+    public ResponseEntity<CooldownSettingsResponse> updateCooldownSettings(
+            @Valid @RequestBody UpdateCooldownSettingsRequest request) {
+        return ResponseEntity.ok(quizCooldownService.updateSettings(request));
+    }
+
+    /**
+     * POST /api/v1/admin/quiz-cooldown/bypass
+     * Set a bypass for a specific user or quiz.
+     */
+    @PostMapping("/quiz-cooldown/bypass")
+    public ResponseEntity<CooldownSettingsResponse> bypassCooldown(
+            @Valid @RequestBody BypassCooldownRequest request) {
+        return ResponseEntity.ok(quizCooldownService.bypassCooldown(request));
+    }
+
+    /**
+     * DELETE /api/v1/admin/quiz-cooldown/bypass
+     * Clear the current cooldown bypass.
+     */
+    @DeleteMapping("/quiz-cooldown/bypass")
+    public ResponseEntity<CooldownSettingsResponse> clearBypass() {
+        return ResponseEntity.ok(quizCooldownService.clearBypass());
+    }
+
+    /**
+     * GET /api/v1/admin/quiz-cooldown/check?userId=&quizId=
+     * Admin can check cooldown status for any user-quiz pair.
+     */
+    @GetMapping("/quiz-cooldown/check")
+    public ResponseEntity<CooldownCheckResult> checkCooldown(
+            @RequestParam UUID userId,
+            @RequestParam UUID quizId) {
+        return ResponseEntity.ok(quizCooldownService.getCooldownStatus(userId, quizId));
     }
 }

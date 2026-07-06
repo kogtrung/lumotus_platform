@@ -385,7 +385,12 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
       setPhase('session')
     },
     onError: (err: unknown) => {
-      const e = err as { message?: string }
+      const e = err as { message?: string; isAxiosError?: boolean; config?: { cancelled?: boolean } }
+      const isCooldownCancel = e?.message === 'cooldown' || (e as { isCanceled?: boolean })?.isCanceled
+      if (isCooldownCancel) {
+        navigate('/quiz')
+        return
+      }
       if (e?.message !== 'missing quizRef') {
         lumotoast.error(e?.message || 'Lỗi khi bắt đầu quiz')
       }

@@ -28,11 +28,11 @@ VALUES (
     50     -- max 50 total attempts per week
 );
 
--- Index for bypass lookups
+-- Simple indexes for bypass lookups (no partial predicate with NOW())
 CREATE INDEX idx_qcs_bypass_user ON quiz_cooldown_settings(bypass_user_id)
-    WHERE bypass_user_id IS NOT NULL AND (bypass_expires_at IS NULL OR bypass_expires_at > NOW());
+    WHERE bypass_user_id IS NOT NULL;
 CREATE INDEX idx_qcs_bypass_quiz ON quiz_cooldown_settings(bypass_quiz_id)
-    WHERE bypass_quiz_id IS NOT NULL AND (bypass_expires_at IS NULL OR bypass_expires_at > NOW());
+    WHERE bypass_quiz_id IS NOT NULL;
 
 -- Trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_quiz_cooldown_settings_timestamp()

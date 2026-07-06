@@ -5,5 +5,8 @@ public record DashboardStatsResponse(
         int streak,
         int cardsLast7Days,
         int quizzesLast7Days,
-        int xpLast7Days
+        int xpLast7Days,
+        int cardsToday,
+        int quizzesToday,
+        int xpToday
 ) {}

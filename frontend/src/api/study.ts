@@ -413,7 +413,7 @@ export const quizApi = {
       username: string
       avatarUrl: string | null
       avgBestScore: number
-      totalAttempts: number
+      quizzesCompleted: number
       totalCorrectAnswers: number
       totalTimeSeconds: number
       rank: number

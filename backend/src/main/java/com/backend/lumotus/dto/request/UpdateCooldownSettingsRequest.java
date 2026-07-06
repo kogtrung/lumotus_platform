@@ -7,9 +7,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record UpdateCooldownSettingsRequest(
-        @NotNull Boolean enabled,
-        @Min(60) Integer minSecondsBetweenAttempts,
-        @Min(1) Integer maxAttemptsPerQuizPerDay,
-        @Min(1) Integer maxTotalAttemptsPerDay,
-        @Min(1) Integer maxTotalAttemptsPerWeek
+        @NotNull(message = "enabled is required") Boolean enabled,
+        @NotNull(message = "minSecondsBetweenAttempts is required")
+        @Min(value = 1, message = "minSecondsBetweenAttempts must be at least 1 second") Integer minSecondsBetweenAttempts,
+        @NotNull(message = "maxAttemptsPerQuizPerDay is required")
+        @Min(value = 1, message = "maxAttemptsPerQuizPerDay must be at least 1") Integer maxAttemptsPerQuizPerDay,
+        @NotNull(message = "maxTotalAttemptsPerDay is required")
+        @Min(value = 1, message = "maxTotalAttemptsPerDay must be at least 1") Integer maxTotalAttemptsPerDay,
+        @NotNull(message = "maxTotalAttemptsPerWeek is required")
+        @Min(value = 1, message = "maxTotalAttemptsPerWeek must be at least 1") Integer maxTotalAttemptsPerWeek
 ) {}
