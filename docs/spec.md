@@ -396,6 +396,18 @@ Query pattern: `WHERE search_vector @@ plainto_tsquery('simple', :q)`
 
 **Quy tắc app cho `user_card_review.deck_id`:** Gán `deck_id` khi tạo review record (copy deck, first review, import). Khi card chuyển deck (nếu có) — cập nhật đồng bộ trong cùng transaction.
 
+#### Bảng `deck_moderation_logs` (audit approve/reject)
+```sql
+CREATE TABLE deck_moderation_logs (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deck_id        UUID NOT NULL REFERENCES decks(id),
+    moderator_id   UUID NOT NULL REFERENCES users(id),
+    action         VARCHAR(20) NOT NULL, -- APPROVE / REJECT
+    note           TEXT,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
 #### Trigger đồng bộ `total_cards`
 
 ```sql
@@ -578,6 +590,13 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - **`PUT /users/{id}/status`**: Khóa (ban) hoặc kích hoạt lại tài khoản.
 - **`GET /decks/popular`**: Thống kê các bộ thẻ được copy và xem nhiều nhất.
 - **`GET /stats`**: Tổng số user, deck, card, quiz_attempt toàn hệ thống.
+- **`POST /admin/decks/{deckRef}/approve`**: Duyệt deck chờ lên Explore.
+- **`POST /admin/decks/{deckRef}/reject`**: Từ chối deck chờ duyệt.
+
+#### Nhóm 10: Deck Approval & Moderation (`/api/v1/decks`)
+- **`POST /{deckRef}/submit-for-approval`**: Gửi deck cá nhân lên Explore.
+- **`POST /admin/decks/{deckRef}/approve`**: Duyệt deck.
+- **`POST /admin/decks/{deckRef}/reject`**: Từ chối deck.
 
 ---
 
