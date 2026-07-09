@@ -23,16 +23,20 @@ import ProfilePage from '@/pages/ProfilePage'
 // Admin pages
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminDeckManagement from '@/pages/admin/AdminDeckManagement'
+import AdminDeckDetailPage from '@/pages/admin/AdminDeckDetailPage'
 import AdminQuizManagement from '@/pages/admin/AdminQuizManagement'
 import AdminQuizEditPage from '@/pages/admin/AdminQuizEditPage'
 import AdminQuizHistory from '@/pages/admin/AdminQuizHistory'
 import AdminTopicManagement from '@/pages/admin/AdminTopicManagement'
 import AdminUsers from '@/pages/admin/AdminUsers'
 import AdminCooldownConfig from '@/pages/admin/AdminCooldownConfig'
+import AdminStudyHistory from '@/pages/admin/AdminStudyHistory'
+import { DialogManager } from '@/store/dialogStore'
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
 
       <Route element={<AuthLayout />}>
@@ -40,13 +44,15 @@ export default function App() {
         <Route path="register" element={<RegisterPage />} />
       </Route>
 
+      {/* All authenticated routes (USER + ADMIN) */}
       <Route element={<PrivateRoute />}>
+
         {/* Flashcard study session */}
         <Route path="decks/:deckRef/flashcard" element={<MinimalLayout />}>
           <Route index element={<FlashcardStudyPage />} />
         </Route>
 
-        {/* Main app layout */}
+        {/* USER-only layout — ADMIN gets blocked by PrivateRoute guard */}
         <Route element={<MainLayout />}>
           <Route path="home" element={<DashboardPage />} />
           <Route path="flashcard" element={<FlashcardPage />} />
@@ -61,13 +67,15 @@ export default function App() {
           <Route path="settings" element={<ProfilePage />} />
         </Route>
 
-        {/* Admin layout - separate from main app */}
+        {/* ADMIN-only layout */}
         <Route element={<AdminLayout />}>
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="admin/decks" element={<AdminDeckManagement />} />
+          <Route path="admin/decks/:deckRef" element={<AdminDeckDetailPage />} />
           <Route path="admin/quizzes" element={<AdminQuizManagement />} />
           <Route path="admin/quizzes/:quizRef" element={<AdminQuizEditPage />} />
           <Route path="admin/quiz-history" element={<AdminQuizHistory />} />
+          <Route path="admin/study-history" element={<AdminStudyHistory />} />
           <Route path="admin/topics" element={<AdminTopicManagement />} />
           <Route path="admin/users" element={<AdminUsers />} />
           <Route path="admin/cooldown" element={<AdminCooldownConfig />} />
@@ -85,5 +93,7 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  )
+    <DialogManager />
+  </>
+)
 }

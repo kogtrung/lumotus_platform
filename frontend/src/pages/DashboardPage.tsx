@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import {
+  ArcElement,
   BarElement,
   CategoryScale,
   Chart as ChartJS,
@@ -13,11 +14,11 @@ import {
   Title,
   Tooltip,
 } from 'chart.js'
-import { Bar, Line } from 'react-chartjs-2'
+import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import {
   AlertTriangle, BookOpen, ChevronRight, Compass, FileUp, Flame,
   Globe, Layers, List, Lock, Play, Plus, Search,
-  Sparkles, Star, Trophy, Zap,
+  Sparkles, Zap,
 } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { quizApi } from '@/api/study'
@@ -37,13 +38,11 @@ import heroImage from '@/assets/hero.png'
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, Filler, Title, Tooltip, Legend,
+  PointElement, Filler, Title, Tooltip, Legend, ArcElement,
 )
 
 type VisibilityFilter = 'ALL' | 'PUBLIC' | 'PRIVATE'
 type SortMode = 'newest' | 'oldest' | 'az' | 'za'
-
-// ─── Animated counter ─────────────────────────────────────────────────────────
 
 function useAnimatedCounter(end: number, duration = 1500, delay = 0) {
   const [count, setCount] = useState(0)
@@ -79,11 +78,9 @@ function useAnimatedCounter(end: number, duration = 1500, delay = 0) {
   return { count, ref }
 }
 
-// ─── Streak banner ──────────────────────────────────────────────────────────
-
-function StreakBanner({ streak, xp, rank, totalParticipants }: { streak: number; xp: number; rank: number | null; totalParticipants: number }) {
+function StreakBanner({ streak, xpToday }: { streak: number; xpToday: number }) {
   const { count: streakCount, ref: streakRef } = useAnimatedCounter(streak, 1000, 0)
-  const { count: xpCount } = useAnimatedCounter(xp, 1200, 100)
+  const { count: xpCount, ref: xpRef } = useAnimatedCounter(xpToday, 1000, 200)
 
   return (
     <div
@@ -111,25 +108,16 @@ function StreakBanner({ streak, xp, rank, totalParticipants }: { streak: number;
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div
+          ref={(el) => { (xpRef as any).current = el }}
+          className="flex items-center gap-3"
+        >
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
-            <Star className="h-7 w-7 text-yellow-300 fill-yellow-300/40" />
+            <Zap className="h-7 w-7 text-yellow-300" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-white">{xpCount.toLocaleString()}</p>
-            <p className="text-xs text-white/70">XP tổng cộng</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
-            <Trophy className="h-7 w-7 text-yellow-300" />
-          </div>
-          <div>
-            <p className="text-2xl font-extrabold text-white">
-              {rank != null ? `#${rank}` : '—'}
-            </p>
-            <p className="text-xs text-white/70">/{totalParticipants} học sinh</p>
+            <p className="text-2xl font-extrabold text-white">+{xpCount}</p>
+            <p className="text-xs text-white/70">XP hôm nay</p>
           </div>
         </div>
 
@@ -158,40 +146,127 @@ function StreakBanner({ streak, xp, rank, totalParticipants }: { streak: number;
   )
 }
 
-// ─── Quick stat card ────────────────────────────────────────────────────────
+function CardStatsDonut({
+  total,
+  due,
+}: {
+  total: number
+  due: number
+}) {
+  const remaining = total - due
+  const duePct = total > 0 ? Math.round((due / total) * 100) : 0
+  const data = {
+    labels: ['Đến hạn', 'Đã học'],
+    datasets: [{
+      data: [due, Math.max(0, remaining)],
+      backgroundColor: [
+        'rgba(236,72,153,0.85)',
+        'rgba(61,51,72,0.6)',
+      ],
+      borderColor: [
+        '#EC4899',
+        '#4A4060',
+      ],
+      borderWidth: 1,
+      hoverOffset: 6,
+    }],
+  }
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#252030',
+        borderColor: '#3D3348',
+        borderWidth: 1,
+        titleColor: '#F5F0FA',
+        bodyColor: '#8B7A9E',
+        padding: 10,
+        callbacks: {
+          label: (ctx: any) => ` ${ctx.label}: ${ctx.raw} thẻ`,
+        },
+      },
+    },
+  }
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#EC4899]/30 hover:shadow-[0_0_30px_rgba(236,72,153,0.15)] w-full h-full flex items-center">
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(236,72,153,0.08) 0%, transparent 70%)' }}
+      />
+      <div className="flex items-center gap-8 w-full relative">
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-full blur-xl opacity-30" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.6) 0%, transparent 70%)' }} />
+          <div className="relative h-52 w-52">
+            <Doughnut data={data} options={options} />
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-4xl font-black text-white drop-shadow-lg">{total}</p>
+              <p className="text-sm font-medium text-[#8B7A9E]">Tổng thẻ</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 space-y-5">
+          {[
+            { label: 'Đến hạn', value: due, pct: duePct, color: '#EC4899', glow: 'rgba(236,72,153,0.3)' },
+            { label: 'Đã học', value: Math.max(0, remaining), pct: 100 - duePct, color: '#4A4060', glow: 'rgba(74,64,96,0.3)' },
+          ].map(({ label, value, pct, color, glow }) => (
+            <div key={label} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: color, boxShadow: `0 0 8px ${glow}` }} />
+                  <span className="text-sm font-medium text-[#8B7A9E]">{label}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-white">{value}</span>
+                  <span className="text-xs font-semibold text-[#8B7A9E] w-10 text-right">{pct}%</span>
+                </div>
+              </div>
+              <div className="h-2 rounded-full bg-[#1A1520] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, backgroundColor: color, boxShadow: `0 0 6px ${glow}` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function QuickCard({
   icon: Icon, value, label, color, onClick,
 }: {
-  icon: typeof BookOpen; value: string | number; label: string; color: string; onClick?: () => void
+  icon: typeof Layers; value: string | number; label: string; color: string; onClick?: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#EC4899]/30 hover:shadow-lg w-full"
+      className="group relative overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#EC4899]/30 hover:shadow-lg w-full flex-1"
     >
       <div
-        className="pointer-events-none absolute -right-3 -top-3 h-20 w-20 rounded-full opacity-15 blur-xl transition-opacity group-hover:opacity-25"
+        className="pointer-events-none absolute -right-3 -top-3 h-24 w-24 rounded-full opacity-15 blur-xl transition-opacity group-hover:opacity-25"
         style={{ backgroundColor: color }}
       />
-      <div className="relative flex items-center gap-3">
+      <div className="relative flex items-center gap-4">
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
           style={{ backgroundColor: `${color}22` }}
         >
-          <Icon className="h-5 w-5" style={{ color }} />
+          <Icon className="h-7 w-7" style={{ color }} />
         </div>
         <div>
-          <p className="text-lg font-extrabold text-[#F5F0FA]">{value}</p>
-          <p className="text-xs text-[#8B7A9E]">{label}</p>
+          <p className="text-3xl font-extrabold text-[#F5F0FA]">{value}</p>
+          <p className="text-sm text-[#8B7A9E]">{label}</p>
         </div>
       </div>
     </button>
   )
 }
-
-// ─── Deck row with real progress ──────────────────────────────────────────────
 
 function DeckRow({ deck }: { deck: any }) {
   const { data: progress } = useQuery({
@@ -259,12 +334,8 @@ function DeckRow({ deck }: { deck: any }) {
   )
 }
 
-// ─── Active flashcard session banner ──────────────────────────────────────────
-
 function FlashcardSessionBanner({
-  deckRef,
-  session,
-  onDismiss,
+  deckRef, session, onDismiss,
 }: {
   deckRef: string
   session: StudySession
@@ -328,8 +399,6 @@ function FlashcardSessionBanner({
   )
 }
 
-// ─── Active quiz session banner ────────────────────────────────────────────────
-
 function QuizSessionBanner({
   attemptId: _attemptId,
   quizSlug,
@@ -344,13 +413,9 @@ function QuizSessionBanner({
   onDismiss: () => void
 }) {
   const navigate = useNavigate()
-
-  // Countdown: start from the initial remaining time, tick every second.
-  // Sync with server time on each parent re-render (parent refetches every 60s).
   const [displaySeconds, setDisplaySeconds] = useState(_timeRemaining ?? null)
 
   useEffect(() => {
-    // Re-sync whenever server time updates
     if (_timeRemaining !== null) {
       setDisplaySeconds(_timeRemaining)
     }
@@ -365,12 +430,10 @@ function QuizSessionBanner({
       })
     }, 1000)
     return () => clearInterval(id)
-  }, []) // run once on mount
+  }, [])
 
   const m = displaySeconds !== null ? Math.floor(displaySeconds / 60) : null
   const s = displaySeconds !== null ? displaySeconds % 60 : null
-
-  // Resume via slug if available, otherwise slug is null (rare edge case)
   const resumeRef = quizSlug ?? _attemptId
 
   return (
@@ -422,12 +485,11 @@ function QuizSessionBanner({
   )
 }
 
-// ─── Weekly bar chart ─────────────────────────────────────────────────────────
-
-function WeeklyChart({ data }: { data: { days: { date: string; cards: number; quizzes: number; xp: number }[]; thisWeek: { cards: number; quizzes: number; xp: number }; lastWeek: { cards: number; quizzes: number; xp: number } } | undefined }) {
+function WeeklyChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
   if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[#252030]" />
 
-  const labels = data.days.map((d: any) => {
+  const slice = data.daily.slice(-days)
+  const labels = slice.map((d: any) => {
     const dt = new Date(d.date)
     return dt.toLocaleDateString('vi-VN', { weekday: 'short' })
   })
@@ -464,7 +526,7 @@ function WeeklyChart({ data }: { data: { days: { date: string; cards: number; qu
               datasets: [
                 {
                   label: 'Thẻ',
-                  data: data.days.map((d: any) => d.cards),
+                  data: slice.map((d: any) => d.cards),
                   backgroundColor: 'rgba(236,72,153,0.7)',
                   borderRadius: 4,
                   barThickness: 16,
@@ -484,7 +546,7 @@ function WeeklyChart({ data }: { data: { days: { date: string; cards: number; qu
               datasets: [
                 {
                   label: 'Quiz',
-                  data: data.days.map((d: any) => d.quizzes),
+                  data: slice.map((d: any) => d.quizzes),
                   backgroundColor: 'rgba(249,115,22,0.7)',
                   borderRadius: 4,
                   barThickness: 16,
@@ -499,13 +561,11 @@ function WeeklyChart({ data }: { data: { days: { date: string; cards: number; qu
   )
 }
 
-// ─── XP trend line chart ───────────────────────────────────────────────────────
-
-function XpTrendChart({ data }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined }) {
+function XpTrendChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
   if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[#252030]" />
 
-  const last14 = data.daily.slice(-14)
-  const labels = last14.map((d: any) => {
+  const slice = data.daily.slice(-days)
+  const labels = slice.map((d: any) => {
     const dt = new Date(d.date)
     return dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
   })
@@ -515,7 +575,7 @@ function XpTrendChart({ data }: { data: { daily: { date: string; cards: number; 
     datasets: [
       {
         label: 'XP kiếm được',
-        data: last14.map((d: any) => d.xp),
+        data: slice.map((d: any) => d.xp),
         borderColor: '#EC4899',
         backgroundColor: 'rgba(236,72,153,0.15)',
         fill: true,
@@ -553,16 +613,14 @@ function XpTrendChart({ data }: { data: { daily: { date: string; cards: number; 
   )
 }
 
-// ─── Activity heatmap ─────────────────────────────────────────────────────────
-
-function ActivityHeatmap({ data }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined }) {
+function ActivityHeatmap({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
   if (!data) return null
-  const days = data.daily.slice(-28)
-  const maxXp = Math.max(...days.map((d: any) => d.xp), 1)
+  const slice = data.daily.slice(-days)
+  const maxXp = Math.max(...slice.map((d: any) => d.xp), 1)
 
   return (
     <div className="grid grid-cols-7 gap-1">
-      {days.map((d: any, i: number) => {
+      {slice.map((d: any, i: number) => {
         const intensity = d.xp > 0 ? Math.max(1, Math.ceil((d.xp / maxXp) * 4)) : 0
         const colors = [
           'bg-[#3D3348]',
@@ -588,18 +646,20 @@ function ActivityHeatmap({ data }: { data: { daily: { date: string; cards: numbe
   )
 }
 
-// ─── Library section ──────────────────────────────────────────────────────────
-
 function LibrarySection({
   decks,
   totalDecks,
   loading,
   onCreateOpen,
+  onImportOpen,
+  sectionRef,
 }: {
   decks: ReturnType<typeof useMemo<any[]>>
   totalDecks: number
   loading: boolean
   onCreateOpen: () => void
+  onImportOpen: () => void
+  sectionRef: (el: HTMLDivElement | null) => void
 }) {
   const [query, setQuery] = useState('')
   const [visibility, setVisibility] = useState<VisibilityFilter>('ALL')
@@ -629,7 +689,7 @@ function LibrarySection({
   }, [decks, query, visibility, sort])
 
   return (
-    <div className="space-y-5">
+    <div ref={sectionRef} className="space-y-5 scroll-mt-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-[#F5F0FA]">Thư viện Deck</h2>
@@ -659,7 +719,7 @@ function LibrarySection({
             <Compass className="h-4 w-4" />
             Khám phá
           </Button>
-          <Button variant="outline" size="md" onClick={onCreateOpen}>
+          <Button variant="outline" size="md" onClick={onImportOpen}>
             <FileUp className="h-4 w-4" />
             Import
           </Button>
@@ -766,16 +826,22 @@ function LibrarySection({
   )
 }
 
-// ─── Dashboard page ───────────────────────────────────────────────────────────
-
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [activityDays, setActivityDays] = useState(30)
   const [weekOffset, setWeekOffset] = useState(0)
+
+  const librarySectionRef = useRef<HTMLDivElement | null>(null)
+  const setLibrarySectionRef = useCallback((el: HTMLDivElement | null) => {
+    librarySectionRef.current = el
+  }, [])
+
+  const scrollToLibrary = () => {
+    librarySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // Active flashcard session (localStorage)
   const [activeFlashcardSession, setActiveFlashcardSession] = useState<{ deckRef: string; session: StudySession } | null>(null)
@@ -794,14 +860,12 @@ export default function DashboardPage() {
   const { data: activeQuizSessions } = useQuery({
     queryKey: ['quiz', 'active-sessions'],
     queryFn: () => quizApi.getActiveSessions().then((r) => r.data),
-    refetchInterval: 15_000, // refresh every 15s so session banner disappears quickly
+    refetchInterval: 15_000,
     refetchOnWindowFocus: true,
   })
 
-  // Track dismissal so useEffect doesn't re-show banner after user dismissed
   const quizBannerDismissedRef = useRef(false)
 
-  // Pick first active quiz session for banner (show only one at a time)
   useEffect(() => {
     if (quizBannerDismissedRef.current) return
     if (activeQuizSessions && activeQuizSessions.length > 0) {
@@ -841,6 +905,9 @@ export default function DashboardPage() {
       qc.invalidateQueries({ queryKey: ['quiz', 'active-sessions'] })
       qc.invalidateQueries({ queryKey: ['quiz', 'attempts'] })
       qc.invalidateQueries({ queryKey: ['quiz', 'me'] })
+      qc.invalidateQueries({ queryKey: ['progress', 'me'] })
+      qc.invalidateQueries({ queryKey: ['stats', 'dashboard'] })
+      qc.invalidateQueries({ queryKey: ['stats', 'activity'] })
     }
   }, [activeQuizSession, qc])
 
@@ -870,15 +937,47 @@ export default function DashboardPage() {
     queryFn: () => statsApi.getDashboard().then((r) => r.data),
   })
 
-  const { data: weeklyData } = useQuery({
-    queryKey: ['stats', 'weekly', weekOffset],
-    queryFn: () => statsApi.getWeekly(weekOffset).then((r) => r.data),
+  const { data: activityData } = useQuery({
+    queryKey: ['stats', 'activity'],
+    queryFn: () => statsApi.getActivity({ days: 90 }).then((r) => r.data),
   })
 
-  const { data: activityData } = useQuery({
-    queryKey: ['stats', 'activity', activityDays],
-    queryFn: () => statsApi.getActivity({ days: activityDays }).then((r) => r.data),
-  })
+  // Compute this-week totals from activityData (last 7 days)
+  const weekTotal = useMemo(() => {
+    if (!activityData?.daily) return { cards: 0, quizzes: 0, xp: 0 }
+    const last7 = activityData.daily.slice(-7)
+    return {
+      cards: last7.reduce((s, d) => s + d.cards, 0),
+      quizzes: last7.reduce((s, d) => s + d.quizzes, 0),
+      xp: last7.reduce((s, d) => s + d.xp, 0),
+    }
+  }, [activityData])
+
+  // Slices for weekOffset: 0 = this week (last N days up to today), 1 = last week (8-14), 2 = week before (15-21)
+  const weekSlice = useMemo(() => {
+    if (!activityData?.daily) return []
+    const now = new Date()
+    const dayOfWeek = now.getDay() // 0=Sun
+    const effectiveDay = dayOfWeek === 0 ? 7 : dayOfWeek // Mon=1..Sun=7
+
+    if (weekOffset === 0) {
+      // This week: show days 1..effectiveDay (Mon to today)
+      const thisWeek = activityData.daily.slice(-effectiveDay)
+      return thisWeek
+    }
+    const base = weekOffset * 7
+    return activityData.daily.slice(-(base + 7), base === 0 ? undefined : -base)
+  }, [activityData, weekOffset])
+
+  // Days in current week slice for chart rendering
+  const chartDays = useMemo(() => {
+    if (!activityData?.daily) return 7
+    if (weekOffset === 0) {
+      const now = new Date()
+      return now.getDay() === 0 ? 7 : now.getDay()
+    }
+    return 7
+  }, [activityData, weekOffset])
 
   // Real progress data (for rank)
   const { data: progressData } = useQuery({
@@ -923,9 +1022,7 @@ export default function DashboardPage() {
         {/* ── Streak banner ── */}
         <StreakBanner
           streak={progressData?.streak ?? dashboardStats?.streak ?? user?.streak ?? 0}
-          xp={progressData?.xp ?? dashboardStats?.totalXp ?? user?.xp ?? 0}
-          rank={progressData?.rank ?? null}
-          totalParticipants={progressData?.totalParticipants ?? 0}
+          xpToday={dashboardStats?.xpToday ?? 0}
         />
 
         {/* ── Active sessions ── */}
@@ -956,13 +1053,56 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* ── Quick stats ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <QuickCard icon={BookOpen} value={totalDue === 0 ? '—' : totalDue} label="Thẻ đến hạn" color="#EC4899" onClick={() => navigate('/flashcard')} />
-          <QuickCard icon={Layers} value={totalDecks} label="Deck của bạn" color="#10B981" />
-          <QuickCard icon={Star} value={totalCards} label="Tổng thẻ" color="#F97316" />
-          <QuickCard icon={Zap} value={`+${dashboardStats?.xpToday ?? 0}`} label="XP hôm nay" color="#A78BFA" />
-          <QuickCard icon={Sparkles} value={`${dashboardStats?.quizzesToday ?? 0}`} label="Quiz hôm nay" color="#06B6D4" />
+        {/* ── Quick stats + Heatmap ── */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <CardStatsDonut total={totalCards} due={totalDue} />
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            {/* Heatmap row */}
+            <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-[#F5F0FA]">
+                  {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Tuần ${weekOffset} trước`}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={weekOffset >= 2}
+                    onClick={() => setWeekOffset((o) => Math.min(3, o + 1))}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
+                  >
+                    ‹
+                  </button>
+                  <span className="px-2 text-xs font-semibold text-[#8B7A9E] min-w-[60px] text-center">
+                    {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Trước nữa`}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={weekOffset <= 0}
+                    onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+              <ActivityHeatmap data={{ daily: weekSlice }} days={chartDays} />
+              <div className="mt-2 flex items-center gap-2 text-[10px] text-[#8B7A9E]">
+                <span>Ít</span>
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div key={i} className={cn('h-3 w-3 rounded-sm', [
+                    'bg-[#3D3348]', 'bg-[rgba(236,72,153,0.25)]', 'bg-[rgba(236,72,153,0.5)]',
+                    'bg-[rgba(236,72,153,0.75)]', 'bg-[#EC4899]',
+                  ][i])} />
+                ))}
+                <span>Nhiều</span>
+              </div>
+            </div>
+            {/* QuickCard row */}
+            <div className="flex gap-4">
+              <QuickCard icon={Layers} value={totalDecks} label="Deck của bạn" color="#10B981" onClick={scrollToLibrary} />
+              <QuickCard icon={Sparkles} value={`${dashboardStats?.quizzesToday ?? 0}`} label="Quiz hôm nay" color="#06B6D4" />
+            </div>
+          </div>
         </div>
 
         {/* ── Stats charts ── */}
@@ -972,30 +1112,24 @@ export default function DashboardPage() {
               📊 Hoạt động
             </h2>
             <div className="flex flex-wrap items-center gap-3 text-xs">
-              {/* Today's stats */}
               <div className="flex items-center gap-2 rounded-lg bg-[#EC4899]/20 px-3 py-1.5 text-[#EC4899]">
                 <span className="font-semibold">Hôm nay:</span>
                 <span>{dashboardStats?.cardsToday ?? 0} thẻ</span>
                 <span className="text-white/50">·</span>
                 <span>{dashboardStats?.quizzesToday ?? 0} quiz</span>
-                <span className="text-white/50">·</span>
-                <span>+{dashboardStats?.xpToday ?? 0} XP</span>
               </div>
-              {/* Weekly stats */}
-              {weeklyData && (
-                <div className="flex items-center gap-2 text-[#8B7A9E]">
-                  <span className="font-semibold">Tuần:</span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-[#EC4899]" /> {weeklyData.thisWeek.cards} thẻ
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-[#F97316]" /> {weeklyData.thisWeek.quizzes} quiz
-                  </span>
-                  <span className="flex items-center gap-1 text-[#EC4899] font-semibold">
-                    ⚡ {weeklyData.thisWeek.xp} XP
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-[#8B7A9E]">
+                <span className="font-semibold">7 ngày:</span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-[#EC4899]" /> {weekTotal.cards} thẻ
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-[#F97316]" /> {weekTotal.quizzes} quiz
+                </span>
+                <span className="flex items-center gap-1 text-[#EC4899] font-semibold">
+                  ⚡ {weekTotal.xp} XP
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1004,74 +1138,62 @@ export default function DashboardPage() {
             <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold text-[#F5F0FA]">
-                  {weekOffset === 0 ? 'Hoạt động tuần này' : `Hoạt động tuần trước ${weekOffset}`}
+                  {weekOffset === 0 ? 'Hoạt động tuần này' : `Hoạt động ${weekOffset === 1 ? 'tuần trước' : `tuần ${weekOffset} trước`}`}
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={weekOffset >= 2}
+                    onClick={() => setWeekOffset((o) => Math.min(3, o + 1))}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
+                  >
+                    ‹
+                  </button>
+                  <span className="px-2 text-xs font-semibold text-[#8B7A9E] min-w-[80px] text-center">
+                    {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Trước nữa`}
+                  </span>
                   <button
                     type="button"
                     disabled={weekOffset <= 0}
                     onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-40 hover:text-white"
-                  >
-                    ‹
-                  </button>
-                  <span className="text-xs font-semibold text-[#8B7A9E]">
-                    {weekOffset === 0 ? 'Tuần này' : `Các tuần trước ${weekOffset}`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setWeekOffset((o) => o + 1)}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] hover:text-white"
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
                   >
                     ›
                   </button>
                 </div>
               </div>
-              <WeeklyChart data={weeklyData} />
+              <WeeklyChart data={{ daily: weekSlice }} days={chartDays} />
             </div>
 
             {/* XP trend */}
             <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-[#F5F0FA]">XP 14 ngày qua</h3>
-                <select
-                  value={activityDays}
-                  onChange={(e) => setActivityDays(Number(e.target.value))}
-                  className="h-8 cursor-pointer rounded-lg border border-[#3D3348] bg-[#1A1520] px-2 text-xs font-semibold text-[#8B7A9E]"
-                >
-                  <option value={7}>7 ngày</option>
-                  <option value={14}>14 ngày</option>
-                  <option value={30}>30 ngày</option>
-                </select>
+                <h3 className="text-sm font-semibold text-[#F5F0FA]">
+                  XP {weekOffset === 0 ? 'tuần này' : weekOffset === 1 ? 'tuần trước' : 'trước nữa'}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={weekOffset >= 2}
+                    onClick={() => setWeekOffset((o) => Math.min(3, o + 1))}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
+                  >
+                    ‹
+                  </button>
+                  <span className="px-2 text-xs font-semibold text-[#8B7A9E] min-w-[80px] text-center">
+                    {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Trước nữa`}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={weekOffset <= 0}
+                    onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
+                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
-              <XpTrendChart data={activityData} />
-            </div>
-          </div>
-
-          {/* Activity heatmap */}
-          <div className="mt-4 rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-[#F5F0FA]">Hoạt động {activityDays} ngày</h3>
-              <select
-                value={activityDays}
-                onChange={(e) => setActivityDays(Number(e.target.value))}
-                className="h-8 cursor-pointer rounded-lg border border-[#3D3348] bg-[#1A1520] px-2 text-xs font-semibold text-[#8B7A9E]"
-              >
-                <option value={14}>14 ngày</option>
-                <option value={30}>30 ngày</option>
-                <option value={60}>60 ngày</option>
-              </select>
-            </div>
-            <ActivityHeatmap data={activityData} />
-            <div className="mt-2 flex items-center gap-2 text-[10px] text-[#8B7A9E]">
-              <span>Ít</span>
-              {[0,1,2,3,4].map(i => (
-                <div key={i} className={cn('h-3 w-3 rounded-sm', [
-                  'bg-[#3D3348]', 'bg-[rgba(236,72,153,0.25)]', 'bg-[rgba(236,72,153,0.5)]',
-                  'bg-[rgba(236,72,153,0.75)]', 'bg-[#EC4899]',
-                ][i])} />
-              ))}
-              <span>Nhiều</span>
+              <XpTrendChart data={{ daily: weekSlice }} days={chartDays} />
             </div>
           </div>
         </section>
@@ -1082,6 +1204,8 @@ export default function DashboardPage() {
           totalDecks={totalDecks}
           loading={isLoading}
           onCreateOpen={() => setCreateOpen(true)}
+          onImportOpen={() => setImportOpen(true)}
+          sectionRef={setLibrarySectionRef}
         />
 
         {/* ── Recent decks with real progress ── */}

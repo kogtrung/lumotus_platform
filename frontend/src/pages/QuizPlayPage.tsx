@@ -366,6 +366,7 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
         setAnsweredSet(new Set())
         setNavIndex(0)
       }
+      qc.invalidateQueries({ queryKey: ['quiz', 'active-sessions'] })
       setResult(null)
       setExpiredSet(new Set())
       // Use per-question time limit from quiz config, default to 30s if not set

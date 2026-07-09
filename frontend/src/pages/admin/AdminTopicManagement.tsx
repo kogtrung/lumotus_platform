@@ -145,19 +145,19 @@ function TopicDialog({
   const isEditing = !!topic
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(10, 8, 20, 0.85)', backdropFilter: 'blur(4px)' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#3D3348] bg-[#1F1A28] shadow-2xl animate-dialog-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl animate-dialog-in">
         {/* Gradient accent bar */}
         <div className="h-0.5 w-full shrink-0 bg-gradient-to-r from-[#EC4899] to-[#F97316]" />
 
-        <div className="flex shrink-0 items-center justify-between border-b border-[#3D3348] px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(236,72,153,0.3)] bg-[rgba(236,72,153,0.1)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-pink-100 bg-pink-50">
               <Tag className="h-5 w-5 text-[#EC4899]" strokeWidth={2.25} />
             </div>
-            <h2 className="text-base font-extrabold text-[#F5F0FA]">{isEditing ? 'Sửa Topic' : 'Tạo Topic mới'}</h2>
+            <h2 className="text-base font-extrabold text-gray-900">{isEditing ? 'Sửa Topic' : 'Tạo Topic mới'}</h2>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8B7A9E] transition-all hover:bg-[#252030] hover:text-[#F5F0FA]">
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900">
             <X className="h-5 w-5" strokeWidth={2.25} />
           </button>
         </div>
@@ -165,7 +165,7 @@ function TopicDialog({
         <div className="space-y-4 px-5 py-4">
           {/* Name */}
           <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">
               Tên <span className="text-rose-400">*</span>
             </label>
             <input
@@ -173,18 +173,18 @@ function TopicDialog({
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="VD: IELTS Vocabulary"
-              className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#EC4899] focus:outline-none"
             />
           </div>
 
           {/* Slug */}
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">
                 Slug <span className="text-rose-400">*</span>
               </label>
-              <label className="flex items-center gap-1.5 text-xs text-[#8B7A9E]">
-                <input type="checkbox" checked={autoSlug} onChange={(e) => setAutoSlug(e.target.checked)} disabled={isEditing} className="h-3.5 w-3.5 rounded border-[#3D3348] accent-pink-500" />
+              <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                <input type="checkbox" checked={autoSlug} onChange={(e) => setAutoSlug(e.target.checked)} disabled={isEditing} className="h-3.5 w-3.5 rounded border-gray-200 accent-pink-500" />
                 Tự động
               </label>
             </div>
@@ -194,63 +194,63 @@ function TopicDialog({
               onChange={(e) => setSlug(e.target.value)}
               placeholder="ielts-vocabulary"
               disabled={isEditing}
-              className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none disabled:bg-[#1A1520] disabled:opacity-60"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#EC4899] focus:outline-none disabled:bg-gray-100 disabled:opacity-60"
             />
-            <p className="mt-1 text-[11px] text-[#8B7A9E]/60">Kebab-case: chữ thường, dùng dấu gạch ngang</p>
+            <p className="mt-1 text-[11px] text-gray-500/60">Kebab-case: chữ thường, dùng dấu gạch ngang</p>
           </div>
 
           {/* Description */}
           <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Mô tả</label>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">Mô tả</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Mô tả topic..."
               rows={2}
-              className="w-full resize-none rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none"
+              className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#EC4899] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Icon */}
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Icon (emoji)</label>
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">Icon (emoji)</label>
               <input type="text" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="📚"
-                className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none" />
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#EC4899] focus:outline-none" />
             </div>
             {/* Sort Order */}
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Thứ tự</label>
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">Thứ tự</label>
               <input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} placeholder="0"
-                className="w-full rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none" />
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#EC4899] focus:outline-none" />
             </div>
           </div>
 
           {/* Color */}
           <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B7A9E]">Màu</label>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">Màu</label>
             <div className="flex items-center gap-3">
               <input
                 type="text"
                 value={colorHex}
                 onChange={(e) => setColorHex(e.target.value)}
                 placeholder="#EC4899"
-                className="flex-1 rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm text-[#F5F0FA] placeholder-[#8B7A9E]/50 focus:border-[#EC4899] focus:outline-none"
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#EC4899] focus:outline-none"
               />
               <input
                 type="color"
                 value={colorHex}
                 onChange={(e) => setColorHex(e.target.value)}
-                className="h-11 w-16 cursor-pointer rounded-xl border border-[#3D3348] bg-transparent"
+                className="h-11 w-16 cursor-pointer rounded-xl border border-gray-200 bg-transparent"
               />
             </div>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#3D3348] px-5 py-4">
+        <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-gray-200 px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-2.5 text-sm font-semibold text-[#8B7A9E] transition-all hover:border-[#3D3348] hover:bg-[#2D2538] hover:text-[#F5F0FA]"
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-500 transition-all hover:border-gray-200 hover:bg-gray-100 hover:text-gray-900"
           >
             Hủy
           </button>

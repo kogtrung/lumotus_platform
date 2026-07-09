@@ -1,22 +1,35 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, ChevronRight, Play, Search, TrendingUp, Zap } from 'lucide-react'
+import { BookOpen, ChevronRight, Compass, Play, Search, Sparkles, TrendingUp, Zap } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { reviewApi } from '@/api/review'
+import { useAuthStore } from '@/store/authStore'
 import DeckProgressBar from '@/components/flashcard/DeckProgressBar'
 import { cn } from '@/utils/cn'
 import type { DeckSummary } from '@/types/deck'
 
+type Tab = 'personal' | 'explore'
+
 export default function FlashcardPage() {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const [tab, setTab] = useState<Tab>('personal')
   const [searchInput, setSearchInput] = useState('')
   const [selectedDeck, setSelectedDeck] = useState<DeckSummary | null>(null)
 
-  const { data: decks = [], isLoading } = useQuery({
+  const { data: personalData, isLoading: loadingPersonal } = useQuery({
     queryKey: ['decks', { mine: true, page: 0, size: 100 }],
-    queryFn: () => decksApi.list({ mine: true, page: 0, size: 100 }).then((r) => r.data.content),
+    queryFn: () => decksApi.list({ mine: true, page: 0, size: 100 }).then((r) => r.data),
   })
+
+  const { data: exploreData, isLoading: loadingExplore } = useQuery({
+    queryKey: ['decks', { mine: false, page: 0, size: 100 }],
+    queryFn: () => decksApi.list({ mine: false, page: 0, size: 100 }).then((r) => r.data),
+  })
+
+  const personalDecks = useMemo(() => personalData?.content ?? [], [personalData])
+  const exploreDecks = useMemo(() => exploreData?.content ?? [], [exploreData])
 
   const progressQuery = useQuery({
     queryKey: ['review', 'deck-progress', selectedDeck?.id],
@@ -30,6 +43,9 @@ export default function FlashcardPage() {
     },
     enabled: !!selectedDeck?.id,
   })
+
+  const decks = tab === 'personal' ? personalDecks : exploreDecks
+  const isLoading = tab === 'personal' ? loadingPersonal : loadingExplore
 
   const filteredDecks = decks.filter((deck) =>
     deck.title.toLowerCase().includes(searchInput.toLowerCase()),
@@ -59,6 +75,40 @@ export default function FlashcardPage() {
         {/* Deck list */}
         <div className="lg:col-span-3">
           <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4 shadow-lg">
+            {/* Tabs */}
+            <div className="mb-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => { setTab('personal'); setSearchInput(''); setSelectedDeck(null) }}
+                className={cn(
+                  'rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
+                  tab === 'personal'
+                    ? 'bg-[#EC4899] text-white shadow-sm'
+                    : 'text-[#8B7A9E] hover:bg-[#2D2538] hover:text-[#F5F0FA]',
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Của bạn ({personalDecks.length})
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTab('explore'); setSearchInput(''); setSelectedDeck(null) }}
+                className={cn(
+                  'rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
+                  tab === 'explore'
+                    ? 'bg-[#EC4899] text-white shadow-sm'
+                    : 'text-[#8B7A9E] hover:bg-[#2D2538] hover:text-[#F5F0FA]',
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <Compass className="h-3.5 w-3.5" />
+                  Khám phá ({exploreDecks.length})
+                </span>
+              </button>
+            </div>
+
             {/* Search */}
             <div className="relative mb-4">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B7A9E]" />
@@ -89,10 +139,10 @@ export default function FlashcardPage() {
               <div className="py-12 text-center">
                 <BookOpen className="mx-auto h-12 w-12 text-[#3D3348]" />
                 <p className="mt-3 font-semibold text-[#8B7A9E]">
-                  {searchInput ? 'Không tìm thấy deck' : 'Chưa có deck nào'}
+                  {searchInput ? 'Không tìm thấy deck' : tab === 'personal' ? 'Chưa có deck nào' : 'Chưa có deck công khai'}
                 </p>
                 <p className="mt-1 text-sm text-[#8B7A9E]">
-                  {searchInput ? 'Thử từ khóa khác' : 'Tạo deck đầu tiên để bắt đầu'}
+                  {searchInput ? 'Thử từ khóa khác' : tab === 'personal' ? 'Tạo deck đầu tiên để bắt đầu' : 'Hãy khám phá thêm deck từ cộng đồng'}
                 </p>
               </div>
             )}
@@ -114,12 +164,19 @@ export default function FlashcardPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate font-bold text-[#F5F0FA] group-hover:text-[#EC4899] transition-colors">
-                          {deck.title}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate font-bold text-[#F5F0FA] group-hover:text-[#EC4899] transition-colors">
+                            {deck.title}
+                          </h3>
+                          {tab === 'explore' && user?.id && deck.ownerId === user.id && (
+                            <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10px] font-bold text-yellow-300">
+                              Của bạn
+                            </span>
+                          )}
+                        </div>
                         <div className="mt-1 flex items-center gap-2 text-xs text-[#8B7A9E]">
                           <span className="font-semibold text-[#EC4899]">{deck.cardCount} thẻ</span>
-                          {deck.isPublic && (
+                          {tab === 'explore' && deck.isPublic && (
                             <span className="rounded-full bg-[#10B981]/15 px-2 py-0.5 text-[#10B981]">
                               Công khai
                             </span>
@@ -159,7 +216,14 @@ export default function FlashcardPage() {
               <>
                 <h2 className="mb-1 text-xs font-bold uppercase tracking-wider text-[#EC4899]">Deck đã chọn</h2>
                 <div className="rounded-xl border border-[#3D3348] bg-[#1A1520] p-4 mt-2">
-                  <h3 className="text-lg font-bold text-[#F5F0FA]">{selectedDeck.title}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-lg font-bold text-[#F5F0FA]">{selectedDeck.title}</h3>
+                    {tab === 'explore' && user?.id && selectedDeck.ownerId === user.id && (
+                      <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10px] font-bold text-yellow-300">
+                        Của bạn
+                      </span>
+                    )}
+                  </div>
                   {selectedDeck.description && (
                     <p className="mt-1 text-sm text-[#8B7A9E]">{selectedDeck.description}</p>
                   )}

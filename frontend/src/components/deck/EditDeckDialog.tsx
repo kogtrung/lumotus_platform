@@ -1,12 +1,12 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { lumotoast } from '@/components/ui/Toast'
-import { Check, FileText, Globe, Hash, Lock, Save, Settings as SettingsIcon, Tag, X } from 'lucide-react'
+import { FileText, Hash, Save, Settings as SettingsIcon, X } from 'lucide-react'
 import { decksApi } from '@/api/decks'
-import { topicsApi } from '@/api/topics'
 import { inputClass } from '@/components/ui/inputClass'
 import { cn } from '@/utils/cn'
 import { getApiErrorMessage } from '@/utils/apiError'
@@ -15,8 +15,6 @@ import type { DeckSummary } from '@/types/deck'
 const schema = z.object({
   title: z.string().min(1, 'Nhập tên deck').max(200),
   description: z.string().max(2000).optional(),
-  isPublic: z.boolean(),
-  topicIds: z.array(z.string()),
 })
 
 type FormData = z.infer<typeof schema>
@@ -41,26 +39,17 @@ export default function EditDeckDialog({
   deleting,
 }: EditDeckDialogProps) {
   const queryClient = useQueryClient()
-  const { data: topics = [] } = useQuery({
-    queryKey: ['topics'],
-    queryFn: () => topicsApi.list().then((r) => r.data),
-    enabled: open,
-  })
 
   const {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       title: deck.title,
       description: deck.description ?? '',
-      isPublic: deck.isPublic,
-      topicIds: deck.topics.map((t) => t.id),
     },
   })
 
@@ -69,8 +58,6 @@ export default function EditDeckDialog({
       reset({
         title: deck.title,
         description: deck.description ?? '',
-        isPublic: deck.isPublic,
-        topicIds: deck.topics.map((t) => t.id),
       })
     }
   }, [open, deck, reset])
@@ -88,17 +75,14 @@ export default function EditDeckDialog({
     }
   }, [open, onClose])
 
-  const selectedTopics = watch('topicIds')
-  const isPublic = watch('isPublic')
-
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       decksApi.update(deckRef, {
         title: data.title,
         description: data.description || undefined,
-        isPublic: data.isPublic,
-        isCopyable: data.isPublic,
-        topicIds: data.isPublic ? data.topicIds : [],
+        // User deck: always private, cannot self-publish
+        isPublic: false,
+        isCopyable: false,
       }),
     onSuccess: async () => {
       await Promise.all([
@@ -114,27 +98,9 @@ export default function EditDeckDialog({
 
   if (!open) return null
 
-  const toggleTopic = (id: string) => {
-    const adding = !selectedTopics.includes(id)
-    const next = adding
-      ? [...selectedTopics, id]
-      : selectedTopics.filter((t) => t !== id)
-    setValue('topicIds', next)
-    if (adding) {
-      setValue('isPublic', true)
-    }
-  }
-
-  const onPublicChange = (checked: boolean) => {
-    setValue('isPublic', checked)
-    if (!checked) {
-      setValue('topicIds', [])
-    }
-  }
-
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ background: 'rgba(10, 8, 20, 0.85)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
@@ -149,7 +115,9 @@ export default function EditDeckDialog({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-[var(--color-text)]">Cài đặt deck</h2>
-              <p className="text-[11px] text-[var(--color-text-muted)]">Bật công khai để xuất hiện trên Khám phá</p>
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                Gửi duyệt để xuất hiện trên Khám phá
+              </p>
             </div>
           </div>
           <button
@@ -162,7 +130,10 @@ export default function EditDeckDialog({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+        <form
+          onSubmit={handleSubmit((d) => mutation.mutate(d))}
+          className="flex-1 space-y-4 overflow-y-auto px-5 py-5"
+        >
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
               <Hash className="h-3 w-3" />
@@ -190,81 +161,24 @@ export default function EditDeckDialog({
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => onPublicChange(!isPublic)}
-            className={cn(
-              'group flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all',
-              isPublic
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]'
-                : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]',
-            )}
-          >
-            <div
-              className={cn(
-                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all',
-                isPublic
-                  ? 'bg-[var(--color-primary)] text-white shadow-md'
-                  : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-primary-subtle)] group-hover:text-[var(--color-primary)]',
-              )}
-            >
-              {isPublic ? <Globe className="h-5 w-5" strokeWidth={2.25} /> : <Lock className="h-5 w-5" strokeWidth={2.25} />}
+          {deck.verificationStatus === 'PENDING' && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+              Đang chờ duyệt. Bạn sẽ nhận thông báo khi được duyệt hoặc từ chối.
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[var(--color-text)]">
-                {isPublic ? 'Công khai trên Khám phá' : 'Riêng tư'}
-              </p>
-              <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                {isPublic
-                  ? 'Mọi người có thể xem và copy deck này'
-                  : 'Chỉ bạn thấy deck này trong thư viện'}
-              </p>
-            </div>
-            <div
-              className={cn(
-                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-                isPublic ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border-strong)]',
-              )}
-            >
-              <div
-                className={cn(
-                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform',
-                  isPublic ? 'translate-x-5' : 'translate-x-0.5',
-                )}
-              />
-            </div>
-          </button>
+          )}
 
-          {isPublic && topics.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                <Tag className="h-3 w-3" />
-                Chủ đề hệ thống
-              </p>
-              <p className="mb-2.5 text-xs text-[var(--color-text-muted)]">
-                Giúp người khác tìm deck theo danh mục trên Khám phá.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {topics.map((t) => {
-                  const active = selectedTopics.includes(t.id)
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => toggleTopic(t.id)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-all',
-                        active
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-sm'
-                          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]',
-                      )}
-                    >
-                      {active && <Check className="h-3 w-3" strokeWidth={3} />}
-                      {t.name}
-                    </button>
-                  )
-                })}
-              </div>
+          {deck.verificationStatus === 'APPROVED' && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-700">
+              Deck đã được duyệt và hiển thị trên Khám phá.
+            </div>
+          )}
+
+          {deck.verificationStatus === 'REJECTED' && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+              Deck đã bị từ chối. Vui lòng chỉnh sửa và gửi lại yêu cầu duyệt.
+              {deck.verificationNote && (
+                <p className="mt-1 font-medium">Lý do: {deck.verificationNote}</p>
+              )}
             </div>
           )}
         </form>
@@ -307,6 +221,7 @@ export default function EditDeckDialog({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

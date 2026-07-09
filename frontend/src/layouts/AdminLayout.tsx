@@ -8,6 +8,9 @@ import {
   ChevronLeft,
   LogOut,
   Shield,
+  Tag,
+  History,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useAuthStore } from '@/store/authStore'
@@ -24,6 +27,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Quản lý Deck', href: '/admin/decks', icon: BookOpen, color: '#10B981' },
   { label: 'Quản lý Quiz', href: '/admin/quizzes', icon: FileQuestion, color: '#F97316' },
   { label: 'Quản lý Users', href: '/admin/users', icon: Users, color: '#A78BFA' },
+  { label: 'Lịch sử Quiz', href: '/admin/quiz-history', icon: History, color: '#06B6D4' },
+  { label: 'Lịch sử ôn tập', href: '/admin/study-history', icon: ClipboardList, color: '#8B5CF6' },
+  { label: 'Chủ đề (Topics)', href: '/admin/topics', icon: Tag, color: '#F59E0B' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -18,4 +18,7 @@ export const authApi = {
 
   updateProfile: (payload: { username?: string; avatarUrl?: string }) =>
     axiosClient.put<User>('/auth/me', payload),
+
+  changePassword: (payload: { currentPassword: string; newPassword: string }) =>
+    axiosClient.put('/auth/me/password', payload),
 }

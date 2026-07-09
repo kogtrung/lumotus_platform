@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, LogOut, ArrowLeft, Clock } from 'lucide-react'
 
 interface ExitConfirmDialogProps {
@@ -52,9 +53,10 @@ export default function ExitConfirmDialog({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
       <div
@@ -113,6 +115,7 @@ export default function ExitConfirmDialog({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

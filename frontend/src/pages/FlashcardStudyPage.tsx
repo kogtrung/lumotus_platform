@@ -9,7 +9,6 @@ import Flashcard from '@/components/flashcard/Flashcard'
 import RatingButtonGroup from '@/components/review/RatingButtonGroup'
 import DeckProgressBar from '@/components/flashcard/DeckProgressBar'
 import Button from '@/components/ui/Button'
-import { shuffleArray } from '@/utils/shuffle'
 import {
   type StudySession,
   type StudyConfig,
@@ -21,11 +20,11 @@ import {
 } from '@/utils/studySession'
 import type { DueCard, ReviewRating } from '@/types/review'
 
-type SessionPhase = 'config' | 'session' | 'result'
+type SessionPhase = 'session' | 'result'
 
-const DEFAULT_CONFIG: StudyConfig = {
-  shuffle: true,
-  count: 20,
+const FLASHCARD_CONFIG: StudyConfig = {
+  shuffle: false,
+  count: 500,
   ttlHours: 1,
 }
 
@@ -35,7 +34,7 @@ export default function FlashcardStudyPage() {
 
   const queryClient = useQueryClient()
   const sessionRef = useRef<StudySession | null>(null)
-  const [phase, setPhase] = useState<SessionPhase>('config')
+  const [phase, setPhase] = useState<SessionPhase>('session')
 
   // Resume dialog
   const [showResume, setShowResume] = useState(false)
@@ -48,13 +47,13 @@ export default function FlashcardStudyPage() {
   const [flipped, setFlipped] = useState(false)
   const [stats, setStats] = useState({ again: 0, hard: 0, good: 0, easy: 0, xp: 0 })
   const [availableCount, setAvailableCount] = useState(0)
-  const [shuffleCards, setShuffleCards] = useState(true)
-  const [cardCount, setCardCount] = useState(20)
 
   const current = cards[index]
 
   const persistSession = useCallback(() => {
-    if (sessionRef.current) saveSession(sessionRef.current)
+    if (sessionRef.current) {
+      saveSession(sessionRef.current)
+    }
   }, [])
 
   // Queries
@@ -65,7 +64,7 @@ export default function FlashcardStudyPage() {
 
   const dueQuery = useQuery({
     queryKey: ['review', 'due', deckRef],
-    queryFn: () => reviewApi.getDue({ deckRef, limit: 200 }).then((r) => r.data),
+    queryFn: () => reviewApi.getDue({ deckRef, limit: 500 }).then((r) => r.data),
     enabled: false,
   })
 
@@ -96,7 +95,6 @@ export default function FlashcardStudyPage() {
       if (data.xpEarned > 0) {
         lumotoast.success(`+${data.xpEarned} XP`, 1500)
       }
-      // Refresh streak/XP on dashboard and progress page
       queryClient.invalidateQueries({ queryKey: ['progress', 'me'] })
       queryClient.invalidateQueries({ queryKey: ['stats', 'dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['stats', 'weekly'] })
@@ -106,16 +104,17 @@ export default function FlashcardStudyPage() {
     onError: () => lumotoast.error('Failed to submit rating'),
   })
 
-  // Handlers
-  const handleStart = useCallback(() => {
+  const initSession = useCallback(() => {
     dueQuery.refetch().then(({ data }) => {
       const dueCards: DueCard[] = data?.cards ?? []
-      let cardsToUse = dueCards
+      const dueIds = new Set(dueCards.map((c) => c.cardId))
 
-      if (dueCards.length < cardCount) {
-        deckCardsQuery.refetch().then(({ data: deckCards }) => {
-          if (deckCards && deckCards.length > 0) {
-            const allDeckCards: DueCard[] = deckCards.map((card) => ({
+      deckCardsQuery.refetch().then(({ data: deckCards }) => {
+        let cardsToUse = dueCards
+        if (deckCards && deckCards.length > 0) {
+          const newCards: DueCard[] = deckCards
+            .filter((card) => !dueIds.has(card.id))
+            .map((card) => ({
               cardId: card.id,
               deckId: card.deckId,
               front: card.front,
@@ -131,38 +130,28 @@ export default function FlashcardStudyPage() {
               intervalDays: null,
               nextReviewAt: null,
             }))
-            const dueIds = new Set(dueCards.map((c) => c.cardId))
-            const newCards = allDeckCards.filter((c) => !dueIds.has(c.cardId))
-            cardsToUse = [...dueCards, ...newCards]
-          }
-          finishInit(cardsToUse)
-        })
-      } else {
-        finishInit(cardsToUse)
-      }
+          cardsToUse = [...cardsToUse, ...newCards]
+        }
+        const ordered = cardsToUse
+        setAvailableCount(ordered.length)
+
+        if (ordered.length === 0) {
+          setCards([])
+          setIndex(0)
+          setPhase('session')
+          return
+        }
+
+        sessionRef.current = createSession(deckRef, 'FLASHCARD', FLASHCARD_CONFIG, ordered)
+        persistSession()
+        setCards(ordered)
+        setIndex(0)
+        setFlipped(false)
+        setStats({ again: 0, hard: 0, good: 0, easy: 0, xp: 0 })
+        setPhase('session')
+      })
     })
-  }, [dueQuery, deckCardsQuery, cardCount])
-
-  const finishInit = (cardsToUse: DueCard[]) => {
-    setAvailableCount(cardsToUse.length)
-    const selected = shuffleCards ? shuffleArray([...cardsToUse]) : cardsToUse
-    const sliced = selected.slice(0, cardCount)
-
-    if (sliced.length === 0) {
-      setCards([])
-      setIndex(0)
-      setPhase('session')
-      return
-    }
-
-    sessionRef.current = createSession(deckRef, 'FLASHCARD', { ...DEFAULT_CONFIG, shuffle: shuffleCards, count: cardCount }, sliced)
-    persistSession()
-    setCards(sliced)
-    setIndex(0)
-    setFlipped(false)
-    setStats({ again: 0, hard: 0, good: 0, easy: 0, xp: 0 })
-    setPhase('session')
-  }
+  }, [dueQuery, deckCardsQuery, deckRef, persistSession])
 
   const handleRate = useCallback((rating: ReviewRating) => {
     rateMutation.mutate(rating)
@@ -192,7 +181,7 @@ export default function FlashcardStudyPage() {
       setSavedSession(null)
       if (!deckCards || deckCards.length === 0) {
         clearSession(deckRef, 'FLASHCARD')
-        setPhase('config')
+        setPhase('session')
         return
       }
 
@@ -220,7 +209,7 @@ export default function FlashcardStudyPage() {
 
       if (resolved.length === 0) {
         clearSession(deckRef, 'FLASHCARD')
-        setPhase('config')
+        setPhase('session')
         return
       }
 
@@ -239,7 +228,7 @@ export default function FlashcardStudyPage() {
     sessionRef.current = null
     setShowResume(false)
     setSavedSession(null)
-    setPhase('config')
+    setPhase('session')
   }, [savedSession, deckRef])
 
   const handleRestart = useCallback(() => {
@@ -249,7 +238,7 @@ export default function FlashcardStudyPage() {
     setIndex(0)
     setFlipped(false)
     setStats({ again: 0, hard: 0, good: 0, easy: 0, xp: 0 })
-    setPhase('config')
+    setPhase('session')
   }, [deckRef])
 
   // Keyboard shortcuts
@@ -298,10 +287,13 @@ export default function FlashcardStudyPage() {
     }
   }, [index, cards.length, deckRef])
 
-  // Check saved session on config phase
+  // Check saved session on session phase
   useEffect(() => {
-    if (phase !== 'config') return
-    if (resumeDismissed.current) { resumeDismissed.current = false; return }
+    if (phase !== 'session') return
+    if (resumeDismissed.current) {
+      resumeDismissed.current = false
+      return
+    }
     if (savedSession) return
     const existing = loadSession(deckRef, 'FLASHCARD')
     if (existing) {
@@ -309,6 +301,14 @@ export default function FlashcardStudyPage() {
       setShowResume(true)
     }
   }, [deckRef, phase])
+
+  // Auto-start when entering session phase with no cards and no resume dialog
+  useEffect(() => {
+    if (phase !== 'session') return
+    if (showResume) return
+    if (cards.length > 0) return
+    initSession()
+  }, [phase, showResume, cards.length, initSession])
 
   // Derived
   const done = index >= cards.length && cards.length > 0
@@ -435,64 +435,6 @@ export default function FlashcardStudyPage() {
     )
   }
 
-  // Config
-  if (phase === 'config') {
-    return (
-      <div className="flex h-screen flex-col" style={{ background: '#1A1520' }}>
-        <header className="shrink-0 border-b border-[#3D3348]">
-          <div className="flex h-14 items-center px-4">
-            <button
-              onClick={() => navigate(`/decks/${deckRef}`)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#3D3348] text-[#8B7A9E] transition-all hover:border-[#EF4444] hover:text-[#EF4444]"
-            >
-              <X className="h-4 w-4" strokeWidth={2.5} />
-            </button>
-            <span className="ml-3 truncate text-sm font-bold text-[#F5F0FA]">{deck.title}</span>
-          </div>
-        </header>
-        <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 sm:gap-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br from-[rgba(236,72,153,0.2)] to-[rgba(249,115,22,0.2)] shadow-lg sm:h-16 sm:w-16">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#EC4899] sm:w-8 sm:h-8" style={{ width: '1.75rem', height: '1.75rem' }}>
-              <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
-              <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-extrabold text-[#F5F0FA] sm:text-2xl">{deck.title}</h1>
-            <p className="mt-1 text-sm text-[#8B7A9E]">Flashcard · {deck.cardCount} cards</p>
-          </div>
-          <div className="flex w-full max-w-xs flex-col gap-4 rounded-2xl border border-[#3D3348] bg-[#252030] p-4 sm:p-5">
-            <div className="flex items-center justify-between text-sm font-semibold text-[#F5F0FA]">
-              <span>Shuffle cards</span>
-              <button
-                type="button"
-                onClick={() => setShuffleCards(!shuffleCards)}
-                className={`relative h-6 w-11 rounded-full transition-all ${shuffleCards ? 'bg-[#EC4899]' : 'bg-[#3D3348]'}`}
-              >
-                <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${shuffleCards ? 'left-6' : 'left-1'}`} />
-              </button>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-sm font-semibold text-[#F5F0FA]">
-                <span>Number of cards</span>
-                <span className="font-extrabold text-[#EC4899]">{cardCount}</span>
-              </div>
-              <input
-                type="range" min={5} max={50} step={5}
-                value={cardCount}
-                onChange={(e) => setCardCount(Number(e.target.value))}
-                className="study-range flex-1"
-              />
-            </div>
-          </div>
-          <Button onClick={handleStart} size="lg" className="w-full max-w-xs" disabled={dueQuery.isFetching}>
-            {dueQuery.isFetching ? 'Loading...' : 'Start studying'}
-          </Button>
-        </main>
-      </div>
-    )
-  }
-
   // Session
   return (
     <div className="flex h-screen flex-col" style={{ background: 'linear-gradient(180deg, #1A1520 0%, #252030 100%)' }}>
@@ -526,7 +468,6 @@ export default function FlashcardStudyPage() {
             />
           )}
         </div>
-        {/* Fixed height container for rating buttons - prevents layout jump */}
         <div className="mt-3 h-[100px] w-full max-w-2xl">
           <RatingButtonGroup onRate={handleRate} flipped={flipped} disabled={rateMutation.isPending} />
         </div>

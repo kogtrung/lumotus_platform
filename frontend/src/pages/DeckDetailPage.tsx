@@ -36,6 +36,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 import type { Card } from '@/types/deck'
+import SubmitForApprovalDialog from '@/components/deck/SubmitForApprovalDialog'
 
 const CARD_PAGE_SIZE = 50
 
@@ -56,6 +57,7 @@ export default function DeckDetailPage() {
   const [editingCard, setEditingCard] = useState<Card | null>(null)
   const [confirmDeleteCard, setConfirmDeleteCard] = useState<{ open: boolean; cardId?: string }>({ open: false })
   const [confirmDeleteDeck, setConfirmDeleteDeck] = useState(false)
+  const [submitApprovalOpen, setSubmitApprovalOpen] = useState(false)
 
   useEffect(() => {
     setPage(0)
@@ -295,7 +297,36 @@ export default function DeckDetailPage() {
           <div className="min-w-0 flex-1">
             {/* Badges row */}
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              {deck.isPublic ? (
+              {/* Source type badge */}
+              {deck.sourceType && (
+                <span className="rounded-full bg-[#A78BFA]/15 px-2.5 py-1 text-xs font-bold text-[#A78BFA]">
+                  {deck.sourceType === 'OFFICIAL' ? 'Official' : deck.sourceType === 'PERSONAL' ? 'Cá nhân' : deck.sourceType === 'COMMUNITY' ? 'Cộng đồng' : 'Clone'}
+                </span>
+              )}
+              {/* Verification status badge */}
+              {deck.verificationStatus === 'PENDING' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-400">
+                  Chờ duyệt
+                </span>
+              )}
+              {deck.verificationStatus === 'APPROVED' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-400">
+                  Đã công khai
+                </span>
+              )}
+              {deck.verificationStatus === 'REJECTED' && (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-bold text-red-400">
+                    Từ chối
+                  </span>
+                  {deck.verificationNote && (
+                    <p className="w-full text-xs text-red-400/80 italic">
+                      Lý do: {deck.verificationNote}
+                    </p>
+                  )}
+                </>
+              )}
+              {!deck.verificationStatus && (deck.isPublic ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 px-2.5 py-1 text-xs font-bold text-[#10B981]">
                   Công khai
                 </span>
@@ -303,7 +334,7 @@ export default function DeckDetailPage() {
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#8B7A9E]/15 px-2.5 py-1 text-xs font-medium text-[#8B7A9E]">
                   Riêng tư
                 </span>
-              ) : null}
+              ) : null)}
               {deck.topics.slice(0, 3).map((t) => (
                 <span
                   key={t.id}
@@ -316,6 +347,12 @@ export default function DeckDetailPage() {
                   {t.name}
                 </span>
               ))}
+              {/* XP multiplier badge */}
+              {deck.xpMultiplier !== undefined && deck.xpMultiplier < 1 && (
+                <span className="rounded-full bg-[#EC4899]/10 px-2.5 py-1 text-xs font-semibold text-[#EC4899]">
+                  x{deck.xpMultiplier} XP
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl font-extrabold tracking-tight text-[#F5F0FA] md:text-3xl">
@@ -373,7 +410,7 @@ export default function DeckDetailPage() {
               </Button>
             )}
             {isOwner && (
-              <>
+              <div className="flex flex-wrap gap-2">
                 <Button
                   size="md"
                   onClick={() => navigate(`/decks/${deckRef}/flashcard`)}
@@ -388,6 +425,15 @@ export default function DeckDetailPage() {
                 >
                   Quiz
                 </Button>
+                {!deck.isPublic && (
+                  <Button
+                    size="md"
+                    variant="outline"
+                    onClick={() => setSubmitApprovalOpen(true)}
+                  >
+                    Gửi duyệt lên Khám phá
+                  </Button>
+                )}
                 <Button variant="outline" size="md" onClick={() => setEditDeckOpen(true)}>
                   <Settings className="h-4 w-4" />
                   Cài đặt
@@ -400,7 +446,7 @@ export default function DeckDetailPage() {
                   <Plus className="h-4 w-4" strokeWidth={2.5} />
                   Thêm thẻ
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -601,6 +647,13 @@ export default function DeckDetailPage() {
           deleteDeckMutation.mutate()
         }}
         onCancel={() => setConfirmDeleteDeck(false)}
+      />
+
+      <SubmitForApprovalDialog
+        open={submitApprovalOpen}
+        deckRef={deckRef}
+        onClose={() => setSubmitApprovalOpen(false)}
+        onSuccess={() => deckQuery.refetch()}
       />
     </div>
   )
