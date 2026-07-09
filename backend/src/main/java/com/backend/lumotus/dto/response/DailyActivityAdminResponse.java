@@ -9,6 +9,8 @@ public record DailyActivityAdminResponse(
         UUID userId,
         String username,
         LocalDate date,
+        int totalCards,
+        int learnedCards,
         int cardsReviewed,
         int xpEarned,
         int quizTaken,
@@ -22,6 +24,8 @@ public record DailyActivityAdminResponse(
                 da.getId().getUserId(),
                 username,
                 da.getId().getActivityDate(),
+                0, // totalCards
+                0, // learnedCards
                 da.getCardsReviewed(),
                 da.getXpEarned(),
                 da.getQuizTaken(),

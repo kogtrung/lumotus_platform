@@ -11,6 +11,8 @@ import {
   Layers,
   User,
   RefreshCw,
+  CopyPlus,
+  CheckCircle2,
 } from 'lucide-react'
 import { adminApi, type DailyActivityAdmin } from '@/api/admin'
 import { cn } from '@/utils/cn'
@@ -58,6 +60,29 @@ function ActivityRow({
         </div>
       </td>
 
+      {/* Deck count */}
+      <td className="whitespace-nowrap px-4 py-3 text-center">
+        <span className="text-sm font-bold text-teal-700">
+          {activity.deckCount != null ? activity.deckCount : '—'}
+        </span>
+      </td>
+
+      {/* Total cards */}
+      <td className="whitespace-nowrap px-4 py-3 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <CopyPlus className="h-3.5 w-3.5 text-blue-400" />
+          <span className="text-sm font-bold text-blue-700">{activity.totalCards}</span>
+        </div>
+      </td>
+
+      {/* Learned cards */}
+      <td className="whitespace-nowrap px-4 py-3 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+          <span className="text-sm font-bold text-green-700">{activity.learnedCards}</span>
+        </div>
+      </td>
+
       {/* Cards reviewed */}
       <td className="whitespace-nowrap px-4 py-3 text-center">
         <div className="flex items-center justify-center gap-1">
@@ -93,13 +118,6 @@ function ActivityRow({
       <td className="whitespace-nowrap px-4 py-3 text-center">
         <span className="text-sm font-bold text-orange-600">
           {activity.streak != null ? `${activity.streak} 🔥` : '—'}
-        </span>
-      </td>
-
-      {/* Deck count */}
-      <td className="whitespace-nowrap px-4 py-3 text-center">
-        <span className="text-sm font-bold text-teal-700">
-          {activity.deckCount != null ? activity.deckCount : '—'}
         </span>
       </td>
 
@@ -395,33 +413,17 @@ export default function AdminStudyHistory() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      Người dùng
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      Hoạt động gần nhất
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-orange-600">
-                      Tổng thẻ ôn
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-cyan-600">
-                      Tổng Quiz
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-yellow-600">
-                      Tổng XP
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-emerald-600">
-                      Tổng thời gian ôn
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-orange-600">
-                      Streak
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-teal-600">
-                      Số Deck
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 text-right pr-6">
-                      Hành động
-                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Người dùng</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500">Hoạt động gần nhất</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-teal-600">Số Deck</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-blue-600">Tổng thẻ</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-green-600">Thẻ đã học</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-orange-600">Tổng thẻ đã ôn</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-cyan-600">Tổng Quiz đã làm</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-yellow-600">Tổng XP nhận</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-emerald-600">Tổng thời gian ôn</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-orange-500">Streak</th>
+                    <th className="px-4 py-3 text-right pr-6 text-xs font-bold uppercase tracking-wider text-gray-500">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -456,7 +458,7 @@ export default function AdminStudyHistory() {
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                     )
-                  }
+                    }
                   >
                     <ChevronLeft className="h-4 w-4" /> Trước
                   </button>

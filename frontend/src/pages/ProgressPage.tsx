@@ -8,6 +8,7 @@ import { decksApi } from '@/api/decks'
 import { progressApi } from '@/api/progress'
 import { reviewApi } from '@/api/review'
 import { cn } from '@/utils/cn'
+import StreakProgressBar from '@/components/ui/StreakProgressBar'
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
 
@@ -157,6 +158,13 @@ function HeatmapStrip({ data, streak }: {
   const maxXp = yearData && yearData.length > 0 ? Math.max(...yearData.map(d => d.xp), 1) : 1
   const map = new Map((yearData ?? []).map(d => [d.date, d]))
 
+  const getLocalYYYYMMDD = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const dDay = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${dDay}`
+  }
+
   // Build weeks grid (columns = weeks, rows = days Mon-Sun)
   // Jan 1 may not be Monday, so days before it in week 1 are empty
   const weeks: { date: Date; dateStr: string }[][] = []
@@ -177,7 +185,7 @@ function HeatmapStrip({ data, streak }: {
   for (let i = 0; i < 7 - emptyDays; i++) {
     const d = new Date(yearStart)
     d.setDate(yearStart.getDate() + i)
-    firstWeek.push({ date: d, dateStr: d.toISOString().split('T')[0] })
+    firstWeek.push({ date: d, dateStr: getLocalYYYYMMDD(d) })
   }
   weeks.push(firstWeek)
 
@@ -191,7 +199,7 @@ function HeatmapStrip({ data, streak }: {
     const week: { date: Date; dateStr: string }[] = []
     for (let d = 0; d < 7; d++) {
       if (currentDate <= endDate) {
-        const dateStr = currentDate.toISOString().split('T')[0]
+        const dateStr = getLocalYYYYMMDD(currentDate)
         week.push({ date: new Date(currentDate), dateStr })
       } else {
         week.push({ date: new Date(0), dateStr: '' })
@@ -269,7 +277,7 @@ function HeatmapStrip({ data, streak }: {
           <div className="flex flex-col">
             {/* Month labels row */}
             <div className="flex gap-1.5 mb-1.5 h-5">
-              {weeks.map((week, weekIdx) => {
+              {weeks.map((_, weekIdx) => {
                 const label = getMonthLabel(weekIdx)
                 return (
                   <div key={weekIdx} className="h-full w-[14px]">
@@ -292,7 +300,7 @@ function HeatmapStrip({ data, streak }: {
                     const entry = map.get(day.dateStr)
                     const xp = entry?.xp ?? 0
                     const intensity = xp > 0 ? Math.max(1, Math.ceil((xp / maxXp) * 4)) : 0
-                    const isToday = day.dateStr === today.toISOString().split('T')[0]
+                    const isToday = day.dateStr === getLocalYYYYMMDD(today)
 
                     return (
                       <div
@@ -427,19 +435,7 @@ export default function ProgressPage() {
         </div>
 
         {/* Progress to streak goal */}
-        <div className="relative mt-4 sm:mt-5">
-          <div className="h-1.5 sm:h-2 rounded-full bg-white/20">
-            <div
-              className="h-full rounded-full bg-white transition-all duration-1000"
-              style={{ width: `${Math.min((streak / 30) * 100, 100)}%` }}
-            />
-          </div>
-          <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-white/60">
-            {streak >= 30
-              ? '🎉 Mục tiêu 30 ngày hoàn thành!'
-              : `${30 - streak} ngày nữa để đạt mốc 30 ngày`}
-          </p>
-        </div>
+        <StreakProgressBar streak={streak} />
       </div>
 
       {/* ── Stats grid ── */}

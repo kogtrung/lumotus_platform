@@ -20,14 +20,14 @@ public interface DailyActivityRepository extends JpaRepository<DailyActivity, Da
 
     @Query(value = "SELECT da.id.userId, u.username, " +
                    "SUM(da.cardsReviewed), " +
-                   "SUM(da.xpEarned), " +
+                   "u.xp, " +
                    "SUM(da.quizTaken), " +
                    "MAX(da.id.activityDate), " +
                    "SUM(da.studyMinutes), " +
                    "u.streak " +
                    "FROM DailyActivity da, User u " +
                    "WHERE da.id.userId = u.id " +
-                   "GROUP BY da.id.userId, u.username, u.streak " +
+                   "GROUP BY da.id.userId, u.username, u.xp, u.streak " +
                    "ORDER BY MAX(da.id.activityDate) DESC",
            countQuery = "SELECT COUNT(DISTINCT da.id.userId) FROM DailyActivity da")
     Page<Object[]> findUserStudySummaries(Pageable pageable);

@@ -69,6 +69,8 @@ export interface DailyActivityAdmin {
   studyMinutes?: number
   streak?: number
   deckCount?: number
+  totalCards: number
+  learnedCards: number
 }
 
 export interface AdminChartDataPoint {

@@ -8,5 +8,7 @@ public record DashboardStatsResponse(
         int xpLast7Days,
         int cardsToday,
         int quizzesToday,
-        int xpToday
+        int xpToday,
+        long totalMastered,
+        long totalLearned
 ) {}

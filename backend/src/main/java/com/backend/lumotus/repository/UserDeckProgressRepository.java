@@ -15,4 +15,10 @@ public interface UserDeckProgressRepository extends JpaRepository<UserDeckProgre
     @Modifying
     @Query("DELETE FROM UserDeckProgress p WHERE p.id.deckId = :deckId")
     void deleteAllByDeckId(@Param("deckId") UUID deckId);
+
+    @Query("SELECT COALESCE(SUM(p.learnedCards), 0) FROM UserDeckProgress p WHERE p.id.userId = :userId")
+    long sumLearnedCardsByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT COALESCE(SUM(p.masteredCards), 0) FROM UserDeckProgress p WHERE p.id.userId = :userId")
+    long sumMasteredCardsByUserId(@Param("userId") UUID userId);
 }

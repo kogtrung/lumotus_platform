@@ -149,7 +149,7 @@ function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
 }
 
 export default function QuizResult({
-  deckRef,
+  deckRef: _deckRef,
   correct: _correct,
   total,
   xpEarned,
@@ -157,7 +157,7 @@ export default function QuizResult({
   startedAt,
   finishedAt,
   details,
-  onRestart,
+  onRestart: _onRestart,
   totalQuestions,
   timeLimitSeconds,
   score,
@@ -172,10 +172,6 @@ export default function QuizResult({
   const answeredCount = details.filter((d) => d.selectedAnswer).length
   const displayScore = score != null ? (score * 10).toFixed(1) : pct.toString()
 
-  const fmtTime = (iso?: string) => {
-    if (!iso) return '—'
-    return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-  }
   const fmtDuration = (iso1?: string, iso2?: string) => {
     if (!iso1 || !iso2) return '—'
     const s = Math.round((new Date(iso2).getTime() - new Date(iso1).getTime()) / 1000)
@@ -289,7 +285,7 @@ export default function QuizResult({
       <div className="flex-none border-b border-[#3D3348]/50 bg-[#1D1A24] px-4 py-2">
         <div className="flex items-center gap-1 rounded-xl bg-[#252030] p-1 w-fit">
           {([
-            { key: 'all', label: 'Tất cả', count: details.length },
+            { key: 'all', label: 'Tất cả', count: details.length, color: 'none' },
             { key: 'correct', label: 'Đúng', count: correctCount, color: 'emerald' },
             { key: 'wrong', label: 'Sai', count: wrong, color: 'red' },
             { key: 'skipped', label: 'Bỏ qua', count: skipped, color: 'gray' },

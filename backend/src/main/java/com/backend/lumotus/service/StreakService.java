@@ -53,8 +53,12 @@ public class StreakService {
         LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         LocalDate lastStudy = user.getLastStudyDate();
 
-        // Already counted today — skip
+        // Already counted today — skip, unless impacted by the zero-streak day 1 bug
         if (today.equals(lastStudy)) {
+            if (user.getStreak() == 0) {
+                user.setStreak(1);
+                userRepository.save(user);
+            }
             return;
         }
 
@@ -70,8 +74,11 @@ public class StreakService {
         int distance = lastStudy == null ? -1 :
                 (int) ChronoUnit.DAYS.between(lastStudy, today);
 
-        if (distance <= 0) {
-            // Same day or weird edge case — keep unchanged
+        if (distance < 0) {
+            // First time studying
+            user.setStreak(1);
+        } else if (distance == 0) {
+            // Same day edge case or manual trigger
         } else if (distance == 1) {
             user.setStreak(user.getStreak() + 1);
         } else {

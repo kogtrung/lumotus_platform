@@ -92,4 +92,12 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
     @Modifying
     @Query("DELETE FROM Card c WHERE c.deckId = :deckId")
     void deleteAllByDeckId(@Param("deckId") UUID deckId);
+
+    @Query(
+            """
+            SELECT COUNT(c) FROM Card c
+            JOIN Deck d ON d.id = c.deckId
+            WHERE d.ownerId = :ownerId
+            """)
+    long countTotalCardsByOwnerId(@Param("ownerId") UUID ownerId);
 }

@@ -709,9 +709,22 @@ public class QuizService {
         attempt.setTotalQuestions(total);
         attempt.setCorrectAnswers(correct);
         attempt.setSkippedAnswers(skipped);
-        attempt.setScore(total > 0 ? (double) correct / total : 0.0);
+        
+        double newScoreRaw = total > 0 ? (double) correct / total : 0.0;
+
+        // Fetch previous best BEFORE modifying attempt.setScore to avoid JPA pre-query flush including current attempt's score
+        double previousBestRaw = quizAttemptRepository.findBestScoreByUserAndQuiz(principal.getId(), quiz.getId())
+                .orElse(0.0);
+
+        attempt.setScore(newScoreRaw);
         attempt.setTimeTakenSeconds(request.timeTakenSeconds());
         attempt.finish();
+
+        // Calculate points gained for the Weekly Quiz Leaderboard
+        double pointsGained = (newScoreRaw * 10.0) - (previousBestRaw * 10.0);
+        if (pointsGained > 0) {
+            leaderboardService.updateWeeklyQuizScore(principal.getId(), pointsGained);
+        }
 
         // Calculate XP with deck multiplier
         int xpEarned = 0;
@@ -735,6 +748,7 @@ public class QuizService {
         DailyActivity activity = dailyActivityRepository.findById(daId)
                 .orElseGet(() -> new DailyActivity(principal.getId(), today));
         activity.setQuizTaken(activity.getQuizTaken() + 1);
+        activity.setStudyMinutes(activity.getStudyMinutes() + 5); // 5 mins per quiz
         activity.setXpEarned(activity.getXpEarned() + xpEarned);
         dailyActivityRepository.save(activity);
         streakService.recordStudyActivity(principal.getId());
@@ -915,6 +929,14 @@ public class QuizService {
     // LEADERBOARD
     // ============================================================
 
+    public List<com.backend.lumotus.dto.response.LeaderboardEntry> getWeeklyQuizLeaderboard(int limit) {
+        return leaderboardService.getWeeklyTopUsers(limit);
+    }
+
+    public Optional<com.backend.lumotus.dto.response.LeaderboardEntry> getWeeklyUserEntry(UUID userId) {
+        return leaderboardService.getWeeklyUserEntry(userId);
+    }
+
     @Transactional(readOnly = true)
     public List<GlobalQuizLeaderboardEntry> getGlobalQuizLeaderboard(int limit) {
         List<Object[]> rows = quizAttemptRepository.findGlobalQuizLeaderboard(limit);
@@ -929,6 +951,31 @@ public class QuizService {
                 row[6] != null ? ((Number) row[6]).intValue() : 0,
                 rankCounter[0]++
         )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<GlobalQuizLeaderboardEntry> getGlobalUserEntry(UUID userId) {
+        List<Object[]> rows = quizAttemptRepository.findGlobalQuizLeaderboardEntry(userId);
+        if (rows.isEmpty()) {
+            User user = userRepository.findById(userId).orElseThrow();
+            return Optional.of(new GlobalQuizLeaderboardEntry(
+                    userId,
+                    user.getUsername(),
+                    user.getAvatarUrl(),
+                    0.0, 0, 0, 0, 0L
+            ));
+        }
+        Object[] row = rows.get(0);
+        return Optional.of(new GlobalQuizLeaderboardEntry(
+                (java.util.UUID) row[0],
+                (String) row[1],
+                !((String) row[2]).isEmpty() ? (String) row[2] : null,
+                row[3] != null ? ((Number) row[3]).doubleValue() : 0.0,
+                row[4] != null ? ((Number) row[4]).intValue() : 0,
+                row[5] != null ? ((Number) row[5]).intValue() : 0,
+                row[6] != null ? ((Number) row[6]).intValue() : 0,
+                row[7] != null ? ((Number) row[7]).longValue() : 0L
+        ));
     }
 
     @Transactional(readOnly = true)
@@ -1292,8 +1339,11 @@ public class QuizService {
 
     private void updateQuizStats(UUID quizId) {
         Optional<Double> avg = quizAttemptRepository.findAvgScoreByQuizId(quizId);
-        quizRepository.incrementAttemptCount(quizId);
-        avg.ifPresent(average -> quizRepository.updateStats(quizId, average));
+        if (avg.isPresent()) {
+            quizRepository.updateStats(quizId, avg.get());
+        } else {
+            quizRepository.incrementAttemptCount(quizId);
+        }
     }
 
     private String normalize(String text) {

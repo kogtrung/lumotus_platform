@@ -186,6 +186,28 @@ public class QuizController {
         return ResponseEntity.ok(quizService.getGlobalQuizLeaderboard(Math.min(limit, 100)));
     }
 
+    @GetMapping("/leaderboard/global/me")
+    public ResponseEntity<GlobalQuizLeaderboardEntry> getMyGlobalQuizLeaderboardEntry(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return quizService.getGlobalUserEntry(principal.getId())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/leaderboard/weekly")
+    public ResponseEntity<List<com.backend.lumotus.dto.response.LeaderboardEntry>> getWeeklyQuizLeaderboard(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(quizService.getWeeklyQuizLeaderboard(Math.min(limit, 50)));
+    }
+
+    @GetMapping("/leaderboard/weekly/me")
+    public ResponseEntity<com.backend.lumotus.dto.response.LeaderboardEntry> getMyWeeklyQuizLeaderboardEntry(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return quizService.getWeeklyUserEntry(principal.getId())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/{quizRef}/leaderboard")
     public ResponseEntity<List<QuizLeaderboardEntry>> getLeaderboard(
             @PathVariable String quizRef,

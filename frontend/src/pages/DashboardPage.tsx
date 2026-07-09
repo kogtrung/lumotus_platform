@@ -35,6 +35,7 @@ import { cn } from '@/utils/cn'
 import { findAnyActiveSession, clearSession, relativeTime } from '@/utils/studySession'
 import type { StudySession } from '@/utils/studySession'
 import heroImage from '@/assets/hero.png'
+import StreakProgressBar from '@/components/ui/StreakProgressBar'
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement,
@@ -131,17 +132,7 @@ function StreakBanner({ streak, xpToday }: { streak: number; xpToday: number }) 
         </Button>
       </div>
 
-      <div className="relative mt-4">
-        <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-white transition-all duration-1000"
-            style={{ width: `${Math.min((streak / 30) * 100, 100)}%` }}
-          />
-        </div>
-        <p className="mt-1 text-[11px] text-white/60">
-          {streak >= 30 ? '🎉 Đạt streak 30 ngày!' : `${30 - streak} ngày nữa đến mốc 30`}
-        </p>
-      </div>
+      <StreakProgressBar streak={streak} className="mt-2" />
     </div>
   )
 }
@@ -149,23 +140,33 @@ function StreakBanner({ streak, xpToday }: { streak: number; xpToday: number }) 
 function CardStatsDonut({
   total,
   due,
+  mastered,
 }: {
   total: number
   due: number
+  mastered: number
 }) {
-  const remaining = total - due
+  // 'due' naturally contains both Review-due cards and New (unstudied) cards from backend via "countTotalDueCards".
+  // Ergo, due + mastered + (total - due - mastered) = total perfectly.
+  const safeLearned = Math.max(0, total - mastered - due)
+  
+  const masteredPct = total > 0 ? Math.round((mastered / total) * 100) : 0
+  const safeLearnedPct = total > 0 ? Math.round((safeLearned / total) * 100) : 0
   const duePct = total > 0 ? Math.round((due / total) * 100) : 0
+
   const data = {
-    labels: ['Đến hạn', 'Đã học'],
+    labels: ['Thành thạo', 'Đang học', 'Đến hạn'],
     datasets: [{
-      data: [due, Math.max(0, remaining)],
+      data: [mastered, safeLearned, due],
       backgroundColor: [
-        'rgba(236,72,153,0.85)',
-        'rgba(61,51,72,0.6)',
+        'rgba(16, 185, 129, 0.85)', // Xanh ngọc
+        'rgba(236, 72, 153, 0.85)', // Hồng
+        'rgba(91, 33, 182, 0.85)',  // Tím đậm
       ],
       borderColor: [
+        '#10B981',
         '#EC4899',
-        '#4A4060',
+        '#5B21B6',
       ],
       borderWidth: 1,
       hoverOffset: 6,
@@ -209,8 +210,9 @@ function CardStatsDonut({
         </div>
         <div className="flex-1 space-y-5">
           {[
-            { label: 'Đến hạn', value: due, pct: duePct, color: '#EC4899', glow: 'rgba(236,72,153,0.3)' },
-            { label: 'Đã học', value: Math.max(0, remaining), pct: 100 - duePct, color: '#4A4060', glow: 'rgba(74,64,96,0.3)' },
+            { label: 'Thành thạo', value: mastered, pct: masteredPct, color: '#10B981', glow: 'rgba(16,185,129,0.3)' },
+            { label: 'Đang học', value: safeLearned, pct: safeLearnedPct, color: '#EC4899', glow: 'rgba(236,72,153,0.3)' },
+            { label: 'Đến hạn', value: due, pct: duePct, color: '#5B21B6', glow: 'rgba(91,33,182,0.3)' },
           ].map(({ label, value, pct, color, glow }) => (
             <div key={label} className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -1055,7 +1057,11 @@ export default function DashboardPage() {
 
         {/* ── Quick stats + Heatmap ── */}
         <div className="grid gap-4 lg:grid-cols-3">
-          <CardStatsDonut total={totalCards} due={totalDue} />
+          <CardStatsDonut 
+            total={totalCards} 
+            due={totalDue} 
+            mastered={dashboardStats?.totalMastered ?? 0}
+          />
           <div className="lg:col-span-2 flex flex-col gap-4">
             {/* Heatmap row */}
             <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
@@ -1100,7 +1106,7 @@ export default function DashboardPage() {
             {/* QuickCard row */}
             <div className="flex gap-4">
               <QuickCard icon={Layers} value={totalDecks} label="Deck của bạn" color="#10B981" onClick={scrollToLibrary} />
-              <QuickCard icon={Sparkles} value={`${dashboardStats?.quizzesToday ?? 0}`} label="Quiz hôm nay" color="#06B6D4" />
+              <QuickCard icon={Sparkles} value={`${activityData?.totalQuizzes ?? 0}`} label="Tổng Quiz" color="#06B6D4" />
             </div>
           </div>
         </div>

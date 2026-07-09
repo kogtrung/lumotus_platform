@@ -61,8 +61,6 @@ export const decksApi = {
     if (options?.deckRef) form.append('deckRef', options.deckRef)
     return axiosClient.post<ImportDeckResponse>('/decks/import', form, {
       params: {
-        title: options?.title,
-        deckRef: options?.deckRef,
         topicIds: options?.topicIds && options.topicIds.length > 0 ? options.topicIds : undefined,
       },
       headers: { 'Content-Type': 'multipart/form-data' },

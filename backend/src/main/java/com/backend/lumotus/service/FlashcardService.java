@@ -129,6 +129,7 @@ public class FlashcardService {
         }
 
         attempt.finish();
+        upsertDailyActivity(principal.getId(), 0, attempt.getTotalCount());
         return buildResult(attempt);
     }
 
@@ -300,7 +301,7 @@ public class FlashcardService {
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             user.setXp(user.getXp() + xpEarned);
             userRepository.save(user);
-            upsertDailyActivity(userId, xpEarned);
+            upsertDailyActivity(userId, xpEarned, 1);
         }
 
         UserDeckProgress progress = ensureDeckProgress(userId, deck);
@@ -369,12 +370,22 @@ public class FlashcardService {
                 });
     }
 
-        private void upsertDailyActivity(UUID userId, int xpEarned) {
+    private void upsertDailyActivity(UUID userId, int xpEarned, int addedCards) {
         LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         DailyActivity activity = dailyActivityRepository
                 .findById(new com.backend.lumotus.entity.DailyActivityId(userId, today))
                 .orElseGet(() -> new DailyActivity(userId, today));
-        activity.setCardsReviewed(activity.getCardsReviewed() + 1);
+
+        int oldCardsCount = activity.getCardsReviewed();
+        int newCardsCount = oldCardsCount + addedCards;
+        activity.setCardsReviewed(newCardsCount);
+
+        // Estimate 1 minute of study time for every 5 cards reviewed
+        int gainedMinutes = (newCardsCount / 5) - (oldCardsCount / 5);
+        if (gainedMinutes > 0) {
+            activity.setStudyMinutes(activity.getStudyMinutes() + gainedMinutes);
+        }
+
         activity.setXpEarned(activity.getXpEarned() + xpEarned);
         dailyActivityRepository.save(activity);
 

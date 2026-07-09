@@ -358,11 +358,15 @@ public class AdminService {
                     UUID uid = (UUID) row[0];
                     int streak = row[7] != null ? ((Number) row[7]).intValue() : 0;
                     long deckCount = deckRepository.countByOwnerId(uid);
+                    long totalCards = cardRepository.countTotalCardsByOwnerId(uid);
+                    long learnedCards = userDeckProgressRepository.sumLearnedCardsByUserId(uid);
                     return new DailyActivityAdminResponse(
                             uid,
                             (String) row[1],
                             row[5] instanceof java.time.LocalDate ld ? ld
                                     : java.time.LocalDate.parse(row[5].toString()),
+                            (int) totalCards,
+                            (int) learnedCards,
                             row[2] != null ? ((Number) row[2]).intValue() : 0,
                             row[3] != null ? ((Number) row[3]).intValue() : 0,
                             row[4] != null ? ((Number) row[4]).intValue() : 0,

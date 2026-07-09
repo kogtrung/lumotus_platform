@@ -5,6 +5,7 @@ import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.entity.DailyActivity;
 import com.backend.lumotus.entity.User;
 import com.backend.lumotus.repository.DailyActivityRepository;
+import com.backend.lumotus.repository.UserDeckProgressRepository;
 import com.backend.lumotus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class StatsService {
 
     private final DailyActivityRepository dailyActivityRepository;
     private final UserRepository userRepository;
+    private final UserDeckProgressRepository userDeckProgressRepository;
 
     @Transactional(readOnly = true)
     public ActivitySummaryResponse getActivitySummary(UUID userId, int days) {
@@ -122,6 +124,10 @@ public class StatsService {
         int streak = user != null ? user.getStreak() : 0;
         int totalXp = user != null ? user.getXp() : 0;
 
+        // Mastered & Learned
+        long totalLearned = userDeckProgressRepository.sumLearnedCardsByUserId(userId);
+        long totalMastered = userDeckProgressRepository.sumMasteredCardsByUserId(userId);
+
         return new DashboardStatsResponse(
                 totalXp,
                 streak,
@@ -130,7 +136,9 @@ public class StatsService {
                 xp7d,
                 cardsToday,
                 quizzesToday,
-                xpToday
+                xpToday,
+                totalMastered,
+                totalLearned
         );
     }
 }
