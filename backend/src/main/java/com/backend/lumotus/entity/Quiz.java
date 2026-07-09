@@ -7,6 +7,8 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "quizzes")
@@ -41,11 +43,13 @@ public class Quiz extends BaseEntity {
     private Boolean isPublic = false;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private QuizStatus status = QuizStatus.PENDING;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "quiz_type", nullable = false, length = 20)
     @Builder.Default
     private QuizType quizType = QuizType.GENERATED;
@@ -63,6 +67,9 @@ public class Quiz extends BaseEntity {
 
     @Transient
     private Integer computedQuestionCount;
+
+    @Transient
+    private Long uniqueUserCount;
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

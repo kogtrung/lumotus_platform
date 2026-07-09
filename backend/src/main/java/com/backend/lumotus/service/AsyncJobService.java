@@ -5,6 +5,7 @@ import com.backend.lumotus.dto.response.AsyncJobResponse;
 import com.backend.lumotus.entity.AsyncJob;
 import com.backend.lumotus.entity.Card;
 import com.backend.lumotus.entity.Deck;
+import com.backend.lumotus.entity.User;
 import com.backend.lumotus.entity.UserCardReview;
 import com.backend.lumotus.entity.UserCardReviewId;
 import com.backend.lumotus.exception.BadRequestException;
@@ -32,6 +33,7 @@ public class AsyncJobService {
     private final DeckRepository deckRepository;
     private final CardRepository cardRepository;
     private final UserCardReviewRepository reviewRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public AsyncJobResponse createGenerationJob(UserPrincipal principal, GenerateDeckRequest request) {
@@ -79,9 +81,11 @@ public class AsyncJobService {
 
         // Ensure unique slug
         String finalSlug = baseSlug;
-        int counter = 1;
-        while (deckRepository.existsByOwnerIdAndSlug(userId, finalSlug)) {
-            finalSlug = baseSlug + "-" + counter++;
+        if (deckRepository.existsBySlug(finalSlug)) {
+            finalSlug = baseSlug + "-" + UUID.randomUUID().toString().substring(0, 6);
+            while (deckRepository.existsBySlug(finalSlug)) {
+                finalSlug = baseSlug + "-" + UUID.randomUUID().toString().substring(0, 6);
+            }
         }
 
         // Create deck
@@ -93,6 +97,15 @@ public class AsyncJobService {
         deck.setPublic(true);
         deck.setGeneratedByAi(true);
         deck.setGenerationPrompt(request.topic());
+
+        User user = userRepository.findById(userId).orElseThrow();
+        if ("ADMIN".equals(user.getRole().name())) {
+            deck.setOwnerType(Deck.OwnerType.ADMIN);
+            deck.setSourceType("OFFICIAL");
+        } else {
+            deck.setOwnerType(Deck.OwnerType.USER);
+            deck.setSourceType("PERSONAL");
+        }
         deck = deckRepository.save(deck);
 
         // Generate cards (simulated - in production, call AI API)

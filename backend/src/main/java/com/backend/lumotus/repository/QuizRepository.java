@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -68,6 +69,12 @@ public interface QuizRepository extends JpaRepository<Quiz, UUID> {
     Page<Quiz> findByDeckIdOrderByCreatedAtDesc(UUID deckId, Pageable pageable);
 
     long countByDeckId(UUID deckId);
+
+    List<Quiz> findByDeckId(UUID deckId);
+
+    @Modifying
+    @Query("DELETE FROM Quiz q WHERE q.deck.id = :deckId")
+    void deleteAllByDeckId(@Param("deckId") UUID deckId);
 
     long countByStatus(Quiz.QuizStatus status);
 

@@ -12,22 +12,20 @@ public class QuestionGenerator {
 
     private final List<Card> cards;
     private final StudyMode mode;
-    private final int count;
 
-    public QuestionGenerator(List<Card> cards, StudyMode mode, int count) {
+    public QuestionGenerator(List<Card> cards, StudyMode mode) {
         this.cards = cards;
         this.mode = mode;
-        this.count = count;
+    }
+
+    public QuestionGenerator(List<Card> cards, StudyMode mode, int count) {
+        this(cards, mode);
     }
 
     public List<QuestionResponse> generate() {
-        List<Card> pool = new ArrayList<>(cards);
-        Collections.shuffle(pool);
-        int size = Math.min(count, pool.size());
-
         return switch (mode) {
-            case FLASHCARD -> generateFlashcard(pool.subList(0, size));
-            case QUIZ -> generateQuiz(pool.subList(0, size));
+            case FLASHCARD -> generateFlashcard(new ArrayList<>(cards));
+            case QUIZ -> generateQuiz(new ArrayList<>(cards));
         };
     }
 

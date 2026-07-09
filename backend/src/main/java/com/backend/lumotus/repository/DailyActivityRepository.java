@@ -6,11 +6,34 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 public interface DailyActivityRepository extends JpaRepository<DailyActivity, DailyActivityId> {
+
+    @Query("SELECT da FROM DailyActivity da ORDER BY da.id.activityDate DESC, da.id.userId ASC")
+    Page<DailyActivity> findAllOrderByDateDesc(Pageable pageable);
+
+    @Query(value = "SELECT da.id.userId, u.username, " +
+                   "SUM(da.cardsReviewed), " +
+                   "SUM(da.xpEarned), " +
+                   "SUM(da.quizTaken), " +
+                   "MAX(da.id.activityDate), " +
+                   "SUM(da.studyMinutes), " +
+                   "u.streak " +
+                   "FROM DailyActivity da, User u " +
+                   "WHERE da.id.userId = u.id " +
+                   "GROUP BY da.id.userId, u.username, u.streak " +
+                   "ORDER BY MAX(da.id.activityDate) DESC",
+           countQuery = "SELECT COUNT(DISTINCT da.id.userId) FROM DailyActivity da")
+    Page<Object[]> findUserStudySummaries(Pageable pageable);
+
+    @Query("SELECT da FROM DailyActivity da WHERE da.id.userId = :userId ORDER BY da.id.activityDate DESC")
+    Page<DailyActivity> findByUserIdOrderByDateDesc(@Param("userId") UUID userId, Pageable pageable);
 
     @Query("SELECT da FROM DailyActivity da WHERE da.id.userId = :userId " +
            "AND da.id.activityDate BETWEEN :startDate AND :endDate " +

@@ -32,6 +32,8 @@ import com.backend.lumotus.repository.DeckRepository;
 import com.backend.lumotus.repository.UserCardReviewRepository;
 import com.backend.lumotus.repository.UserDeckProgressRepository;
 import com.backend.lumotus.repository.UserRepository;
+import com.backend.lumotus.config.AppProperties;
+import com.backend.lumotus.config.Sm2Properties;
 import com.backend.lumotus.review.Sm2Algorithm;
 import com.backend.lumotus.security.UserPrincipal;
 import com.backend.lumotus.study.QuestionGenerator;
@@ -39,7 +41,6 @@ import com.backend.lumotus.study.StudyAttempt;
 import com.backend.lumotus.util.SlugUtils;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,7 +61,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class FlashcardService {
 
     private static final int DEFAULT_DUE_LIMIT = 50;
-    private static final int MASTERED_INTERVAL_DAYS = 21;
 
     private final DeckRepository deckRepository;
     private final CardRepository cardRepository;
@@ -72,6 +72,8 @@ public class FlashcardService {
     private final LeaderboardService leaderboardService;
 
     private final Map<UUID, StudyAttempt> activeAttempts = new ConcurrentHashMap<>();
+
+    private final Sm2Properties sm2Properties;
 
     // ============================================================
     // STUDY SESSION
@@ -92,8 +94,7 @@ public class FlashcardService {
         }
 
         StudyAttempt attempt = new StudyAttempt(userId, deck.getId(), StudyMode.FLASHCARD);
-        int count = request.count() != null ? request.count() : Math.min(10, allCards.size());
-        List<QuestionResponse> questions = new QuestionGenerator(allCards, StudyMode.FLASHCARD, count).generate();
+        List<QuestionResponse> questions = new QuestionGenerator(allCards, StudyMode.FLASHCARD).generate();
 
         for (QuestionResponse q : questions) {
             attempt.addQuestion(q.questionId(), q.correctAnswer(), q.cardInfo());
@@ -182,16 +183,20 @@ public class FlashcardService {
         UserDeckProgress progress = progressRepository.findById(new UserDeckProgressId(principal.getId(), deckId))
                 .orElse(null);
 
+        int liveTotalCards = (int) cardRepository.countByDeckId(deckId);
+
         if (progress == null) {
-            int totalCards = (int) cardRepository.countByDeckId(deckId);
-            return new DeckProgressResponse(deckId, totalCards, 0, 0);
+            return new DeckProgressResponse(deckId, liveTotalCards, 0, 0);
         }
+
+        int learned = Math.min(progress.getLearnedCards(), liveTotalCards);
+        int mastered = Math.min(progress.getMasteredCards(), learned);
 
         return new DeckProgressResponse(
                 deckId,
-                progress.getTotalCards(),
-                progress.getLearnedCards(),
-                progress.getMasteredCards()
+                liveTotalCards,
+                learned,
+                mastered
         );
     }
 
@@ -269,14 +274,15 @@ public class FlashcardService {
         int oldReps = review.getRepetitions();
         int oldInterval = review.getIntervalDays();
         boolean wasLearned = oldReps > 0;
-        boolean wasMastered = oldInterval >= MASTERED_INTERVAL_DAYS;
+        boolean wasMastered = oldInterval >= sm2Properties.masteredIntervalDays();
 
         Sm2Algorithm.Result sm2 = Sm2Algorithm.apply(
                 review.getEaseFactor(),
                 review.getRepetitions(),
                 review.getIntervalDays(),
                 request.rating(),
-                now);
+                now,
+                sm2Properties);
 
         review.setDeckId(deck.getId());
         review.setEaseFactor(sm2.easeFactor());
@@ -287,7 +293,7 @@ public class FlashcardService {
         review.setUpdatedAt(now);
         reviewRepository.save(review);
 
-        int xpEarned = xpForRating(request.rating());
+        int xpEarned = applyXpMultiplier(xpForRating(request.rating()), deck.getXpMultiplier());
         if (xpEarned > 0) {
             User user = userRepository
                     .findById(userId)
@@ -302,7 +308,7 @@ public class FlashcardService {
         progress.setUpdatedAt(now);
 
         boolean isLearned = sm2.repetitions() > 0;
-        boolean isMastered = sm2.intervalDays() >= MASTERED_INTERVAL_DAYS;
+        boolean isMastered = sm2.intervalDays() >= sm2Properties.masteredIntervalDays();
 
         if (isLearned && !wasLearned) {
             progress.setLearnedCards(progress.getLearnedCards() + 1);
@@ -363,8 +369,8 @@ public class FlashcardService {
                 });
     }
 
-    private void upsertDailyActivity(UUID userId, int xpEarned) {
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        private void upsertDailyActivity(UUID userId, int xpEarned) {
+        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         DailyActivity activity = dailyActivityRepository
                 .findById(new com.backend.lumotus.entity.DailyActivityId(userId, today))
                 .orElseGet(() -> new DailyActivity(userId, today));
@@ -452,5 +458,14 @@ public class FlashcardService {
             case GOOD -> 10;
             case EASY -> 12;
         };
+    }
+
+    private static int applyXpMultiplier(int baseXp, double multiplier) {
+        if (baseXp <= 0 || multiplier <= 0) {
+            return 0;
+        }
+        double scaled = baseXp * multiplier;
+        int rounded = (int) Math.ceil(scaled);
+        return Math.max(rounded, 1);
     }
 }

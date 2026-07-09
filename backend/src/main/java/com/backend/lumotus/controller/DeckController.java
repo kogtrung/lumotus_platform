@@ -2,6 +2,7 @@ package com.backend.lumotus.controller;
 
 import com.backend.lumotus.dto.request.CreateCardRequest;
 import com.backend.lumotus.dto.request.CreateDeckRequest;
+import com.backend.lumotus.dto.request.SubmitDeckApprovalRequest;
 import com.backend.lumotus.dto.request.UpdateCardRequest;
 import com.backend.lumotus.dto.request.UpdateDeckRequest;
 import com.backend.lumotus.dto.response.CardResponse;
@@ -11,6 +12,7 @@ import com.backend.lumotus.dto.response.PageResponse;
 import com.backend.lumotus.security.UserPrincipal;
 import com.backend.lumotus.service.DeckService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,8 +45,10 @@ public class DeckController {
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "false") boolean mine) {
-        return ResponseEntity.ok(deckService.listDecks(principal, topicId, topicSlug, q, page, size, mine));
+            @RequestParam(defaultValue = "false") boolean mine,
+            @RequestParam(required = false) Boolean isPublic,
+            @RequestParam(required = false) String verificationStatus) {
+        return ResponseEntity.ok(deckService.listDecks(principal, topicId, topicSlug, q, page, size, mine, isPublic, verificationStatus));
     }
 
     @PostMapping
@@ -58,9 +62,10 @@ public class DeckController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) String deckRef) {
+            @RequestParam(required = false) String deckRef,
+            @RequestParam(required = false) List<UUID> topicIds) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(deckService.importCsv(file, title, deckRef, principal));
+                .body(deckService.importCsv(file, title, deckRef, topicIds, principal));
     }
 
     @GetMapping("/{deckRef}")
@@ -84,10 +89,25 @@ public class DeckController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{deckRef}/hard")
+    public ResponseEntity<Void> hardDelete(
+            @PathVariable String deckRef, @AuthenticationPrincipal UserPrincipal principal) {
+        deckService.hardDeleteDeck(deckRef, principal);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{deckRef}/copy")
     public ResponseEntity<DeckSummaryResponse> copy(
             @PathVariable String deckRef, @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED).body(deckService.copyDeck(deckRef, principal));
+    }
+
+    @PostMapping("/{deckRef}/submit-for-approval")
+    public ResponseEntity<DeckSummaryResponse> submitForApproval(
+            @PathVariable String deckRef,
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestBody(required = false) SubmitDeckApprovalRequest request) {
+        return ResponseEntity.ok(deckService.submitForApproval(deckRef, principal, request));
     }
 
     @GetMapping("/{deckRef}/cards")

@@ -26,6 +26,11 @@ public record DeckSummaryResponse(
         String sourceDeckSlug,
         String sourceDeckTitle,
         String sourceOwnerUsername,
+        String sourceType,
+        double xpMultiplier,
+        String verificationStatus,
+        String verificationNote,
+        String requestedTopic,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -58,6 +63,11 @@ public record DeckSummaryResponse(
                 source != null ? source.slug() : null,
                 source != null ? source.title() : null,
                 source != null ? source.ownerUsername() : null,
+                deck.getSourceType(),
+                deck.getXpMultiplier(),
+                deck.getVerificationStatus(),
+                deck.getVerificationNote(),
+                deck.getRequestedTopic(),
                 deck.getCreatedAt(),
                 deck.getUpdatedAt());
     }

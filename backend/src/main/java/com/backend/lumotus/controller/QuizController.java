@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -45,6 +47,17 @@ public class QuizController {
     @GetMapping("/explore/{quizRef}")
     public ResponseEntity<QuizDetailResponse> getExploreQuiz(@PathVariable String quizRef) {
         return ResponseEntity.ok(quizService.getExploreQuiz(quizRef));
+    }
+
+    /**
+     * GET /api/v1/quizzes/deck/{deckId}
+     * List all quizzes for a deck (owner/admin only).
+     */
+    @GetMapping("/deck/{deckId}")
+    public ResponseEntity<PageResponse<QuizSummaryResponse>> listQuizzesByDeck(
+            @PathVariable UUID deckId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(quizService.listQuizzesByDeck(deckId, pageable));
     }
 
     // ============================================================

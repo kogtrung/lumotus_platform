@@ -74,6 +74,10 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
         """)
     List<QuizAttempt> findActiveByUserId(@Param("userId") UUID userId);
 
+    @Modifying
+    @Query("DELETE FROM QuizAttempt qa WHERE qa.quiz.id = :quizId")
+    void deleteAllByQuizId(@Param("quizId") UUID quizId);
+
     /**
      * Atomically close (quit) a quiz attempt.
      * Only updates rows where status = 'IN_PROGRESS' — prevents race with submitQuiz.
@@ -240,4 +244,15 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
     long countTotalAttemptsSince(
             @Param("userId") UUID userId,
             @Param("since") Instant since);
+
+    @Query(
+        "SELECT CAST(qa.startedAt AS date), COUNT(qa) " +
+        "FROM QuizAttempt qa " +
+        "WHERE qa.startedAt >= :start AND qa.startedAt <= :end " +
+        "GROUP BY CAST(qa.startedAt AS date) " +
+        "ORDER BY CAST(qa.startedAt AS date) ASC"
+    )
+    java.util.List<Object[]> countQuizAttemptsByDay(
+            @Param("start") Instant start,
+            @Param("end") Instant end);
 }

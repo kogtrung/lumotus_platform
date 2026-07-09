@@ -74,7 +74,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest request) {
-        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", request.getRequestURI());
+        log.error("Unhandled exception", ex);
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error: " + ex.getMessage(), request.getRequestURI());
     }
 
     private ResponseEntity<ApiError> buildError(HttpStatus status, String message, String path) {

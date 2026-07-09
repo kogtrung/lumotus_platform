@@ -2,6 +2,9 @@ package com.backend.lumotus.repository;
 
 import com.backend.lumotus.entity.QuizAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,4 +18,8 @@ public interface QuizAnswerRepository extends JpaRepository<QuizAnswer, UUID> {
     void deleteByAttemptId(UUID attemptId);
 
     void deleteByQuestionId(UUID questionId);
+
+    @Modifying
+    @Query("DELETE FROM QuizAnswer qa WHERE qa.attempt.id = :quizId")
+    void deleteAllByQuizId(@Param("quizId") UUID quizId);
 }

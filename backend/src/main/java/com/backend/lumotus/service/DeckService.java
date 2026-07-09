@@ -2,6 +2,7 @@ package com.backend.lumotus.service;
 
 import com.backend.lumotus.dto.request.CreateCardRequest;
 import com.backend.lumotus.dto.request.CreateDeckRequest;
+import com.backend.lumotus.dto.request.SubmitDeckApprovalRequest;
 import com.backend.lumotus.dto.request.UpdateCardRequest;
 import com.backend.lumotus.dto.request.UpdateDeckRequest;
 import com.backend.lumotus.dto.response.CardResponse;
@@ -9,10 +10,12 @@ import com.backend.lumotus.dto.response.DeckSummaryResponse;
 import com.backend.lumotus.dto.response.ImportDeckResponse;
 import com.backend.lumotus.dto.response.PageResponse;
 import com.backend.lumotus.dto.response.TopicResponse;
+import com.backend.lumotus.entity.DeckModerationLog;
 import com.backend.lumotus.service.CsvDeckImporter.ImportRow;
 import com.backend.lumotus.service.CsvDeckImporter.ParseResult;
 import com.backend.lumotus.entity.Card;
 import com.backend.lumotus.entity.Deck;
+import com.backend.lumotus.entity.Quiz;
 import com.backend.lumotus.entity.DeckTopic;
 import com.backend.lumotus.entity.DeckTopicId;
 import com.backend.lumotus.entity.Topic;
@@ -22,12 +25,21 @@ import com.backend.lumotus.exception.ForbiddenException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
 import com.backend.lumotus.util.SlugUtils;
 import com.backend.lumotus.repository.CardRepository;
+import com.backend.lumotus.repository.DeckModerationLogRepository;
 import com.backend.lumotus.repository.DeckRepository;
 import com.backend.lumotus.repository.DeckTopicRepository;
+import com.backend.lumotus.repository.DeckTagRepository;
+import com.backend.lumotus.repository.QuizRepository;
+import com.backend.lumotus.repository.QuizAnswerRepository;
+import com.backend.lumotus.repository.QuizQuestionRepository;
+import com.backend.lumotus.repository.QuizAttemptRepository;
+import com.backend.lumotus.repository.UserCardReviewRepository;
+import com.backend.lumotus.repository.UserDeckProgressRepository;
 import com.backend.lumotus.repository.TopicRepository;
 import com.backend.lumotus.repository.UserRepository;
 import com.backend.lumotus.security.UserPrincipal;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +65,14 @@ public class DeckService {
     private final DeckTopicRepository deckTopicRepository;
     private final TopicRepository topicRepository;
     private final UserRepository userRepository;
+    private final DeckModerationLogRepository deckModerationLogRepository;
+    private final QuizQuestionRepository quizQuestionRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final QuizRepository quizRepository;
+    private final QuizAnswerRepository quizAnswerRepository;
+    private final UserCardReviewRepository userCardReviewRepository;
+    private final UserDeckProgressRepository userDeckProgressRepository;
+    private final DeckTagRepository deckTagRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<DeckSummaryResponse> listDecks(
@@ -62,9 +82,35 @@ public class DeckService {
             String q,
             int page,
             int size,
-            boolean mineOnly) {
-        UUID resolvedTopicId = resolveTopicId(topicId, topicSlug);
+            boolean mineOnly,
+            Boolean isPublic,
+            String verificationStatus) {
         Pageable pageable = PageRequest.of(page, size);
+        boolean isAdmin = "ADMIN".equals(principal.getRole());
+
+        // Admin tabs (via filterPublic + approvalStatus params)
+        if (isAdmin) {
+            // "Tất cả" — OFFICIAL (any public state) + all public decks
+            if (isPublic == null && verificationStatus == null) {
+                Page<Deck> decks = deckRepository.findAdminAllDecks(topicId, blankToNull(q), pageable);
+                return PageResponse.from(decks.map(this::toSummary));
+            }
+            // "Riêng tư" — OFFICIAL decks not yet published
+            if (Boolean.FALSE.equals(isPublic)) {
+                Page<Deck> decks = deckRepository.findAdminPrivateOfficialDecks(topicId, blankToNull(q), pageable);
+                return PageResponse.from(decks.map(this::toSummary));
+            }
+            // "Công khai" — decks visible on Explore
+            if (Boolean.TRUE.equals(isPublic) && verificationStatus == null) {
+                Page<Deck> decks = deckRepository.findAdminPublicDecks(topicId, blankToNull(q), pageable);
+                return PageResponse.from(decks.map(this::toSummary));
+            }
+            // Status tabs — COMMUNITY decks filtered by verificationStatus
+            Page<Deck> decks = deckRepository.findAdminUserDecksByStatus(topicId, verificationStatus, blankToNull(q), pageable);
+            return PageResponse.from(decks.map(this::toSummary));
+        }
+
+        UUID resolvedTopicId = resolveTopicId(topicId, topicSlug);
         Page<Deck> decks = mineOnly
                 ? deckRepository.findOwnedByUser(principal.getId(), blankToNull(q), pageable)
                 : deckRepository.findPublicDecks(resolvedTopicId, blankToNull(q), pageable);
@@ -76,6 +122,17 @@ public class DeckService {
         Deck deck = resolveViewableDeck(deckRef, principal);
         deck.setViewCount(deck.getViewCount() + 1);
         deckRepository.save(deck);
+
+        String latestNote = deck.getVerificationNote();
+        if ("REJECTED".equals(deck.getVerificationStatus()) && latestNote == null) {
+            latestNote = deckModerationLogRepository.findByDeckIdOrderByCreatedAtDesc(deck.getId()).stream()
+                    .filter(log -> DeckModerationLog.Action.REJECT == log.getAction())
+                    .map(DeckModerationLog::getNote)
+                    .findFirst()
+                    .orElse(null);
+            deck.setVerificationNote(latestNote);
+        }
+
         return toSummary(deck);
     }
 
@@ -87,12 +144,18 @@ public class DeckService {
         deck.setDescription(request.description());
         deck.setCoverImageUrl(request.coverImageUrl());
         deck.setOwnerId(principal.getId());
-        deck.setOwnerType(Deck.OwnerType.USER);
-        if (request.isPublic() != null) {
-            deck.setPublic(request.isPublic());
-        }
-        if (request.isCopyable() != null) {
-            deck.setCopyable(request.isCopyable());
+        if ("ADMIN".equals(principal.getRole())) {
+            deck.setOwnerType(Deck.OwnerType.ADMIN);
+            deck.setSourceType("OFFICIAL");
+            deck.setXpMultiplier(1.0);
+            deck.setPublic(false); // admin publishes manually via Publish button
+            deck.setCopyable(true);
+        } else {
+            deck.setOwnerType(Deck.OwnerType.USER);
+            deck.setSourceType("PERSONAL");
+            deck.setXpMultiplier(0.1);
+            deck.setPublic(false);
+            deck.setCopyable(true);
         }
         if (request.languageFront() != null) {
             deck.setLanguageFront(request.languageFront());
@@ -108,13 +171,105 @@ public class DeckService {
     }
 
     @Transactional
+    public DeckSummaryResponse submitForApproval(String deckRef, UserPrincipal principal,
+            SubmitDeckApprovalRequest request) {
+        Deck deck = findOwnedDeck(deckRef, principal);
+        if (!"PERSONAL".equals(deck.getSourceType()) && !"REJECTED".equals(deck.getVerificationStatus())) {
+            throw new BadRequestException("Only personal decks can be submitted for approval");
+        }
+        if (deck.getVerificationStatus() != null && !"REJECTED".equals(deck.getVerificationStatus())) {
+            throw new BadRequestException("Deck is already in review");
+        }
+
+        // Apply optional description and requested topic from request
+        if (request != null) {
+            if (request.description() != null && !request.description().isBlank()) {
+                deck.setDescription(request.description().trim());
+            }
+            // User's topic suggestion — admin will decide whether to create or assign
+            if (request.requestedTopic() != null && !request.requestedTopic().isBlank()) {
+                deck.setRequestedTopic(request.requestedTopic().trim());
+            }
+            // Attach existing topics only — admin controls topic creation
+            if (request.topicIds() != null && !request.topicIds().isEmpty()) {
+                deckTopicRepository.deleteAllByDeckId(deck.getId());
+                for (UUID tid : request.topicIds()) {
+                    deckTopicRepository.save(new DeckTopic(new DeckTopicId(deck.getId(), tid)));
+                }
+            }
+        }
+
+        deck.setSourceType("COMMUNITY");
+        deck.setVerificationStatus("PENDING");
+        deck.setXpMultiplier(0.1);
+        deckRepository.save(deck);
+
+        deckModerationLogRepository.save(new DeckModerationLog(
+                deck, userRepository.getReferenceById(principal.getId()), DeckModerationLog.Action.SUBMIT, null));
+
+        return toSummary(deck);
+    }
+
+    @Transactional
+    public DeckSummaryResponse approveDeck(String deckRef, UserPrincipal principal, String note) {
+        requireAdmin(principal.getRole());
+        Deck deck = resolveDeckRef(deckRef, principal.getId());
+        if (!"PENDING".equals(deck.getVerificationStatus())) {
+            throw new BadRequestException("Deck is not pending approval");
+        }
+
+        deck.setVerificationStatus("APPROVED");
+        deck.setVerifiedAt(Instant.now());
+        deck.setVerifiedById(principal.getId());
+        deck.setVerificationNote(blankToNull(note));
+        deck.setPublic(true);
+        deck.setXpMultiplier(1.0);
+        deckRepository.save(deck);
+
+        deckModerationLogRepository.save(new DeckModerationLog(
+                deck, userRepository.getReferenceById(principal.getId()), DeckModerationLog.Action.APPROVE, blankToNull(note)));
+
+        return toSummary(deck);
+    }
+
+    @Transactional
+    public DeckSummaryResponse rejectDeck(String deckRef, UserPrincipal principal, String note) {
+        requireAdmin(principal.getRole());
+        Deck deck = resolveDeckRef(deckRef, principal.getId());
+        if (!"PENDING".equals(deck.getVerificationStatus())) {
+            throw new BadRequestException("Deck is not pending approval");
+        }
+
+        deck.setVerificationStatus("REJECTED");
+        deck.setVerifiedAt(Instant.now());
+        deck.setVerifiedById(principal.getId());
+        deck.setVerificationNote(blankToNull(note));
+        deck.setPublic(false);
+        deck.setSourceType("PERSONAL");
+        deck.setXpMultiplier(0.1);
+        deckRepository.save(deck);
+
+        deckModerationLogRepository.save(new DeckModerationLog(
+                deck, userRepository.getReferenceById(principal.getId()), DeckModerationLog.Action.REJECT, blankToNull(note)));
+
+        return toSummary(deck);
+    }
+
+    @Transactional
     public DeckSummaryResponse updateDeck(String deckRef, UpdateDeckRequest request, UserPrincipal principal) {
         Deck deck = findOwnedDeck(deckRef, principal);
         if (request.slug() != null) {
             assignSlug(deck, request.slug(), principal.getId());
         }
         if (request.title() != null) {
+            boolean titleChanged = !request.title().equals(deck.getTitle());
             deck.setTitle(request.title());
+            if (titleChanged && request.slug() == null) {
+                String candidateSlug = com.backend.lumotus.util.SlugUtils.slugify(request.title());
+                if (!deck.getSlug().equals(candidateSlug)) {
+                    deck.setSlug(uniqueSlugForOwner(principal.getId(), null, request.title()));
+                }
+            }
         }
         if (request.description() != null) {
             deck.setDescription(request.description());
@@ -146,8 +301,36 @@ public class DeckService {
     @Transactional
     public void deleteDeck(String deckRef, UserPrincipal principal) {
         Deck deck = findOwnedDeck(deckRef, principal);
+        if (deck.isPublic()) {
+            throw new BadRequestException("Cannot delete a deck that is visible on Explore. Unpublish it first.");
+        }
         deck.markDeleted();
         deckRepository.save(deck);
+    }
+
+    @Transactional
+    public void hardDeleteDeck(String deckRef, UserPrincipal principal) {
+        Deck deck = findOwnedDeck(deckRef, principal);
+        UUID deckId = deck.getId();
+
+        // Delete quiz-related data (quizzes belong to deck, not deck_id FK directly)
+        List<Quiz> quizzes = quizRepository.findByDeckId(deckId);
+        for (Quiz quiz : quizzes) {
+            UUID quizId = quiz.getId();
+            quizAnswerRepository.deleteAllByQuizId(quizId);
+            quizAttemptRepository.deleteAllByQuizId(quizId);
+            quizQuestionRepository.deleteByQuizId(quizId);
+        }
+        quizRepository.deleteAllByDeckId(deckId);
+
+        // Delete deck-related data
+        userCardReviewRepository.deleteAllByDeckId(deckId);
+        userDeckProgressRepository.deleteAllByDeckId(deckId);
+        cardRepository.deleteAllByDeckId(deckId);
+        deckTagRepository.deleteAllByDeckId(deckId);
+        deckTopicRepository.deleteAllByDeckId(deckId);
+        deckModerationLogRepository.deleteAllByDeckId(deckId);
+        deckRepository.delete(deck);
     }
 
     @Transactional
@@ -175,6 +358,8 @@ public class DeckService {
         copy.setLanguageFront(source.getLanguageFront());
         copy.setLanguageBack(source.getLanguageBack());
         copy.setSourceDeckId(source.getId());
+        copy.setSourceType("CLONE");
+        copy.setXpMultiplier(0.1);
         Deck savedCopy = deckRepository.save(copy);
 
         for (Card sourceCard : cardRepository.findByDeckIdOrderBySortOrderAsc(source.getId())) {
@@ -281,7 +466,7 @@ public class DeckService {
 
     @Transactional
     public ImportDeckResponse importCsv(
-            MultipartFile file, String title, String deckRef, UserPrincipal principal) {
+            MultipartFile file, String title, String deckRef, List<UUID> topicIds, UserPrincipal principal) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("CSV file is required");
         }
@@ -309,8 +494,25 @@ public class DeckService {
             deck.setSlug(uniqueSlugForOwner(principal.getId(), null, deckTitle));
             deck.setTitle(deckTitle);
             deck.setOwnerId(principal.getId());
-            deck.setOwnerType(Deck.OwnerType.USER);
+            if ("ADMIN".equals(principal.getRole())) {
+                deck.setOwnerType(Deck.OwnerType.ADMIN);
+                deck.setSourceType("OFFICIAL");
+                deck.setXpMultiplier(1.0);
+            } else {
+                deck.setOwnerType(Deck.OwnerType.USER);
+                deck.setSourceType("PERSONAL");
+                deck.setXpMultiplier(0.1);
+            }
+            deck.setPublic(false);
+            deck.setCopyable(true);
             deck = deckRepository.save(deck);
+        }
+
+        // Attach topics to newly created deck
+        if (topicIds != null && !topicIds.isEmpty()) {
+            for (UUID tid : topicIds) {
+                deckTopicRepository.save(new DeckTopic(new DeckTopicId(deck.getId(), tid)));
+            }
         }
 
         int sortBase = cardRepository.findMaxSortOrder(deck.getId()) + 1;
@@ -376,14 +578,32 @@ public class DeckService {
 
     private Deck findOwnedDeck(String deckRef, UserPrincipal principal) {
         Deck deck;
+        boolean isAdmin = "ADMIN".equals(principal.getRole());
+
         if (SlugUtils.isUuid(deckRef)) {
-            deck = deckRepository
-                    .findByIdAndOwnerId(SlugUtils.parseUuid(deckRef), principal.getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            UUID id = SlugUtils.parseUuid(deckRef);
+            if (isAdmin) {
+                deck = deckRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            } else {
+                deck = deckRepository.findByIdAndOwnerId(id, principal.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            }
         } else {
-            deck = deckRepository
-                    .findByOwnerIdAndSlug(principal.getId(), deckRef)
-                    .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            if (isAdmin) {
+                deck = deckRepository.findAll().stream()
+                        .filter(d -> deckRef.equals(d.getSlug()))
+                        .findFirst()
+                        .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            } else {
+                deck = deckRepository.findByOwnerIdAndSlug(principal.getId(), deckRef)
+                        .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            }
+        }
+
+        // Users cannot modify OFFICIAL decks
+        if (!isAdmin && "OFFICIAL".equals(deck.getSourceType())) {
+            throw new ForbiddenException("Admin decks cannot be modified by users");
         }
         return deck;
     }
@@ -398,10 +618,24 @@ public class DeckService {
         if (matches.isEmpty()) {
             throw new ResourceNotFoundException("Deck not found");
         }
-        if (matches.size() > 1) {
-            throw new BadRequestException("Ambiguous deck slug — use UUID instead");
+        if (matches.size() == 1) {
+            return matches.get(0);
         }
-        return matches.get(0);
+        // If there are multiple matches (legacy duplicate slugs), prioritize:
+        // 1. Owned by the current user
+        // 2. Pending approval
+        // 3. Official deck
+        // 4. Default to first match
+        return matches.stream()
+                .filter(d -> d.getOwnerId().equals(userId))
+                .findFirst()
+                .orElseGet(() -> matches.stream()
+                        .filter(d -> "PENDING".equals(d.getVerificationStatus()))
+                        .findFirst()
+                        .orElseGet(() -> matches.stream()
+                                .filter(d -> "OFFICIAL".equals(d.getSourceType()))
+                                .findFirst()
+                                .orElse(matches.get(0))));
     }
 
     private UUID resolveTopicId(UUID topicId, String topicSlug) {
@@ -425,21 +659,23 @@ public class DeckService {
         if (!SlugUtils.isValidSlug(base)) {
             throw new BadRequestException("Invalid slug format");
         }
-        String candidate = base;
-        int suffix = 2;
-        while (deckRepository.existsByOwnerIdAndSlug(ownerId, candidate)) {
-            candidate = base + "-" + suffix++;
+        if (deckRepository.existsBySlug(base)) {
+            String candidate = base + "-" + UUID.randomUUID().toString().substring(0, 6);
+            while (deckRepository.existsBySlug(candidate)) {
+                candidate = base + "-" + UUID.randomUUID().toString().substring(0, 6);
+            }
+            return candidate;
         }
-        return candidate;
+        return base;
     }
 
     private void assignSlug(Deck deck, String newSlug, UUID ownerId) {
         if (!SlugUtils.isValidSlug(newSlug)) {
             throw new BadRequestException("Invalid slug format");
         }
-        if (deckRepository.existsByOwnerIdAndSlug(ownerId, newSlug)
+        if (deckRepository.existsBySlug(newSlug)
                 && !newSlug.equals(deck.getSlug())) {
-            throw new ConflictException("Deck slug already exists for this user");
+            throw new ConflictException("Deck slug already exists");
         }
         deck.setSlug(newSlug);
     }
@@ -461,6 +697,11 @@ public class DeckService {
                 .findById(deck.getOwnerId())
                 .map(u -> u.getUsername())
                 .orElse("unknown");
+        
+        if (Deck.OwnerType.ADMIN.equals(deck.getOwnerType())) {
+            ownerUsername = null;
+        }
+
         DeckSummaryResponse.SourceMeta source = resolveSourceMeta(deck.getSourceDeckId());
         return DeckSummaryResponse.from(deck, cardCount, topics, ownerUsername, source);
     }
@@ -507,6 +748,12 @@ public class DeckService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void requireAdmin(String userRole) {
+        if (!"ADMIN".equals(userRole)) {
+            throw new ForbiddenException("Admin access required");
+        }
     }
 
     private String deriveTitleFromFilename(String filename) {

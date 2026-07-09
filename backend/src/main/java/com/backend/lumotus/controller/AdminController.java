@@ -5,8 +5,12 @@ import com.backend.lumotus.dto.request.UpdateCooldownSettingsRequest;
 import com.backend.lumotus.dto.response.AdminStatsResponse;
 import com.backend.lumotus.dto.response.CooldownCheckResult;
 import com.backend.lumotus.dto.response.CooldownSettingsResponse;
+import com.backend.lumotus.dto.response.DeckSummaryResponse;
+import com.backend.lumotus.dto.response.PageResponse;
+import com.backend.lumotus.dto.response.CardResponse;
 import com.backend.lumotus.dto.response.QuizAttemptAdminResponse;
 import com.backend.lumotus.dto.response.UserAdminResponse;
+import com.backend.lumotus.security.UserPrincipal;
 import com.backend.lumotus.service.AdminService;
 import com.backend.lumotus.service.QuizCooldownService;
 import jakarta.validation.Valid;
@@ -16,8 +20,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -71,6 +77,34 @@ public class AdminController {
         return ResponseEntity.ok(adminService.updateUser(userId, role, active));
     }
 
+    // ============================================================
+    // DECK MANAGEMENT
+    // ============================================================
+
+    /**
+     * GET /api/v1/admin/decks/{deckRef}
+     * Admin-only endpoint — bypasses user access checks so moderators can view
+     * any deck including PENDING decks of other users.
+     */
+    @GetMapping("/decks/{deckRef}")
+    public ResponseEntity<DeckSummaryResponse> getAdminDeck(
+            @PathVariable String deckRef,
+            @AuthenticationPrincipal com.backend.lumotus.security.UserPrincipal principal) {
+        return ResponseEntity.ok(adminService.getAdminDeck(deckRef, principal.getRole()));
+    }
+
+    /**
+     * GET /api/v1/admin/decks/{deckRef}/cards
+     * Admin-only endpoint — bypasses user access checks for card listing.
+     */
+    @GetMapping("/decks/{deckRef}/cards")
+    public ResponseEntity<PageResponse<CardResponse>> listAdminDeckCards(
+            @PathVariable String deckRef,
+            @RequestParam(required = false) String q,
+            @PageableDefault(size = 50) Pageable pageable) {
+        return ResponseEntity.ok(adminService.listAdminDeckCards(deckRef, q, pageable));
+    }
+
     /**
      * GET /api/v1/admin/quiz-attempts
      * List all quiz attempts with pagination.
@@ -101,6 +135,48 @@ public class AdminController {
             @PathVariable UUID quizId,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(adminService.getQuizAttemptsByQuiz(quizId, pageable));
+    }
+
+    // ============================================================
+    // STUDY HISTORY
+    // ============================================================
+
+    /**
+     * GET /api/v1/admin/study-history
+     * Paginated study history grouped by user (master list).
+     */
+    @GetMapping("/study-history")
+    public ResponseEntity<org.springframework.data.domain.Page<com.backend.lumotus.dto.response.DailyActivityAdminResponse>> getStudyHistory(
+            @PageableDefault(size = 30) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getStudyHistory(pageable));
+    }
+
+    /**
+     * GET /api/v1/admin/study-history/user/{userId}
+     * Paginated daily activity log for a specific user (for admin detail drill-down).
+     */
+    @GetMapping("/study-history/user/{userId}")
+    public ResponseEntity<org.springframework.data.domain.Page<com.backend.lumotus.dto.response.DailyActivityAdminResponse>> getUserStudyHistory(
+            @PathVariable UUID userId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getStudyHistoryByUser(userId, pageable));
+    }
+
+    // ============================================================
+    // CHART / ANALYTICS STATS
+    // ============================================================
+
+    /**
+     * GET /api/v1/admin/stats/charts?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+     * Returns daily aggregated new-users / new-decks / quiz-attempts for chart rendering.
+     */
+    @GetMapping("/stats/charts")
+    public ResponseEntity<java.util.List<com.backend.lumotus.dto.response.AdminChartDataPoint>> getChartStats(
+            @RequestParam(required = false) java.time.LocalDate startDate,
+            @RequestParam(required = false) java.time.LocalDate endDate) {
+        java.time.LocalDate end = endDate != null ? endDate : java.time.LocalDate.now();
+        java.time.LocalDate start = startDate != null ? startDate : end.minusDays(29);
+        return ResponseEntity.ok(adminService.getChartStats(start, end));
     }
 
     // ============================================================
@@ -154,5 +230,62 @@ public class AdminController {
             @RequestParam UUID userId,
             @RequestParam UUID quizId) {
         return ResponseEntity.ok(quizCooldownService.getCooldownStatus(userId, quizId));
+    }
+
+    /**
+     * POST /api/v1/admin/decks/{deckRef}/approve
+     */
+    @PostMapping("/decks/{deckRef}/approve")
+    public ResponseEntity<DeckSummaryResponse> approveDeck(
+            @PathVariable String deckRef,
+            @RequestParam(required = false) String note,
+            @RequestParam(required = false) List<UUID> topicIds,
+            @AuthenticationPrincipal com.backend.lumotus.security.UserPrincipal principal) {
+        return ResponseEntity.ok(adminService.approveDeck(
+                deckRef,
+                principal.getRole(),
+                principal.getId(),
+                note,
+                topicIds));
+    }
+
+    /**
+     * POST /api/v1/admin/decks/{deckRef}/publish
+     */
+    @PostMapping("/decks/{deckRef}/publish")
+    public ResponseEntity<DeckSummaryResponse> publishDeck(
+            @PathVariable String deckRef,
+            @AuthenticationPrincipal com.backend.lumotus.security.UserPrincipal principal) {
+        return ResponseEntity.ok(adminService.publishDeck(
+                deckRef,
+                principal.getRole(),
+                principal.getId()));
+    }
+
+    /**
+     * POST /api/v1/admin/decks/{deckRef}/reject
+     */
+    @PostMapping("/decks/{deckRef}/reject")
+    public ResponseEntity<DeckSummaryResponse> rejectDeck(
+            @PathVariable String deckRef,
+            @RequestParam(required = false) String note,
+            @AuthenticationPrincipal com.backend.lumotus.security.UserPrincipal principal) {
+        return ResponseEntity.ok(adminService.rejectDeck(
+                deckRef,
+                principal.getRole(),
+                principal.getId(),
+                note));
+    }
+
+    /**
+     * DELETE /api/v1/admin/decks/{deckRef}
+     * Hard delete a deck and all its related data (permanent, irreversible).
+     */
+    @DeleteMapping("/decks/{deckRef}")
+    public ResponseEntity<Void> hardDeleteDeck(
+            @PathVariable String deckRef,
+            @AuthenticationPrincipal com.backend.lumotus.security.UserPrincipal principal) {
+        adminService.hardDeleteDeck(deckRef, principal.getRole());
+        return ResponseEntity.noContent().build();
     }
 }

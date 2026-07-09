@@ -28,4 +28,8 @@ public interface DeckTagRepository extends JpaRepository<DeckTag, DeckTagId> {
     @Modifying
     @Query("DELETE FROM DeckTag dt WHERE dt.deckId = :deckId AND dt.userId = :userId")
     void deleteAllByDeckIdAndUserId(@Param("deckId") UUID deckId, @Param("userId") UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM DeckTag dt WHERE dt.deckId = :deckId")
+    void deleteAllByDeckId(@Param("deckId") UUID deckId);
 }

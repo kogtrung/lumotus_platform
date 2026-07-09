@@ -7,6 +7,7 @@ import com.backend.lumotus.exception.BadRequestException;
 import com.backend.lumotus.exception.ForbiddenException;
 import com.backend.lumotus.exception.QuizCooldownException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
+import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.repository.*;
 import com.backend.lumotus.security.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -298,6 +298,12 @@ public class QuizService {
         }
 
         return buildDetailResponse(quiz);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<QuizSummaryResponse> listQuizzesByDeck(UUID deckId, Pageable pageable) {
+        Page<Quiz> page = quizRepository.findByDeckIdOrderByCreatedAtDesc(deckId, pageable);
+                return PageResponse.from(page, QuizSummaryResponse::from);
     }
 
     /**
@@ -707,26 +713,24 @@ public class QuizService {
         attempt.setTimeTakenSeconds(request.timeTakenSeconds());
         attempt.finish();
 
-        // Calculate XP
+        // Calculate XP with deck multiplier
         int xpEarned = 0;
         if (qualifiesForXp) {
             int baseXp = quiz.getXpBase() != null ? quiz.getXpBase() : 10;
             int bonusXp = quiz.getXpBonus() != null ? quiz.getXpBonus() : 20;
+            int rawXp = correct * baseXp + (correct == total && total > 0 ? bonusXp : 0);
+            double multiplier = quiz.getDeck() != null ? quiz.getDeck().getXpMultiplier() : 1.0;
+            xpEarned = applyXpMultiplier(rawXp, multiplier);
+        }
 
-            xpEarned = correct * baseXp;
-            if (correct == total && total > 0) {
-                xpEarned += bonusXp; // Perfect bonus
-            }
-
-            if (xpEarned > 0) {
-                User user = attempt.getUser();
-                user.setXp(user.getXp() + xpEarned);
-                userRepository.save(user);
-            }
+        if (xpEarned > 0) {
+            User user = attempt.getUser();
+            user.setXp(user.getXp() + xpEarned);
+            userRepository.save(user);
         }
 
         // DailyActivity & streak
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         DailyActivityId daId = new DailyActivityId(principal.getId(), today);
         DailyActivity activity = dailyActivityRepository.findById(daId)
                 .orElseGet(() -> new DailyActivity(principal.getId(), today));
@@ -968,11 +972,15 @@ public class QuizService {
             } catch (IllegalArgumentException ignored) {}
         }
         Page<Quiz> page = quizRepository.findAllForAdmin(quizStatus, pageable);
-        page.forEach(q -> q.setComputedQuestionCount(
-            quizRepository.countQuestionsByQuizId(q.getId()) != null
-                ? quizRepository.countQuestionsByQuizId(q.getId())
-                : q.getQuestionCount() != null ? q.getQuestionCount() : 0
-        ));
+        page.forEach(q -> {
+            q.setComputedQuestionCount(
+                quizRepository.countQuestionsByQuizId(q.getId()) != null
+                    ? quizRepository.countQuestionsByQuizId(q.getId())
+                    : q.getQuestionCount() != null ? q.getQuestionCount() : 0
+            );
+            long distinctUsers = quizAttemptRepository.countDistinctUsersByQuiz(q.getId());
+            q.setUniqueUserCount(distinctUsers);
+        });
         return PageResponse.from(page, QuizSummaryResponse::from);
     }
 
@@ -1271,6 +1279,15 @@ public class QuizService {
             return trimmed.replaceFirst("^[A-D][.)]\\s+", "");
         }
         return trimmed;
+    }
+
+    private static int applyXpMultiplier(int baseXp, double multiplier) {
+        if (multiplier <= 0) {
+            return 0;
+        }
+        double scaled = baseXp * multiplier;
+        int rounded = (int) Math.ceil(scaled);
+        return Math.max(rounded, 1);
     }
 
     private void updateQuizStats(UUID quizId) {

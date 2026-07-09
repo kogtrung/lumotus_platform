@@ -5,6 +5,7 @@ public record AdminStatsResponse(
         long totalDecks,
         long totalCards,
         long totalQuizzes,
+        long totalQuizAttempts,
         long totalActiveUsersToday,
         long totalReviewsToday,
         long totalXpAwardedToday

@@ -7,6 +7,8 @@ import lombok.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "quiz_attempts")
@@ -29,6 +31,7 @@ public class QuizAttempt extends BaseEntity {
     private Quiz quiz;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private AttemptStatus status = AttemptStatus.IN_PROGRESS;

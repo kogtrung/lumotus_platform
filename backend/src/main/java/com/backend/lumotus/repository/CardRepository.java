@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -87,4 +88,8 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
             )
             """)
     long countNewCardsForUserAcrossDecks(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM Card c WHERE c.deckId = :deckId")
+    void deleteAllByDeckId(@Param("deckId") UUID deckId);
 }
