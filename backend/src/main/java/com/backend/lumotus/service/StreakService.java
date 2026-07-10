@@ -98,13 +98,12 @@ public class StreakService {
     @Transactional
     public void resetStaleStreaks() {
         LocalDate yesterday = LocalDate.now(AppProperties.APP_ZONE).minusDays(1);
-        LocalDate cutoff = yesterday.minusDays(1); // streak should have been set on or before yesterday
 
         List<User> activeUsers = userRepository.findAll().stream()
                 .filter(u -> u.isActive())
                 .filter(u -> {
                     LocalDate lastStudy = u.getLastStudyDate();
-                    return lastStudy != null && lastStudy.isBefore(cutoff);
+                    return lastStudy != null && lastStudy.isBefore(yesterday);
                 })
                 .toList();
 

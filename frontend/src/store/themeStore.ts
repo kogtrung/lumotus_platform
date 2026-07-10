@@ -33,14 +33,23 @@ export const useThemeStore = create<ThemeState>()(
     {
       name: 'lumo-theme-storage',
       onRehydrateStorage: () => (state) => {
-        if (state) {
-          if (state.theme === 'dark') {
-            document.documentElement.classList.add('dark')
-          } else {
-            document.documentElement.classList.remove('dark')
-          }
+        const theme = state?.theme || 'dark'
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
         }
       },
     }
   )
 )
+
+// Ensure initial state is synced in case Rehydrate doesn't catch fresh visitors
+if (typeof document !== 'undefined') {
+  const currentTheme = useThemeStore.getState().theme
+  if (currentTheme === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
