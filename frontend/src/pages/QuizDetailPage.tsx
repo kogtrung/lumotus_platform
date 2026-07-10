@@ -87,7 +87,7 @@ export default function QuizDetailPage() {
       {quiz && !detailQuery.isLoading && (
         <>
           {/* Cover */}
-          <div className="relative overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
             <div className="flex h-48 items-center justify-center overflow-hidden">
               {quiz.coverImageUrl ? (
                 <img src={quiz.coverImageUrl} alt={quiz.title} className="h-full w-full object-cover" />
@@ -114,7 +114,7 @@ export default function QuizDetailPage() {
           </div>
 
           {/* Info */}
-          <div className="space-y-4 rounded-2xl border border-[#3D3348] bg-[#252030] p-5">
+          <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
             <div>
               <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[rgba(236,72,153,0.12)] px-2.5 py-1 text-xs font-bold text-[#EC4899]">
                 <Trophy className="h-3 w-3" />
@@ -131,28 +131,28 @@ export default function QuizDetailPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="flex items-center gap-2 rounded-xl border border-[#3D3348] bg-[#1A1520] p-3">
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
                 <Target className="h-4 w-4 text-[#EC4899]" />
                 <div>
                   <p className="text-xs text-[#8B7A9E]">Câu hỏi</p>
                   <p className="text-sm font-bold text-[#F5F0FA]">{quiz.questionCount}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl border border-[#3D3348] bg-[#1A1520] p-3">
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
                 <Timer className="h-4 w-4 text-[#F97316]" />
                 <div>
                   <p className="text-xs text-[#8B7A9E]">Thời gian</p>
                   <p className="text-sm font-bold text-[#F5F0FA]">{formatTime(quiz.timeLimitSeconds)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl border border-[#3D3348] bg-[#1A1520] p-3">
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
                 <Users className="h-4 w-4 text-[#8B7A9E]" />
                 <div>
                   <p className="text-xs text-[#8B7A9E]">Lượt chơi</p>
                   <p className="text-sm font-bold text-[#F5F0FA]">{quiz.attemptCount}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl border border-[#3D3348] bg-[#1A1520] p-3">
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
                 <TrendingUp className="h-4 w-4 text-emerald-400" />
                 <div>
                   <p className="text-xs text-[#8B7A9E]">Điểm TB</p>
@@ -196,7 +196,7 @@ export default function QuizDetailPage() {
               {questions.map((q, qi) => (
                 <div
                   key={q.id}
-                  className="rounded-xl border border-[#3D3348] bg-[#252030] p-4"
+                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
                 >
                   <div className="mb-3 flex items-start gap-3">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EC4899]/20 text-xs font-bold text-[#EC4899]">
@@ -212,10 +212,10 @@ export default function QuizDetailPage() {
                           key={oi}
                           className={cn(
                             'flex items-center gap-2 rounded-lg border px-3 py-2 text-xs',
-                            'border-[#3D3348] bg-[#1A1520] text-[#8B7A9E]'
+                            'border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)]'
                           )}
                         >
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-[#3D3348] bg-[#252030] text-[10px] font-bold text-[#8B7A9E]">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[10px] font-bold text-[var(--color-text-muted)]">
                             {getOptionLabel(oi)}
                           </span>
                           <span>{opt}</span>

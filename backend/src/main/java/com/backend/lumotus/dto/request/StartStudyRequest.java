@@ -7,11 +7,10 @@ import jakarta.validation.constraints.NotNull;
 
 public record StartStudyRequest(
         @NotNull StudyMode mode,
-        @Min(1) @Max(100) Integer count,
+        Integer count,
         String direction
 ) {
     public StartStudyRequest {
-        if (count == null) count = 10;
         if (direction == null) direction = "forward";
     }
 }

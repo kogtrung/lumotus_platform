@@ -161,6 +161,17 @@ export interface QuizAttemptSummary {
 // ============================================================
 
 export const quizApi = {
+  // --- Cooldown Config ---
+  getCooldownConfig() {
+    return axiosClient.get<{
+      enabled: boolean
+      minSecondsBetweenAttempts: number
+      maxAttemptsPerQuizPerDay: number
+      maxTotalAttemptsPerDay: number
+      maxTotalAttemptsPerWeek: number
+    }>('/quizzes/cooldown/config')
+  },
+
   // --- Explore (public approved quizzes) ---
   listExplore(params?: { page?: number; size?: number; sort?: string }) {
     return axiosClient.get<{ content: QuizSummary[]; totalElements: number; totalPages: number }>(
@@ -408,15 +419,30 @@ export const quizApi = {
 
   // --- Global Quiz Leaderboard (performance across all quizzes) ---
   getGlobalQuizLeaderboard(limit = 10) {
-    return axiosClient.get<Array<{
-      userId: string
-      username: string
-      avatarUrl: string | null
-      avgBestScore: number
-      quizzesCompleted: number
-      totalCorrectAnswers: number
-      totalTimeSeconds: number
-      rank: number
-    }>>('/quizzes/leaderboard', { params: { limit } })
+    return axiosClient.get<
+      Array<{
+        userId: string
+        username: string
+        avatarUrl: string | null
+        avgBestScore: number
+        quizzesCompleted: number
+        totalCorrectAnswers: number
+        totalTimeSeconds: number
+        rank: number
+      }>
+    >('/quizzes/leaderboard', { params: { limit } })
+  },
+
+  // --- Weekly Quiz Leaderboard (sum of best scores) ---
+  getMyGlobalQuizLeaderboardEntry() { return axiosClient.get<any>('/quizzes/leaderboard/global/me') },
+
+  getWeeklyQuizLeaderboard(limit = 10) {
+    return axiosClient.get<import('./progress').LeaderboardEntry[]>('/quizzes/leaderboard/weekly', {
+      params: { limit },
+    })
+  },
+
+  getMyWeeklyQuizLeaderboardEntry() {
+    return axiosClient.get<import('./progress').LeaderboardEntry>('/quizzes/leaderboard/weekly/me')
   },
 }

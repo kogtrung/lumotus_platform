@@ -7,6 +7,7 @@ import com.backend.lumotus.exception.BadRequestException;
 import com.backend.lumotus.exception.ForbiddenException;
 import com.backend.lumotus.exception.QuizCooldownException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
+import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.repository.*;
 import com.backend.lumotus.security.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -298,6 +298,12 @@ public class QuizService {
         }
 
         return buildDetailResponse(quiz);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<QuizSummaryResponse> listQuizzesByDeck(UUID deckId, Pageable pageable) {
+        Page<Quiz> page = quizRepository.findByDeckIdOrderByCreatedAtDesc(deckId, pageable);
+                return PageResponse.from(page, QuizSummaryResponse::from);
     }
 
     /**
@@ -703,34 +709,46 @@ public class QuizService {
         attempt.setTotalQuestions(total);
         attempt.setCorrectAnswers(correct);
         attempt.setSkippedAnswers(skipped);
-        attempt.setScore(total > 0 ? (double) correct / total : 0.0);
+        
+        double newScoreRaw = total > 0 ? (double) correct / total : 0.0;
+
+        // Fetch previous best BEFORE modifying attempt.setScore to avoid JPA pre-query flush including current attempt's score
+        double previousBestRaw = quizAttemptRepository.findBestScoreByUserAndQuiz(principal.getId(), quiz.getId())
+                .orElse(0.0);
+
+        attempt.setScore(newScoreRaw);
         attempt.setTimeTakenSeconds(request.timeTakenSeconds());
         attempt.finish();
 
-        // Calculate XP
+        // Calculate points gained for the Weekly Quiz Leaderboard
+        double pointsGained = (newScoreRaw * 10.0) - (previousBestRaw * 10.0);
+        if (pointsGained > 0) {
+            leaderboardService.updateWeeklyQuizScore(principal.getId(), pointsGained);
+        }
+
+        // Calculate XP with deck multiplier
         int xpEarned = 0;
         if (qualifiesForXp) {
             int baseXp = quiz.getXpBase() != null ? quiz.getXpBase() : 10;
             int bonusXp = quiz.getXpBonus() != null ? quiz.getXpBonus() : 20;
+            int rawXp = correct * baseXp + (correct == total && total > 0 ? bonusXp : 0);
+            double multiplier = quiz.getDeck() != null ? quiz.getDeck().getXpMultiplier() : 1.0;
+            xpEarned = applyXpMultiplier(rawXp, multiplier);
+        }
 
-            xpEarned = correct * baseXp;
-            if (correct == total && total > 0) {
-                xpEarned += bonusXp; // Perfect bonus
-            }
-
-            if (xpEarned > 0) {
-                User user = attempt.getUser();
-                user.setXp(user.getXp() + xpEarned);
-                userRepository.save(user);
-            }
+        if (xpEarned > 0) {
+            User user = attempt.getUser();
+            user.setXp(user.getXp() + xpEarned);
+            userRepository.save(user);
         }
 
         // DailyActivity & streak
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         DailyActivityId daId = new DailyActivityId(principal.getId(), today);
         DailyActivity activity = dailyActivityRepository.findById(daId)
                 .orElseGet(() -> new DailyActivity(principal.getId(), today));
         activity.setQuizTaken(activity.getQuizTaken() + 1);
+        activity.setStudyMinutes(activity.getStudyMinutes() + 5); // 5 mins per quiz
         activity.setXpEarned(activity.getXpEarned() + xpEarned);
         dailyActivityRepository.save(activity);
         streakService.recordStudyActivity(principal.getId());
@@ -911,6 +929,14 @@ public class QuizService {
     // LEADERBOARD
     // ============================================================
 
+    public List<com.backend.lumotus.dto.response.LeaderboardEntry> getWeeklyQuizLeaderboard(int limit) {
+        return leaderboardService.getWeeklyTopUsers(limit);
+    }
+
+    public Optional<com.backend.lumotus.dto.response.LeaderboardEntry> getWeeklyUserEntry(UUID userId) {
+        return leaderboardService.getWeeklyUserEntry(userId);
+    }
+
     @Transactional(readOnly = true)
     public List<GlobalQuizLeaderboardEntry> getGlobalQuizLeaderboard(int limit) {
         List<Object[]> rows = quizAttemptRepository.findGlobalQuizLeaderboard(limit);
@@ -925,6 +951,31 @@ public class QuizService {
                 row[6] != null ? ((Number) row[6]).intValue() : 0,
                 rankCounter[0]++
         )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<GlobalQuizLeaderboardEntry> getGlobalUserEntry(UUID userId) {
+        List<Object[]> rows = quizAttemptRepository.findGlobalQuizLeaderboardEntry(userId);
+        if (rows.isEmpty()) {
+            User user = userRepository.findById(userId).orElseThrow();
+            return Optional.of(new GlobalQuizLeaderboardEntry(
+                    userId,
+                    user.getUsername(),
+                    user.getAvatarUrl(),
+                    0.0, 0, 0, 0, 0L
+            ));
+        }
+        Object[] row = rows.get(0);
+        return Optional.of(new GlobalQuizLeaderboardEntry(
+                (java.util.UUID) row[0],
+                (String) row[1],
+                !((String) row[2]).isEmpty() ? (String) row[2] : null,
+                row[3] != null ? ((Number) row[3]).doubleValue() : 0.0,
+                row[4] != null ? ((Number) row[4]).intValue() : 0,
+                row[5] != null ? ((Number) row[5]).intValue() : 0,
+                row[6] != null ? ((Number) row[6]).intValue() : 0,
+                row[7] != null ? ((Number) row[7]).longValue() : 0L
+        ));
     }
 
     @Transactional(readOnly = true)
@@ -968,11 +1019,15 @@ public class QuizService {
             } catch (IllegalArgumentException ignored) {}
         }
         Page<Quiz> page = quizRepository.findAllForAdmin(quizStatus, pageable);
-        page.forEach(q -> q.setComputedQuestionCount(
-            quizRepository.countQuestionsByQuizId(q.getId()) != null
-                ? quizRepository.countQuestionsByQuizId(q.getId())
-                : q.getQuestionCount() != null ? q.getQuestionCount() : 0
-        ));
+        page.forEach(q -> {
+            q.setComputedQuestionCount(
+                quizRepository.countQuestionsByQuizId(q.getId()) != null
+                    ? quizRepository.countQuestionsByQuizId(q.getId())
+                    : q.getQuestionCount() != null ? q.getQuestionCount() : 0
+            );
+            long distinctUsers = quizAttemptRepository.countDistinctUsersByQuiz(q.getId());
+            q.setUniqueUserCount(distinctUsers);
+        });
         return PageResponse.from(page, QuizSummaryResponse::from);
     }
 
@@ -1273,10 +1328,22 @@ public class QuizService {
         return trimmed;
     }
 
+    private static int applyXpMultiplier(int baseXp, double multiplier) {
+        if (multiplier <= 0) {
+            return 0;
+        }
+        double scaled = baseXp * multiplier;
+        int rounded = (int) Math.ceil(scaled);
+        return Math.max(rounded, 1);
+    }
+
     private void updateQuizStats(UUID quizId) {
         Optional<Double> avg = quizAttemptRepository.findAvgScoreByQuizId(quizId);
-        quizRepository.incrementAttemptCount(quizId);
-        avg.ifPresent(average -> quizRepository.updateStats(quizId, average));
+        if (avg.isPresent()) {
+            quizRepository.updateStats(quizId, avg.get());
+        } else {
+            quizRepository.incrementAttemptCount(quizId);
+        }
     }
 
     private String normalize(String text) {

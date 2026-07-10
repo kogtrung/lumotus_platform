@@ -42,9 +42,14 @@ final class CsvDeckImporter {
                 throw new BadRequestException("CSV file is empty");
             }
 
-            Map<String, Integer> headerIndex = mapHeaders(headerRow);
+            String[] cleanedHeaderRow = stripBom(headerRow);
+            Map<String, Integer> headerIndex = mapHeaders(cleanedHeaderRow);
             if (!headerIndex.containsKey("front") || !headerIndex.containsKey("back")) {
-                throw new BadRequestException("CSV must include columns: front, back");
+                String foundHeaders = String.join(", ", java.util.Arrays.stream(cleanedHeaderRow)
+                        .filter(h -> h != null && !h.trim().isEmpty())
+                        .map(h -> "\"" + h.trim() + "\"")
+                        .toList());
+                throw new BadRequestException("CSV must include columns: front, back. Found headers: " + foundHeaders);
             }
 
             String[] line;
@@ -120,6 +125,21 @@ final class CsvDeckImporter {
             return "";
         }
         return raw.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+    }
+
+    private static String[] stripBom(String[] headers) {
+        if (headers == null || headers.length == 0) {
+            return headers;
+        }
+        String[] cleaned = new String[headers.length];
+        for (int i = 0; i < headers.length; i++) {
+            String value = headers[i];
+            if (value != null && value.startsWith("\uFEFF")) {
+                value = value.substring(1);
+            }
+            cleaned[i] = value;
+        }
+        return cleaned;
     }
 
     private static boolean isBlankLine(String[] line) {

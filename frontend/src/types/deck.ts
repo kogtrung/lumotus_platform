@@ -29,6 +29,11 @@ export interface DeckSummary {
   sourceDeckSlug: string | null
   sourceDeckTitle: string | null
   sourceOwnerUsername: string | null
+  sourceType: string
+  xpMultiplier: number
+  verificationStatus: string | null
+  verificationNote: string | null
+  requestedTopic: string | null
   createdAt: string
   updatedAt: string
 }
@@ -104,5 +109,9 @@ export interface DeckListParams {
   size?: number
   q?: string
   topicSlug?: string
+  topicId?: string
   mine?: boolean
+  isPublic?: boolean
+  verificationStatus?: string
+  sort?: 'newest' | 'popular' | 'trending'
 }

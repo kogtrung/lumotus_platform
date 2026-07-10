@@ -35,10 +35,10 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 |---|---|
 | **Giai đoạn** | Sprint 6 — AI generate, Admin, Polish |
 | **Branch** | `develop` |
-| **Sprint đang focus** | Sprint 6: AI generate, Admin UI, MockMvc tests |
-| **Việc tiếp theo** | AI generate deck, Admin dashboard |
-| **Đối chiếu đề tài** | [`spec.md`](spec.md) §8 |
-| **Cập nhật lần cuối** | 2026-07-03 |
+| **Sprint đang focus** | Sprint 6: Deck Source + Admin Moderation + Flashcard SRS (đã xong); AI generate, MockMvc tests |
+| **Việc tiếp theo** | Test E2E deck approval flow; AI generate; MockMvc tests |
+| **Đối chiếu đề tài** | [`spec.md`](spec.md) §2.2–2.3, §4, §5.2 |
+| **Cập nhật lần cuối** | 2026-07-06 |
 
 ### Tóm tắt nhanh
 
@@ -160,6 +160,8 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ### Sprint 6 — AI, Admin & Polish ⏳
 
 - [ ] AI generate + `async_jobs` polling
+- [x] Deck Source Model: V27 migration, source_type/xp_multiplier/verification_status, deck moderation
+- [x] Flashcard SRS: tự động load due+new cards, không shuffle/count, XP multiplier
 - [ ] Admin UI + MockMvc tests + responsive
 
 ---
@@ -167,6 +169,108 @@ Cập nhật **cuối mỗi buổi** (hoặc khi merge PR quan trọng).
 ## Nhật ký session
 
 Ghi **mới nhất lên trên**. Mỗi entry: ngày, đã làm, chưa xong, **Next**, **Nhánh gợi ý** (nếu session đã xong phần code).
+
+---
+
+### Session 2026-07-07 — Fix XP multiplier for imported decks
+
+**Đã làm**
+
+- **Fix `DeckService.importCsv()`**:
+  - Khi tạo deck mới từ import CSV, set `sourceType=PERSONAL`, `xpMultiplier=0.1`, `public=false`, `copyable=true`
+  - Không còn bị nhầm default `1.0` gây rating cho 5-10 XP ở deck cá nhân vừa import
+
+**Chưa xong / blocker**
+
+- ...
+
+**Next**
+
+- ...
+
+**Nhánh gợi ý**
+
+|| Phạm vi | Nhánh |
+|---|---|---|
+|| Deck import + XP | `fix(deck): normalize import deck xp multiplier` |
+
+---
+
+### Session 2026-07-06 — Chuẩn hóa Deck Source + XP Multiplier + Flashcard SRS
+
+**Đã làm**
+
+- **DB Migration V27 (`V27__deck_source_model.sql`):**
+  - Thêm `source_type` (`OFFICIAL|PERSONAL|COMMUNITY|CLONE`)
+  - Thêm `xp_multiplier` (default 1.0), `verification_status`, `verified_at`, `verified_by_id`, `verification_note`
+  - Thêm bảng `deck_moderation_logs` (id, deck_id, moderator_id, action, note, created_at)
+  - Backfill: ADMIN deck → OFFICIAL + public + multiplier 1.0; USER deck → PERSONAL + multiplier 0.1; Clone deck → CLONE + multiplier nguồn
+  - Indexes: `idx_decks_source_type`, `idx_decks_verification_status`, `idx_deck_moderation_logs_*`
+
+- **Backend Entity/DTO:**
+  - `Deck.java` — thêm `sourceType`, `xpMultiplier`, `verificationStatus`, `verifiedAt`, `verifiedById`, `verificationNote`
+  - `DeckSummaryResponse.java` — trả thêm `sourceType`, `xpMultiplier`, `verificationStatus`
+
+- **Backend Service:**
+  - `DeckService.createDeck()` — ADMIN → OFFICIAL, public=true, multiplier 1.0; USER → PERSONAL, multiplier 0.1
+  - `DeckService.copyDeck()` — `source_type=CLONE`, multiplier = source multiplier
+  - `DeckService.submitForApproval()` — PERSONAL → COMMUNITY + PENDING
+  - `DeckService.getDeck()` / `listDecks()` — lọc Explore: `is_public=true AND (source_type=OFFICIAL OR verification_status=APPROVED)`
+  - `FlashcardService.rateCard()` — `xpEarned = xpForRating(rating) * deck.xpMultiplier`, min 1 XP
+  - `QuizService` — `applyXpMultiplier()` đã có sẵn
+  - `AdminService.approveDeck()` / `rejectDeck()` — cập nhật `verification_status`, audit log
+
+- **Backend Controller:**
+  - `DeckController` — `POST /{deckRef}/submit-for-approval`
+  - `AdminController` — `POST /admin/decks/{deckRef}/approve|reject`
+
+- **Backend Entity:**
+  - `DeckModerationLog.java` — entity mới với enum `Action` (SUBMIT, APPROVE, REJECT)
+  - `DeckModerationLogRepository.java` — `findByDeckId` query
+  - `Quiz.java` — thêm `xpMultiplier`, `getXpMultiplier()`, `setXpMultiplier()`
+  - `QuizAttempt.java` — thêm `xpMultiplier` field
+
+- **Flashcard SRS FE:**
+  - `FlashcardStudyPage.tsx` — rewrite hoàn toàn: tự động load due cards + all deck cards, không shuffle, không count limit
+  - `utils/studySession.ts` — `FLASHCARD_CONFIG = { shuffle: false, count: 500, ttlHours: 1 }`
+
+- **Deck Admin FE:**
+  - `AdminDeckManagement.tsx` — thêm filter PENDING/APPROVED/REJECTED, nút Approve/Reject cho mỗi deck
+  - `decksApi.ts` — thêm `approveDeck()`, `rejectDeck()` (đã có)
+  - `DeckDetailPage.tsx` — badges source_type, verification_status, xpMultiplier; nút "Gửi duyệt lên Khám phá"
+  - `CreateDeckDialog.tsx` — bỏ isPublic toggle (deck luôn tạo private)
+
+- **Types:**
+  - `types/deck.ts` — thêm `verificationStatus` (string|null), `sourceType`, `xpMultiplier` vào `DeckSummary`
+
+- **Admin Deck Management FE:**
+  - Thêm nút "Tạo deck" (→ `AdminCreateDeckDialog`) và "Import CSV" (→ `AdminImportCsvDialog`) vào header trang quản lý deck
+  - `AdminCreateDeckDialog.tsx`, `AdminImportCsvDialog.tsx` — phiên bản light theme riêng cho admin
+
+- **Admin/User route separation:**
+  - `PrivateRoute.tsx` — ADMIN bị chặn khỏi user pages (`/home`, `/quiz`, `/explore`, ...), tự động redirect → `/admin`
+  - `LoginPage.tsx` — ADMIN sau khi đăng nhập redirect → `/admin` thay vì `/home`
+  - `AdminLayout.tsx` — nút "Đăng xuất" thay vì "Quay về App" (gọi `clearAuth()`)
+
+- **Admin Deck CRUD (FE):**
+  - `AdminDeckDetailPage.tsx` — trang chi tiết deck cho admin: xem/sửa thông tin deck (title, mô tả, isPublic, isCopyable), CRUD card (thêm, sửa, xóa thẻ với form đầy đủ trường), duyệt/từ chối deck, xóa deck, thống kê (thẻ, lượt xem, copy)
+  - `RejectDialog` — dialog nhập lý do từ chối deck
+  - `AdminDeckManagement.tsx` — click card → `/admin/decks/:deckRef`; nút duyệt/từ chối stopPropagation
+  - Route: `/admin/decks/:deckRef` → `AdminDeckDetailPage`
+
+**Chưa xong / Còn lại**
+
+- Admin moderation log view (FE hiển thị lịch sử duyệt deck)
+- Pre-existing TypeScript errors trong `QuizResult.tsx`, `AdminQuizHistory.tsx`, `ProgressPage.tsx`, `QuizLeaderboardPage.tsx` (unrelated to plan)
+
+**Next**
+
+- Test end-to-end: tạo deck USER → submit for approval → admin approve → hiển thị Explore
+- Fix pre-existing TS errors nếu cần
+
+**Nhánh gợi ý**
+
+`feat(deck): normalize deck source xp and srs study`
 
 ---
 

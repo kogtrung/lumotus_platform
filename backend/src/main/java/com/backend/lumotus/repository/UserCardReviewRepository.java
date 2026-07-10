@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -44,4 +45,8 @@ public interface UserCardReviewRepository extends JpaRepository<UserCardReview, 
             @Param("deckId") UUID deckId,
             @Param("now") Instant now,
             @Param("starredOnly") boolean starredOnly);
+
+    @Modifying
+    @Query("DELETE FROM UserCardReview r WHERE r.deckId = :deckId")
+    void deleteAllByDeckId(@Param("deckId") UUID deckId);
 }

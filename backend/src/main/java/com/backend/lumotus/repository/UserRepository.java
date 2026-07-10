@@ -17,4 +17,17 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT CAST(u.createdAt AS date), COUNT(u) " +
+        "FROM User u " +
+        "WHERE u.createdAt >= :start AND u.createdAt <= :end " +
+        "GROUP BY CAST(u.createdAt AS date) " +
+        "ORDER BY CAST(u.createdAt AS date) ASC"
+    )
+    java.util.List<Object[]> countNewUsersByDay(
+            @org.springframework.data.repository.query.Param("start") java.time.Instant start,
+            @org.springframework.data.repository.query.Param("end") java.time.Instant end
+    );
 }
+

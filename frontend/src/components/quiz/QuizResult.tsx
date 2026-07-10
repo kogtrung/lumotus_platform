@@ -68,11 +68,11 @@ function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
             'flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-bold',
             status === 'correct' && 'bg-emerald-500/25 text-emerald-400',
             status === 'wrong' && 'bg-red-500/25 text-red-400',
-            status === 'skipped' && 'bg-[#8B7A9E]/20 text-[#8B7A9E]'
+            status === 'skipped' && 'bg-[var(--color-bg)]/20 text-[var(--color-text-muted)]'
           )}>
             {idx + 1}
           </span>
-          <span className="text-[11px] font-semibold text-[#8B7A9E]">Câu {idx + 1}</span>
+          <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">Câu {idx + 1}</span>
         </div>
         <div className="flex items-center gap-1.5">
           {status === 'correct' && (
@@ -86,14 +86,14 @@ function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
             </span>
           )}
           {status === 'skipped' && (
-            <span className="text-[10px] font-semibold text-[#8B7A9E]">Bỏ qua</span>
+            <span className="text-[10px] font-semibold text-[var(--color-text-muted)]">Bỏ qua</span>
           )}
         </div>
       </div>
 
       {/* Question text */}
       <div className="px-3 pt-2.5 pb-2 shrink-0">
-        <p className="text-xs font-semibold leading-snug text-[#F5F0FA] line-clamp-2">{d.questionText || ''}</p>
+        <p className="text-xs font-semibold leading-snug text-[var(--color-text)] line-clamp-2">{d.questionText || ''}</p>
       </div>
 
       {/* Answer rows */}
@@ -107,19 +107,19 @@ function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
         )}>
           <span className={cn(
             'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold',
-            status === 'correct' && 'bg-emerald-500/20 text-emerald-400',
-            status === 'wrong' && 'bg-red-500/20 text-red-400',
-            status === 'skipped' && 'bg-[#8B7A9E]/20 text-[#8B7A9E]'
+            status === 'correct' && 'bg-emerald-500/20 text-[var(--color-success)]',
+            status === 'wrong' && 'bg-red-500/20 text-[var(--color-danger)]',
+            status === 'skipped' && 'bg-[var(--color-bg)]/20 text-[var(--color-text-muted)]'
           )}>
             {getLetter(d.selectedAnswer)}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold text-[#8B7A9E]">Đáp án của bạn</p>
+            <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">Đáp án của bạn</p>
             <p className={cn(
               'mt-0.5 text-xs leading-snug',
-              status === 'correct' && 'font-semibold text-emerald-300',
-              status === 'wrong' && 'text-red-300',
-              status === 'skipped' && 'italic text-[#8B7A9E]'
+              status === 'correct' && 'font-semibold text-[var(--color-success)]',
+              status === 'wrong' && 'text-[var(--color-danger)]',
+              status === 'skipped' && 'italic text-[var(--color-text-muted)]'
             )}>
               {displayAnswer(d.selectedAnswer)}
             </p>
@@ -135,8 +135,8 @@ function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
               {getLetter(d.correctAnswer)}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold text-[#8B7A9E]">Đáp án đúng</p>
-              <p className="mt-0.5 text-xs font-semibold leading-snug text-emerald-300">
+              <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">Đáp án đúng</p>
+              <p className="mt-0.5 text-xs font-semibold leading-snug text-[var(--color-success)]">
                 {d.correctAnswer}
               </p>
             </div>
@@ -149,7 +149,7 @@ function QuestionCard({ d, idx }: { d: QuizResultDetail; idx: number }) {
 }
 
 export default function QuizResult({
-  deckRef,
+  deckRef: _deckRef,
   correct: _correct,
   total,
   xpEarned,
@@ -157,7 +157,7 @@ export default function QuizResult({
   startedAt,
   finishedAt,
   details,
-  onRestart,
+  onRestart: _onRestart,
   totalQuestions,
   timeLimitSeconds,
   score,
@@ -172,10 +172,6 @@ export default function QuizResult({
   const answeredCount = details.filter((d) => d.selectedAnswer).length
   const displayScore = score != null ? (score * 10).toFixed(1) : pct.toString()
 
-  const fmtTime = (iso?: string) => {
-    if (!iso) return '—'
-    return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-  }
   const fmtDuration = (iso1?: string, iso2?: string) => {
     if (!iso1 || !iso2) return '—'
     const s = Math.round((new Date(iso2).getTime() - new Date(iso1).getTime()) / 1000)
@@ -203,19 +199,19 @@ export default function QuizResult({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Fixed Header */}
-      <div className="flex-none border-b border-[#3D3348]/50 bg-[#1D1A24] px-4 py-3">
+      <div className="flex-none border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Left: Quiz info */}
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-bold text-[#F5F0FA]">{quizTitle}</h2>
-            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[10px] text-[#8B7A9E]">
+            <h2 className="truncate text-base font-bold text-[var(--color-text)]">{quizTitle}</h2>
+            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
               <span className="flex items-center gap-1">
                 <Target className="h-3 w-3" />{totalQuestions ?? total} câu
               </span>
               <span className="flex items-center gap-1">
-                <Check className="h-3 w-3 text-emerald-400" />
-                <span className="text-emerald-400">{answeredCount}</span>
-                <span className="text-[#8B7A9E]">/{total} đã làm</span>
+                <Check className="h-3 w-3 text-[var(--color-success)]" />
+                <span className="text-[var(--color-success)]">{answeredCount}</span>
+                <span className="text-[var(--color-text-muted)]">/{total} đã làm</span>
               </span>
               {timeLimitSeconds != null && timeLimitSeconds > 0 && (
                 <span className="flex items-center gap-1">
@@ -268,17 +264,17 @@ export default function QuizResult({
               </div>
               {skipped > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-extrabold text-[#8B7A9E]">—</span>
-                  <span className="text-[10px] text-[#8B7A9E]/60">bỏ {skipped}</span>
+                  <span className="text-sm font-extrabold text-[var(--color-text-muted)]">—</span>
+                  <span className="text-[10px] text-[var(--color-text-muted)]/60">bỏ {skipped}</span>
                 </div>
               )}
             </div>
 
             {/* XP Badge */}
             {xpEarned > 0 && (
-              <div className="flex items-center gap-1.5 rounded-xl border border-[rgba(236,72,153,0.5)] bg-[rgba(236,72,153,0.15)] px-3 py-1.5">
-                <Zap className="h-4 w-4 text-[#EC4899]" />
-                <span className="text-base font-extrabold text-[#EC4899]">+{xpEarned}</span>
+              <div className="flex items-center gap-1.5 rounded-xl border border-[var(--color-primary)]/50 bg-[var(--color-primary)]/15 px-3 py-1.5">
+                <Zap className="h-4 w-4 text-[var(--color-primary)]" />
+                <span className="text-base font-extrabold text-[var(--color-primary)]">+{xpEarned}</span>
               </div>
             )}
           </div>
@@ -286,10 +282,10 @@ export default function QuizResult({
       </div>
 
       {/* Filter tabs */}
-      <div className="flex-none border-b border-[#3D3348]/50 bg-[#1D1A24] px-4 py-2">
-        <div className="flex items-center gap-1 rounded-xl bg-[#252030] p-1 w-fit">
+      <div className="flex-none border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2">
+        <div className="flex items-center gap-1 rounded-xl bg-[var(--color-surface)] p-1 w-fit">
           {([
-            { key: 'all', label: 'Tất cả', count: details.length },
+            { key: 'all', label: 'Tất cả', count: details.length, color: 'none' },
             { key: 'correct', label: 'Đúng', count: correctCount, color: 'emerald' },
             { key: 'wrong', label: 'Sai', count: wrong, color: 'red' },
             { key: 'skipped', label: 'Bỏ qua', count: skipped, color: 'gray' },
@@ -300,11 +296,11 @@ export default function QuizResult({
               className={cn(
                 'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
                 filter === key
-                  ? color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400'
-                  : color === 'red' ? 'bg-red-500/20 text-red-400'
-                  : color === 'gray' ? 'bg-[#3D3348] text-[#F5F0FA]'
-                  : 'bg-[#3D3348] text-[#F5F0FA]'
-                  : 'text-[#8B7A9E] hover:text-[#F5F0FA]'
+                  ? color === 'emerald' ? 'bg-emerald-500/20 text-[var(--color-success)]'
+                  : color === 'red' ? 'bg-red-500/20 text-[var(--color-danger)]'
+                  : color === 'gray' ? 'bg-[var(--color-surface-hover)] text-[var(--color-text)]'
+                  : 'bg-[var(--color-surface-hover)] text-[var(--color-text)]'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
               )}
             >
               {label}
@@ -313,8 +309,8 @@ export default function QuizResult({
                 filter === key
                   ? color === 'emerald' ? 'bg-emerald-500/30'
                   : color === 'red' ? 'bg-red-500/30'
-                  : 'bg-[#3D3348]'
-                  : 'bg-[#252030]'
+                  : 'bg-[var(--color-surface)]'
+                  : 'bg-[var(--color-bg)]'
               )}>
                 {count}
               </span>
@@ -330,7 +326,7 @@ export default function QuizResult({
           <div className="flex-1 min-w-0 space-y-3">
             {leftColumn.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-[#8B7A9E]">
+                <p className="text-[var(--color-text-muted)]">
                   {filter === 'all' ? 'Không có câu hỏi' :
                     filter === 'correct' ? 'Không có câu đúng' :
                     filter === 'wrong' ? 'Không có câu sai' :

@@ -1,5 +1,6 @@
 package com.backend.lumotus.service;
 
+import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.dto.response.ActivityDayResponse;
 import com.backend.lumotus.dto.response.LeaderboardEntry;
 import com.backend.lumotus.dto.response.ProgressResponse;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +42,7 @@ public class ProgressService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Get heatmap data for the last 365 days
-        LocalDate endDate = LocalDate.now(ZoneOffset.UTC);
+        LocalDate endDate = LocalDate.now(AppProperties.APP_ZONE);
         LocalDate startDate = endDate.minusDays(364);
 
         List<DailyActivity> activities = dailyActivityRepository

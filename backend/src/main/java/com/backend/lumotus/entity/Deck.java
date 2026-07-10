@@ -68,4 +68,25 @@ public class Deck extends SoftDeleteEntity {
 
     @Column(name = "source_deck_id")
     private UUID sourceDeckId;
+
+    @Column(name = "source_type", nullable = false, length = 20)
+    private String sourceType = "PERSONAL";
+
+    @Column(name = "xp_multiplier", nullable = false)
+    private double xpMultiplier = 1.0;
+
+    @Column(name = "verification_status", length = 20)
+    private String verificationStatus;
+
+    @Column(name = "verified_at")
+    private java.time.Instant verifiedAt;
+
+    @Column(name = "verified_by_id")
+    private UUID verifiedById;
+
+    @Column(name = "verification_note", columnDefinition = "TEXT")
+    private String verificationNote;
+
+    @Column(name = "requested_topic", length = 200)
+    private String requestedTopic;
 }

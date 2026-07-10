@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -47,6 +49,17 @@ public class QuizController {
         return ResponseEntity.ok(quizService.getExploreQuiz(quizRef));
     }
 
+    /**
+     * GET /api/v1/quizzes/deck/{deckId}
+     * List all quizzes for a deck (owner/admin only).
+     */
+    @GetMapping("/deck/{deckId}")
+    public ResponseEntity<PageResponse<QuizSummaryResponse>> listQuizzesByDeck(
+            @PathVariable UUID deckId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(quizService.listQuizzesByDeck(deckId, pageable));
+    }
+
     // ============================================================
     // PLAY — start / auto-save / submit
     // ============================================================
@@ -71,6 +84,18 @@ public class QuizController {
         com.backend.lumotus.entity.Quiz quiz = quizService.findQuizByRef(quizRef);
         CooldownCheckResult result = quizCooldownService.getCooldownStatus(principal.getId(), quiz.getId());
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/cooldown/config")
+    public ResponseEntity<PublicCooldownConfigResponse> getCooldownConfig() {
+        CooldownSettingsResponse s = quizCooldownService.getSettings();
+        return ResponseEntity.ok(new PublicCooldownConfigResponse(
+            s.enabled(),
+            s.minSecondsBetweenAttempts(),
+            s.maxAttemptsPerQuizPerDay(),
+            s.maxTotalAttemptsPerDay(),
+            s.maxTotalAttemptsPerWeek()
+        ));
     }
 
     /**
@@ -171,6 +196,28 @@ public class QuizController {
     public ResponseEntity<List<GlobalQuizLeaderboardEntry>> getGlobalQuizLeaderboard(
             @RequestParam(defaultValue = "20") int limit) {
         return ResponseEntity.ok(quizService.getGlobalQuizLeaderboard(Math.min(limit, 100)));
+    }
+
+    @GetMapping("/leaderboard/global/me")
+    public ResponseEntity<GlobalQuizLeaderboardEntry> getMyGlobalQuizLeaderboardEntry(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return quizService.getGlobalUserEntry(principal.getId())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/leaderboard/weekly")
+    public ResponseEntity<List<com.backend.lumotus.dto.response.LeaderboardEntry>> getWeeklyQuizLeaderboard(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(quizService.getWeeklyQuizLeaderboard(Math.min(limit, 50)));
+    }
+
+    @GetMapping("/leaderboard/weekly/me")
+    public ResponseEntity<com.backend.lumotus.dto.response.LeaderboardEntry> getMyWeeklyQuizLeaderboardEntry(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return quizService.getWeeklyUserEntry(principal.getId())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{quizRef}/leaderboard")

@@ -16,6 +16,7 @@ import {
   Minus,
 } from 'lucide-react'
 import { adminApi, QuizAttemptAdmin } from '@/api/admin'
+import { quizApi } from '@/api/study'
 import { cn } from '@/utils/cn'
 
 type FilterTab = 'all' | 'correct' | 'wrong' | 'skipped'
@@ -65,15 +66,15 @@ function formatDuration(seconds: number | null) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function ScoreBadge({ correct, total, status }: { correct: number; total: number; status: string }) {
+function ScoreBadge({ correct, total, score, status }: { correct: number; total: number; score: number; status: string }) {
   if (status !== 'COMPLETED') {
     return <span className="text-sm font-medium text-gray-400">—</span>
   }
-  const pct = total > 0 ? Math.round((correct / total) * 100) : 0
-  const color = pct >= 80 ? 'text-emerald-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600'
+  const pct = (score != null ? score : (total > 0 ? (correct / total) : 0)) * 10
+  const color = pct >= 8.0 ? 'text-emerald-600' : pct >= 5.0 ? 'text-yellow-600' : 'text-red-600'
   return (
     <span className={cn('text-sm font-bold', color)}>
-      {correct}/{total}
+      {pct.toFixed(1)}
     </span>
   )
 }
@@ -120,9 +121,10 @@ function AttemptDetailModal({
         {/* Summary Stats */}
         <div className="grid grid-cols-4 gap-4 border-b border-gray-200 bg-gray-50 p-4">
           <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-3">
-            <p className="text-2xl font-extrabold text-gray-900">{attempt.score != null ? `${Math.round(attempt.score)}%` : '—'}</p>
+            <p className="text-2xl font-extrabold text-gray-900">{attempt.score != null ? (attempt.score * 10).toFixed(1) : '—'}</p>
             <p className="text-xs text-gray-500">Điểm</p>
           </div>
+
           <div className="flex flex-col items-center rounded-xl border border-emerald-200 bg-emerald-50 p-3">
             <div className="flex items-center gap-1">
               <Check className="h-4 w-4 text-emerald-600" />
@@ -172,7 +174,7 @@ function AttemptDetailModal({
               { key: 'correct', label: 'Đúng', count: correctCount, color: 'emerald' },
               { key: 'wrong', label: 'Sai', count: wrongCount, color: 'red' },
               { key: 'skipped', label: 'Bỏ qua', count: skippedCount, color: 'gray' },
-            ] as const).map(({ key, label, count, color }) => (
+            ] as Array<{ key: FilterTab; label: string; count: number; color?: string }>).map(({ key, label, count, color }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
@@ -307,97 +309,288 @@ export default function AdminQuizHistory() {
   const [page, setPage] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedAttempt, setSelectedAttempt] = useState<QuizAttemptAdmin | null>(null)
-  const [filter, setFilter] = useState<'ALL' | 'COMPLETED' | 'ABANDONED'>('ALL')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETED' | 'ABANDONED'>('ALL')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['admin', 'quiz-attempts', page, filter],
-    queryKeyHashers: ['admin', 'quiz-attempts', page, filter],
-    queryFn: () =>
-      adminApi.getQuizAttempts({ page, size: 20 }).then((r) => r.data),
+  // State to track if we are drilling down into a specific quiz
+  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null)
+  const [selectedQuizTitle, setSelectedQuizTitle] = useState<string | null>(null)
+
+  // 1. Fetch all quizzes for MASTER VIEW
+  const { data: quizzesData, isLoading: isLoadingQuizzes } = useQuery({
+    queryKey: ['admin', 'quizzes-all', page],
+    queryFn: () => quizApi.listAdminAll({ page, size: 20 }).then((r: any) => r.data),
     placeholderData: (prev) => prev,
+    enabled: !selectedQuizId,
   })
 
-  const attempts = data?.content || []
-  const totalPages = data?.totalPages || 0
-  const totalElements = data?.totalElements || 0
+  // 2. Fetch attempts for a specific quiz for DETAIL VIEW
+  const { data: attemptsData, isLoading: isLoadingAttempts, isFetching: isFetchingAttempts } = useQuery({
+    queryKey: ['admin', 'quiz-attempts-detail', selectedQuizId, page],
+    queryFn: () => adminApi.getQuizAttemptDetails(selectedQuizId!, { page, size: 20 }).then((r: any) => r.data),
+    placeholderData: (prev) => prev,
+    enabled: !!selectedQuizId,
+  })
 
-  // Filter client-side by search
-  const filteredAttempts = searchQuery
-    ? attempts.filter(
-        (a) =>
-          a.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.quizTitle?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : attempts
+  // Master: Client-side search filters for quizzes
+  const allQuizzes = quizzesData?.content || []
+  const filteredQuizzes = allQuizzes.filter((q: any) => {
+    const matchSearch = !searchQuery || q.title.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchSearch
+  })
 
-  const displayedAttempts =
-    filter === 'ALL'
-      ? filteredAttempts
-      : filteredAttempts.filter((a) => a.status === filter)
+  // Detail: Filters for attempts
+  const allAttempts = attemptsData?.content || []
+  const filteredAttempts = allAttempts.filter((a: any) => {
+    // Filter by status (Client-side extra safety or in case BE paging parameters didn't cover all cases)
+    const matchStatus = statusFilter === 'ALL' || a.status === statusFilter
+    // Search username
+    const matchSearch = !searchQuery || a.username?.toLowerCase().includes(searchQuery.toLowerCase())
+    // Date range
+    const matchFrom = !dateFrom || new Date(a.startedAt) >= new Date(dateFrom)
+    const matchTo = !dateTo || new Date(a.startedAt) <= new Date(dateTo + 'T23:59:59')
+    return matchStatus && matchSearch && matchFrom && matchTo
+  })
+
+  const handleBackToQuizzes = () => {
+    setSelectedQuizId(null)
+    setSelectedQuizTitle(null)
+    setPage(0)
+    setSearchQuery('')
+    setStatusFilter('ALL')
+    setDateFrom('')
+    setDateTo('')
+  }
+
+  // Common pagination calculations
+  const totalPages = selectedQuizId ? (attemptsData?.totalPages || 0) : (quizzesData?.totalPages || 0)
+  const totalElements = selectedQuizId ? (attemptsData?.totalElements || 0) : (quizzesData?.totalElements || 0)
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Lịch sử Quiz</h1>
+          <div className="flex items-center gap-2">
+            {selectedQuizId && (
+              <button
+                onClick={handleBackToQuizzes}
+                className="mr-2 flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                title="Quay lại"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            )}
+            <h1 className="text-2xl font-extrabold text-gray-900">Lịch sử Quiz</h1>
+          </div>
           <p className="mt-1 text-sm text-gray-500">
-            {totalElements.toLocaleString()} lượt làm quiz
+            {selectedQuizId 
+              ? `Lượt làm cho quiz: "${selectedQuizTitle}" (${totalElements.toLocaleString()} lượt làm)` 
+              : `Quản lý lịch sử và điểm số (${quizzesData?.totalElements || 0} quiz)`}
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm theo tên user hoặc quiz..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64 rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-pink-500 focus:outline-none"
-          />
+        {/* Filters row */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder={selectedQuizId ? "Tìm user..." : "Tìm quiz..."}
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(0) }}
+              className="w-52 rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-pink-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Date range filters only of interest in Attempts Detail view */}
+          {selectedQuizId && (
+            <>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-pink-500 focus:outline-none"
+                placeholder="Từ ngày"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-pink-500 focus:outline-none"
+                placeholder="Đến ngày"
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => { setDateFrom(''); setDateTo('') }}
+                  className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200"
+                >
+                  Xóa lọc ngày
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
-        {(['ALL', 'COMPLETED', 'ABANDONED'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              'border-b-2 px-4 py-2 text-sm font-semibold transition-colors',
-              filter === f
-                ? 'border-pink-500 text-pink-500'
-                : 'border-transparent text-gray-500 hover:text-gray-900'
-            )}
-          >
-            {f === 'ALL' ? 'Tất cả' : f === 'COMPLETED' ? 'Hoàn thành' : 'Bỏ dở'}
-          </button>
-        ))}
-      </div>
+      {/* Detail: Status Filter Tabs */}
+      {selectedQuizId && (
+        <div className="flex gap-2 border-b border-gray-200">
+          {(['ALL', 'COMPLETED', 'ABANDONED'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => { setStatusFilter(f); setPage(0) }}
+              className={cn(
+                'border-b-2 px-4 py-2 text-sm font-semibold transition-colors',
+                statusFilter === f
+                  ? 'border-pink-500 text-pink-500'
+                  : 'border-transparent text-gray-500 hover:text-gray-900'
+              )}
+            >
+              {f === 'ALL' ? 'Tất cả' : f === 'COMPLETED' ? 'Hoàn thành' : 'Bỏ dở'}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Table */}
-      {isLoading ? (
+      {/* Main Table Content */}
+      {(!selectedQuizId ? isLoadingQuizzes : isLoadingAttempts) ? (
         <div className="flex h-64 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
         </div>
-      ) : displayedAttempts.length === 0 ? (
+      ) : (!selectedQuizId ? filteredQuizzes.length === 0 : filteredAttempts.length === 0) ? (
         <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-gray-200 bg-white">
           <FileQuestion className="mb-2 h-12 w-12 text-gray-300" />
-          <p className="text-gray-500">Không có lượt làm quiz nào</p>
+          <p className="text-gray-500">
+            {selectedQuizId ? "Không có lượt làm quiz nào thỏa mãn bộ lọc" : "Không có quiz nào trong hệ thống"}
+          </p>
         </div>
-      ) : (
+      ) : !selectedQuizId ? (
+        // ============================================
+        // MASTER VIEW: QUIZ LIST TABLE
+        // ============================================
         <>
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Người dùng
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Quiz
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    Số câu hỏi
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-pink-600">
+                    Lượt làm
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-purple-600">
+                    Số User làm
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-emerald-600">
+                    Điểm trung bình (ĐTB)
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500 text-right pr-6">
+                    Hành động
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredQuizzes.map((quiz: any) => {
+                  const safeAvgScore = quiz.avgScore != null ? (quiz.avgScore * 10).toFixed(1) : '—'
+                  return (
+                    <tr key={quiz.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span className="font-semibold text-gray-900">{quiz.title}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-center">
+                        <span className="text-sm font-medium text-gray-900">{quiz.questionCount}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-center">
+                        <span className="rounded bg-pink-50 px-2.5 py-1 text-sm font-bold text-pink-600">
+                           {quiz.attemptCount || 0}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-center">
+                        <span className="rounded bg-purple-50 px-2.5 py-1 text-sm font-bold text-purple-600">
+                          {quiz.uniqueUserCount || 0}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-center">
+                        <span className="text-sm font-bold text-emerald-600">
+                          {safeAvgScore}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right pr-6">
+                        <button
+                          onClick={() => {
+                            setSelectedQuizId(quiz.id)
+                            setSelectedQuizTitle(quiz.title)
+                            setPage(0) // reset page for the quiz details
+                            setSearchQuery('') // reset query
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-pink-200 bg-pink-50 hover:bg-pink-100 transition-colors px-3 py-1.5 text-xs font-bold text-pink-600"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Xem lượt làm
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination for Quizzes */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                Trang {page + 1} / {totalPages} ({quizzesData?.totalElements || 0} kết quả)
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className={cn(
+                    'flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold',
+                    page === 0
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  )}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Trước
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className={cn(
+                    'flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold',
+                    page >= totalPages - 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  )}
+                >
+                  Sau
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        // ============================================
+        // DETAIL VIEW: ATTEMPTS LIST FOR THE SELECTED QUIZ
+        // ============================================
+        <>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    Người làm
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Trạng thái
@@ -421,12 +614,12 @@ export default function AdminQuizHistory() {
                     Thời gian
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Chi tiết
+                    Chi tiết câu trả lời
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {displayedAttempts.map((attempt) => {
+                {filteredAttempts.map((attempt: any) => {
                   const wrongCount = attempt.totalQuestions - attempt.correctAnswers - attempt.skippedAnswers
                   return (
                     <tr key={attempt.id} className="hover:bg-gray-50 transition-colors">
@@ -435,15 +628,11 @@ export default function AdminQuizHistory() {
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100">
                             <User className="h-4 w-4 text-pink-500" />
                           </div>
-                          <span className="font-medium text-gray-900">{attempt.username}</span>
+                          <div>
+                            <span className="font-semibold text-gray-900 block">{attempt.username}</span>
+                            <span className="text-[10px] text-gray-400 block">{formatDate(attempt.startedAt)}</span>
+                          </div>
                         </div>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <span className="text-sm text-gray-900">
-                          {attempt.quizTitle || (
-                            <span className="italic text-gray-400">Quiz đã xóa</span>
-                          )}
-                        </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-center">
                         <StatusBadge status={attempt.status} />
@@ -464,12 +653,12 @@ export default function AdminQuizHistory() {
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-center">
-                        <ScoreBadge correct={attempt.correctAnswers} total={attempt.totalQuestions} status={attempt.status} />
+                        <ScoreBadge correct={attempt.correctAnswers} total={attempt.totalQuestions} score={attempt.score} status={attempt.status} />
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <Trophy className="h-3 w-3 text-yellow-500" />
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-semibold text-gray-900">
                             +{attempt.xpEarned}
                           </span>
                         </div>
@@ -485,7 +674,7 @@ export default function AdminQuizHistory() {
                           className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200"
                         >
                           <Eye className="h-3 w-3" />
-                          Xem
+                          Xem bài làm
                         </button>
                       </td>
                     </tr>
@@ -495,11 +684,11 @@ export default function AdminQuizHistory() {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Pagination for attempts */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                Trang {page + 1} / {totalPages} ({totalElements.toLocaleString()} kết quả)
+                Trang {page + 1} / {totalPages} ({totalElements.toLocaleString()} lượt làm)
               </p>
               <div className="flex gap-2">
                 <button
@@ -535,7 +724,7 @@ export default function AdminQuizHistory() {
       )}
 
       {/* Loading overlay */}
-      {isFetching && !isLoading && (
+      {(selectedQuizId ? isFetchingAttempts : false) && (
         <div className="pointer-events-none fixed inset-0 z-40 bg-white/50" />
       )}
 

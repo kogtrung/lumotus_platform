@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Navigate } from 'react-router-dom'
+import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   BookOpen,
@@ -9,6 +9,7 @@ import {
   Tag,
   History,
   Clock,
+  ClipboardList,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
@@ -18,10 +19,12 @@ const ADMIN_NAV_ITEMS = [
   { to: '/admin/decks', label: 'Quản lý Deck', icon: BookOpen },
   { to: '/admin/quizzes', label: 'Quản lý Quiz', icon: FileQuestion },
   { to: '/admin/quiz-history', label: 'Lịch sử Quiz', icon: History },
+  { to: '/admin/study-history', label: 'Lịch sử ôn tập', icon: ClipboardList },
   { to: '/admin/cooldown', label: 'Cài đặt Cooldown', icon: Clock },
   { to: '/admin/topics', label: 'Quản lý Topics', icon: Tag },
   { to: '/admin/users', label: 'Quản lý Users', icon: Users },
 ] as const
+
 
 function AdminNavItem({
   to,
@@ -55,10 +58,17 @@ function AdminNavItem({
 
 export default function AdminLayout() {
   const user = useAuthStore((s) => s.user)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
+  const navigate = useNavigate()
 
   // Redirect non-admin users
   if (!user || user.role !== 'ADMIN') {
-    return <Navigate to="/home" replace />
+    return <Navigate to="/login" replace />
+  }
+
+  const handleLogout = () => {
+    clearAuth()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -111,16 +121,16 @@ export default function AdminLayout() {
 
           {/* Actions */}
           <div className="space-y-1">
-            <NavLink
-              to="/home"
+            <button
+              onClick={handleLogout}
               className={cn(
-                'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200',
+                'flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200',
                 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
               )}
             >
               <LogOut className="h-4 w-4" />
-              Quay về App
-            </NavLink>
+              Đăng xuất
+            </button>
           </div>
         </div>
       </aside>

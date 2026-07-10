@@ -6,6 +6,7 @@ import com.backend.lumotus.config.CloudinaryProperties;
 import com.backend.lumotus.config.GoogleProperties;
 import com.backend.lumotus.config.JwtProperties;
 import com.backend.lumotus.config.RedisProperties;
+import com.backend.lumotus.config.Sm2Properties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -19,7 +20,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
     AdminProperties.class,
     RedisProperties.class,
     GoogleProperties.class,
-    CloudinaryProperties.class
+    CloudinaryProperties.class,
+    Sm2Properties.class
 })
 public class LumotusApplication {
 

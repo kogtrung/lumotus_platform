@@ -6,6 +6,7 @@ export interface AdminStats {
   totalDecks: number
   totalCards: number
   totalQuizzes: number
+  totalQuizAttempts: number
   totalActiveUsersToday: number
   totalReviewsToday: number
   totalXpAwardedToday: number
@@ -20,6 +21,8 @@ export interface UserAdmin {
   streak: number
   createdAt: string
   active: boolean
+  deckCount: number
+  totalCards: number
 }
 
 export interface UpdateUserPayload {
@@ -54,6 +57,27 @@ export interface QuizAnswerDetail {
   userAnswer: string | null
   correctAnswer: string | null
   correct: boolean
+}
+
+export interface DailyActivityAdmin {
+  userId: string
+  username: string
+  date: string
+  cardsReviewed: number
+  xpEarned: number
+  quizTaken: number
+  studyMinutes?: number
+  streak?: number
+  deckCount?: number
+  totalCards: number
+  learnedCards: number
+}
+
+export interface AdminChartDataPoint {
+  date: string
+  newUsers: number
+  newDecks: number
+  quizAttempts: number
 }
 
 // ============================================================
@@ -117,8 +141,12 @@ export const adminApi = {
     return axiosClient.patch<UserAdmin>(`/admin/users/${userId}`, payload)
   },
 
-  getQuizAttempts(params?: { page?: number; size?: number }) {
+  getQuizAttempts(params?: { page?: number; size?: number; status?: string }) {
     return axiosClient.get<PageResponse<QuizAttemptAdmin>>('/admin/quiz-attempts', { params })
+  },
+
+  getStudyHistory(params?: { page?: number; size?: number }) {
+    return axiosClient.get<PageResponse<DailyActivityAdmin>>('/admin/study-history', { params })
   },
 
   getUserQuizAttempts(userId: string, params?: { page?: number; size?: number }) {
@@ -127,6 +155,14 @@ export const adminApi = {
 
   getQuizAttemptDetails(quizId: string, params?: { page?: number; size?: number }) {
     return axiosClient.get<PageResponse<QuizAttemptAdmin>>(`/admin/quiz-attempts/quiz/${quizId}`, { params })
+  },
+
+  getChartStats(params?: { startDate?: string; endDate?: string }) {
+    return axiosClient.get<AdminChartDataPoint[]>('/admin/stats/charts', { params })
+  },
+
+  getUserStudyHistory(userId: string, params?: { page?: number; size?: number }) {
+    return axiosClient.get<PageResponse<DailyActivityAdmin>>(`/admin/study-history/user/${userId}`, { params })
   },
 
   // ============================================================

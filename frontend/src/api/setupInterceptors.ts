@@ -1,6 +1,7 @@
 import axiosClient from '@/api/axiosClient'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import { queryClient } from '@/api/queryClient'
 
 let isRefreshing = false
 
@@ -55,7 +56,12 @@ export function setupAxiosInterceptors() {
 
 /** Khôi phục phiên: dùng accessToken đã lưu; chỉ gọi /refresh khi token hết hạn. Khách không gọi /refresh. */
 export async function initializeAuth() {
-  const { accessToken, user, setAuth, clearAuth, setInitialized } = useAuthStore.getState()
+  const { accessToken, user, setAuth, clearAuth, setInitialized, onClearAuth } = useAuthStore.getState()
+
+  // Khi logout → xóa React Query cache để không hiển thị data user cũ
+  onClearAuth(() => {
+    queryClient.clear()
+  })
 
   try {
     if (accessToken && user) {

@@ -96,6 +96,7 @@ export default function AdminCooldownConfig() {
     },
     onError: () => {
       lumotoast.error('Không thể lưu cài đặt. Vui lòng thử lại.')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'cooldown-settings'] })
     },
   })
 

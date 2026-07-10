@@ -30,6 +30,8 @@ export interface DashboardStats {
   cardsToday: number
   quizzesToday: number
   xpToday: number
+  totalMastered: number
+  totalLearned: number
 }
 
 export const statsApi = {

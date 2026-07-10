@@ -1,9 +1,11 @@
 package com.backend.lumotus.service;
 
+import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.dto.response.*;
 import com.backend.lumotus.entity.DailyActivity;
 import com.backend.lumotus.entity.User;
 import com.backend.lumotus.repository.DailyActivityRepository;
+import com.backend.lumotus.repository.UserDeckProgressRepository;
 import com.backend.lumotus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,10 +23,11 @@ public class StatsService {
 
     private final DailyActivityRepository dailyActivityRepository;
     private final UserRepository userRepository;
+    private final UserDeckProgressRepository userDeckProgressRepository;
 
     @Transactional(readOnly = true)
     public ActivitySummaryResponse getActivitySummary(UUID userId, int days) {
-        LocalDate end = LocalDate.now(ZoneOffset.UTC);
+        LocalDate end = LocalDate.now(AppProperties.APP_ZONE);
         LocalDate start = end.minusDays(days - 1);
 
         List<DailyActivity> activities = dailyActivityRepository.findByUserIdAndDateRange(userId, start, end);
@@ -62,7 +64,7 @@ public class StatsService {
 
     @Transactional(readOnly = true)
     public WeeklySummaryResponse getWeeklySummary(UUID userId, int offset) {
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         LocalDate weekStart = today.with(DayOfWeek.MONDAY).minusWeeks(offset);
         LocalDate weekEnd = offset == 0 ? today : weekStart.plusDays(6);
 
@@ -107,7 +109,7 @@ public class StatsService {
         User user = userRepository.findById(userId).orElse(null);
 
         // Last 7 days
-        LocalDate end = LocalDate.now(ZoneOffset.UTC);
+        LocalDate end = LocalDate.now(AppProperties.APP_ZONE);
         LocalDate start7 = end.minusDays(6);
         int cards7d = dailyActivityRepository.sumCardsReviewed(userId, start7, end);
         int quizzes7d = dailyActivityRepository.sumQuizTaken(userId, start7, end);
@@ -122,6 +124,10 @@ public class StatsService {
         int streak = user != null ? user.getStreak() : 0;
         int totalXp = user != null ? user.getXp() : 0;
 
+        // Mastered & Learned
+        long totalLearned = userDeckProgressRepository.sumLearnedCardsByUserId(userId);
+        long totalMastered = userDeckProgressRepository.sumMasteredCardsByUserId(userId);
+
         return new DashboardStatsResponse(
                 totalXp,
                 streak,
@@ -130,7 +136,9 @@ public class StatsService {
                 xp7d,
                 cardsToday,
                 quizzesToday,
-                xpToday
+                xpToday,
+                totalMastered,
+                totalLearned
         );
     }
 }

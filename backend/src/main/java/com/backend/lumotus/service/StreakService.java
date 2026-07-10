@@ -3,6 +3,7 @@ package com.backend.lumotus.service;
 import com.backend.lumotus.entity.DailyActivity;
 import com.backend.lumotus.entity.DailyActivityId;
 import com.backend.lumotus.entity.User;
+import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.repository.DailyActivityRepository;
 import com.backend.lumotus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -50,11 +50,15 @@ public class StreakService {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         LocalDate lastStudy = user.getLastStudyDate();
 
-        // Already counted today — skip
+        // Already counted today — skip, unless impacted by the zero-streak day 1 bug
         if (today.equals(lastStudy)) {
+            if (user.getStreak() == 0) {
+                user.setStreak(1);
+                userRepository.save(user);
+            }
             return;
         }
 
@@ -70,8 +74,11 @@ public class StreakService {
         int distance = lastStudy == null ? -1 :
                 (int) ChronoUnit.DAYS.between(lastStudy, today);
 
-        if (distance <= 0) {
-            // Same day or weird edge case — keep unchanged
+        if (distance < 0) {
+            // First time studying
+            user.setStreak(1);
+        } else if (distance == 0) {
+            // Same day edge case or manual trigger
         } else if (distance == 1) {
             user.setStreak(user.getStreak() + 1);
         } else {
@@ -84,13 +91,13 @@ public class StreakService {
     }
 
     /**
-     * Daily scheduler: runs at 01:00 UTC every day.
+     * Daily scheduler: runs at 01:00 Asia/Ho_Chi_Minh every day.
      * Resets streak = 0 for users who haven't studied by end of yesterday.
      */
-    @Scheduled(cron = "0 0 1 * * *", zone = "UTC")
+    @Scheduled(cron = "0 0 1 * * *", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void resetStaleStreaks() {
-        LocalDate yesterday = LocalDate.now(ZoneOffset.UTC).minusDays(1);
+        LocalDate yesterday = LocalDate.now(AppProperties.APP_ZONE).minusDays(1);
         LocalDate cutoff = yesterday.minusDays(1); // streak should have been set on or before yesterday
 
         List<User> activeUsers = userRepository.findAll().stream()
@@ -119,7 +126,7 @@ public class StreakService {
         if (user == null) return;
 
         // Walk backwards from today to find last qualifying study day
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
         int streak = 0;
         LocalDate cursor = today;
 

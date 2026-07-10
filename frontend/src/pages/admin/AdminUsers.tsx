@@ -51,12 +51,7 @@ function UserRow({
           {user.role}
         </span>
       </td>
-      <td className="hidden md:table-cell px-4 py-4 text-center text-sm text-gray-600">
-        {user.xp.toLocaleString()} XP
-      </td>
-      <td className="hidden sm:table-cell px-4 py-4 text-center text-sm text-gray-600">
-        {user.streak} 🔥
-      </td>
+
       <td className="hidden lg:table-cell px-4 py-4 text-center text-sm text-gray-500">
         {new Date(user.createdAt).toLocaleDateString('vi')}
       </td>
@@ -222,13 +217,7 @@ export default function AdminUsers() {
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
                       Vai trò
                     </th>
-                    <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      XP
-                    </th>
-                    <th className="hidden sm:table-cell px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      Streak
-                    </th>
-                    <th className="hidden lg:table-cell px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
                       Tham gia
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">

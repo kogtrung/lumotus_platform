@@ -451,6 +451,30 @@
           }
         }
       ]
+    },
+    {
+      "name": "Admin",
+      "description": "Quản lý hệ thống — cần role ADMIN.",
+      "item": [
+        {
+          "name": "Hard Delete Deck (ADMIN)",
+          "description": "Xóa vĩnh viễn deck và toàn bộ dữ liệu liên quan (quiz, card, progress, review...). Có thể xóa cả deck đã bị soft-delete. **Irreversible — cẩn thận!**",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/admin/decks/{{deckRef}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

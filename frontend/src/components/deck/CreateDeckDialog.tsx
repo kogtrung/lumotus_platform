@@ -1,21 +1,18 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { lumotoast } from '@/components/ui/Toast'
-import { Check, FileText, Globe, Hash, Layers, Lock, Sparkles, Tag, X } from 'lucide-react'
+import { FileText, Hash, Layers, Sparkles, X } from 'lucide-react'
 import { decksApi } from '@/api/decks'
-import { topicsApi } from '@/api/topics'
 import { inputClass } from '@/components/ui/inputClass'
-import { cn } from '@/utils/cn'
 import { getApiErrorMessage } from '@/utils/apiError'
 
 const schema = z.object({
   title: z.string().min(1, 'Nhập tên deck').max(200),
   description: z.string().max(2000).optional(),
-  isPublic: z.boolean(),
-  topicIds: z.array(z.string()),
 })
 
 type FormData = z.infer<typeof schema>
@@ -28,38 +25,27 @@ interface CreateDeckDialogProps {
 
 export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDeckDialogProps) {
   const queryClient = useQueryClient()
-  const { data: topics = [] } = useQuery({
-    queryKey: ['topics'],
-    queryFn: () => topicsApi.list().then((r) => r.data),
-    enabled: open,
-  })
-
   const {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', description: '', isPublic: false, topicIds: [] },
+    defaultValues: { title: '', description: '' },
   })
-
-  const selectedTopics = watch('topicIds')
-  const isPublic = watch('isPublic')
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       decksApi.create({
         title: data.title,
         description: data.description || undefined,
-        isPublic: data.isPublic,
-        isCopyable: data.isPublic,
-        topicIds: data.isPublic && data.topicIds.length ? data.topicIds : undefined,
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['decks'] })
+    onSuccess: async (res) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['decks'] }),
+        queryClient.invalidateQueries({ queryKey: ['stats', 'dashboard'] })
+      ])
       lumotoast.success('Đã tạo deck')
       reset()
       onClose()
@@ -83,32 +69,13 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
 
   if (!open) return null
 
-  const toggleTopic = (id: string) => {
-    const adding = !selectedTopics.includes(id)
-    const next = adding
-      ? [...selectedTopics, id]
-      : selectedTopics.filter((t) => t !== id)
-    setValue('topicIds', next)
-    if (adding) {
-      setValue('isPublic', true)
-    }
-  }
-
-  const onPublicChange = (checked: boolean) => {
-    setValue('isPublic', checked)
-    if (!checked) {
-      setValue('topicIds', [])
-    }
-  }
-
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ background: 'rgba(10, 8, 20, 0.85)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="lumo-modal relative z-10 flex max-h-[95vh] w-full max-w-md flex-col overflow-hidden animate-modal-in sm:rounded-2xl sm:shadow-2xl">
-        {/* Gradient accent bar */}
         <div className="h-0.5 w-full shrink-0 bg-gradient-to-r from-[#EC4899] to-[#F97316]" />
 
         <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3.5">
@@ -152,96 +119,15 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
             </label>
             <textarea
               rows={3}
-              className={cn(inputClass(), 'resize-none')}
+              className={inputClass()}
               placeholder="Mô tả ngắn về nội dung deck..."
               {...register('description')}
             />
           </div>
 
-          {/* Visibility toggle - styled */}
-          <button
-            type="button"
-            onClick={() => onPublicChange(!isPublic)}
-            className={cn(
-              'group flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all',
-              isPublic
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]'
-                : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]',
-            )}
-          >
-            <div
-              className={cn(
-                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all',
-                isPublic
-                  ? 'bg-[var(--color-primary)] text-white shadow-md'
-                  : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-primary-subtle)] group-hover:text-[var(--color-primary)]',
-              )}
-            >
-              {isPublic ? <Globe className="h-5 w-5" strokeWidth={2.25} /> : <Lock className="h-5 w-5" strokeWidth={2.25} />}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[var(--color-text)]">
-                {isPublic ? 'Công khai trên Khám phá' : 'Riêng tư'}
-              </p>
-              <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                {isPublic
-                  ? 'Mọi người có thể xem và copy deck này'
-                  : 'Chỉ bạn thấy deck này trong thư viện'}
-              </p>
-            </div>
-            <div
-              className={cn(
-                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-                isPublic ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border-strong)]',
-              )}
-            >
-              <div
-                className={cn(
-                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform',
-                  isPublic ? 'translate-x-5' : 'translate-x-0.5',
-                )}
-              />
-            </div>
-          </button>
-
-          {isPublic && topics.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                <Tag className="h-3 w-3" />
-                Chủ đề hệ thống
-              </p>
-              <p className="mb-2.5 text-xs text-[var(--color-text-muted)]">
-                Do Admin quản lý — giúp deck xuất hiện đúng danh mục trên Khám phá.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {topics.map((t) => {
-                  const active = selectedTopics.includes(t.id)
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => toggleTopic(t.id)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-all',
-                        active
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-sm'
-                          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]',
-                      )}
-                    >
-                      {active && <Check className="h-3 w-3" strokeWidth={3} />}
-                      {t.name}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {isPublic && topics.length === 0 && (
-            <div className="rounded-xl bg-[var(--color-accent-warm)] px-3 py-2.5 text-xs text-[var(--color-warning)]">
-              Chưa có chủ đề hệ thống — Admin cần tạo topic trước. Bạn vẫn có thể tạo deck công khai.
-            </div>
-          )}
+          <div className="rounded-xl bg-[var(--color-accent-warm)] px-3 py-2.5 text-xs text-[var(--color-warning)]">
+            Deck mới được tạo ở chế độ riêng tư. Sau khi thêm thẻ, bạn có thể gửi yêu cầu duyệt để xuất hiện trên Khám phá.
+          </div>
         </form>
 
         <div className="sticky bottom-0 flex shrink-0 items-center justify-end gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
@@ -272,6 +158,7 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

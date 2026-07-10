@@ -24,7 +24,8 @@ public record QuizSummaryResponse(
     Instant createdAt,
     String quizType,
     Boolean isImmutable,
-    String slug
+    String slug,
+    Long uniqueUserCount
 ) {
     public static QuizSummaryResponse from(Quiz quiz) {
         int qCount = quiz.getComputedQuestionCount() != null
@@ -49,7 +50,8 @@ public record QuizSummaryResponse(
                 quiz.getCreatedAt(),
                 quiz.getQuizType().name(),
                 quiz.getIsImmutable(),
-                quiz.getSlug()
+                quiz.getSlug(),
+                quiz.getUniqueUserCount() != null ? quiz.getUniqueUserCount() : 0L
         );
     }
 }

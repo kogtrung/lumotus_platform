@@ -37,12 +37,13 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(data)
       setAuth(res.data.accessToken, res.data.user)
-      // Priority: 1) from state (after redirect from protected route), 2) '/quiz/play/' sessionStorage, 3) '/home'
       const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname
       const pendingQuiz = sessionStorage.getItem('pending_quiz_play')
-      const redirectTo = fromState
-        || (pendingQuiz && pendingQuiz.startsWith('/quiz/play/') ? pendingQuiz : null)
-        || '/home'
+      const redirectTo = res.data.user.role === 'ADMIN'
+        ? '/admin'
+        : fromState
+          || (pendingQuiz && pendingQuiz.startsWith('/quiz/play/') ? pendingQuiz : null)
+          || '/home'
       if (pendingQuiz?.startsWith('/quiz/play/')) {
         sessionStorage.removeItem('pending_quiz_play')
       }

@@ -13,7 +13,9 @@ public record UserAdminResponse(
         int xp,
         int streak,
         Instant createdAt,
-        boolean active
+        boolean active,
+        long deckCount,
+        long totalCards
 ) {
     public static UserAdminResponse from(User user) {
         return new UserAdminResponse(
@@ -24,7 +26,24 @@ public record UserAdminResponse(
                 user.getXp(),
                 user.getStreak(),
                 user.getCreatedAt(),
-                user.isActive()
+                user.isActive(),
+                0L,
+                0L
+        );
+    }
+
+    public static UserAdminResponse from(User user, long deckCount, long totalCards) {
+        return new UserAdminResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getXp(),
+                user.getStreak(),
+                user.getCreatedAt(),
+                user.isActive(),
+                deckCount,
+                totalCards
         );
     }
 }

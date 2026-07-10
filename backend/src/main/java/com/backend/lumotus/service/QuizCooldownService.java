@@ -1,5 +1,6 @@
 package com.backend.lumotus.service;
 
+import com.backend.lumotus.config.AppProperties;
 import com.backend.lumotus.dto.request.BypassCooldownRequest;
 import com.backend.lumotus.dto.request.UpdateCooldownSettingsRequest;
 import com.backend.lumotus.dto.response.CooldownCheckResult;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +30,7 @@ import java.util.UUID;
 public class QuizCooldownService {
 
     private static final UUID SETTINGS_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final ZoneId VN_ZONE = AppProperties.APP_ZONE;
 
     private final QuizCooldownSettingsRepository cooldownRepository;
     private final QuizAttemptRepository attemptRepository;

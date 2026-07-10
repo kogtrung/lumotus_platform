@@ -102,6 +102,17 @@ app:
     openai-api-key: ${OPENAI_API_KEY:}
     claude-api-key: ${CLAUDE_API_KEY:}
     max-cards-per-request: 50
+  sm2:
+    min-ease: 1.3
+    mastered-interval-days: 21
+    intervals:
+      first: 1
+      second: 3
+      third: 6
+    ease:
+      a: 0.15
+      b: 0.08
+      c: 0.02
 
   # Redis TTL
   redis:
