@@ -21,9 +21,18 @@ public final class Sm2Algorithm {
             Sm2Properties properties) {
         int q = rating.quality();
 
-        float newEase = easeFactor + (float) (properties.ease().a() - (3 - q) * (properties.ease().b() + (3 - q) * properties.ease().c()));
-        if (newEase < properties.minEase()) {
-            newEase = properties.minEase();
+        float easeA = properties != null && properties.ease() != null ? properties.ease().a() : 0.15f;
+        float easeB = properties != null && properties.ease() != null ? properties.ease().b() : 0.08f;
+        float easeC = properties != null && properties.ease() != null ? properties.ease().c() : 0.02f;
+        float minEase = properties != null ? properties.minEase() : 1.3f;
+
+        int intFirst = properties != null && properties.intervals() != null ? properties.intervals().first() : 1;
+        int intSecond = properties != null && properties.intervals() != null ? properties.intervals().second() : 3;
+        int intThird = properties != null && properties.intervals() != null ? properties.intervals().third() : 6;
+
+        float newEase = easeFactor + (float) (easeA - (3 - q) * (easeB + (3 - q) * easeC));
+        if (newEase < minEase) {
+            newEase = minEase;
         }
 
         int newReps;
@@ -38,19 +47,19 @@ public final class Sm2Algorithm {
             if (q == 3) {
                 // EASY rating accelerates intervals significantly
                 if (repetitions == 0) {
-                    newInterval = properties.intervals().second() + 1;
+                    newInterval = intSecond + 1;
                 } else {
-                    int base = Math.max(intervalDays, properties.intervals().second());
+                    int base = Math.max(intervalDays, intSecond);
                     newInterval = (int) Math.ceil(base * newEase * 1.3);
                 }
             } else {
                 if (newReps == 1) {
-                    newInterval = properties.intervals().first();
+                    newInterval = intFirst;
                 } else if (newReps == 2) {
                     // Prevent interval regression if previously rated EASY
-                    newInterval = Math.max(intervalDays, properties.intervals().second());
+                    newInterval = Math.max(intervalDays, intSecond);
                 } else if (newReps == 3) {
-                    newInterval = Math.max(intervalDays, properties.intervals().third());
+                    newInterval = Math.max(intervalDays, intThird);
                 } else {
                     newInterval = (int) Math.ceil(intervalDays * newEase);
                 }

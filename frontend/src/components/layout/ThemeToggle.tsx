@@ -12,9 +12,9 @@ export default function ThemeToggle() {
       title={theme === 'dark' ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
     >
       {theme === 'dark' ? (
-        <Sun className="h-5 w-5 text-warning" />
+        <Sun className="h-5 w-5 text-[var(--color-warning)]" />
       ) : (
-        <Moon className="h-5 w-5 text-secondary" />
+        <Moon className="h-5 w-5 text-[var(--color-secondary)]" />
       )}
     </button>
   )
