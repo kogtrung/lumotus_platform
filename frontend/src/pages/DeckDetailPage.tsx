@@ -249,7 +249,7 @@ export default function DeckDetailPage() {
   if (deckQuery.isLoading) {
     return (
       <div>
-        <div className="mb-6 h-8 w-48 animate-pulse rounded bg-[#2D2538]" />
+        <div className="mb-6 h-8 w-48 animate-pulse rounded bg-[var(--color-surface-hover)]" />
         <DeckGridSkeleton />
       </div>
     )
@@ -258,8 +258,8 @@ export default function DeckDetailPage() {
   if (deckQuery.isError || !deck) {
     return (
       <div className="py-16 text-center">
-        <p className="text-[#EF4444]">Không tìm thấy deck.</p>
-        <Link to="/home" className="mt-4 inline-block text-sm text-[#EC4899]">
+        <p className="text-[var(--color-danger)] font-medium">Không tìm thấy deck.</p>
+        <Link to="/home" className="mt-4 inline-block text-sm text-[var(--color-primary)] font-bold">
           Về trang chủ
         </Link>
       </div>
@@ -271,7 +271,7 @@ export default function DeckDetailPage() {
       {/* Back nav */}
       <Link
         to={isOwner ? '/home' : '/explore'}
-        className="inline-flex items-center gap-1.5 px-4 md:px-0 text-sm text-[#8B7A9E] transition-colors hover:text-[#EC4899]"
+        className="inline-flex items-center gap-1.5 px-4 md:px-0 text-sm font-semibold text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
       >
         <ArrowLeft className="h-4 w-4" />
         {isOwner ? 'Thư viện' : 'Khám phá'}
@@ -281,7 +281,7 @@ export default function DeckDetailPage() {
       {deck.sourceDeckId && deck.sourceDeckTitle && (
         <Link
           to={`/decks/${deck.sourceDeckSlug ?? deck.sourceDeckId}`}
-          className="mt-3 inline-flex max-w-full items-center gap-2 rounded-xl border border-[#3D3348] bg-[#252030]/60 px-4 py-2.5 text-sm text-[#C4B8D9] transition-all hover:border-[#EC4899] hover:text-[#EC4899]"
+          className="mt-3 inline-flex max-w-full items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
         >
           <GitBranch className="h-4 w-4 shrink-0" />
           <span className="truncate">
@@ -293,7 +293,7 @@ export default function DeckDetailPage() {
 
       {/* Deck header */}
       <header className="mt-4 px-4 md:px-0">
-        <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/80 backdrop-blur-sm p-5 shadow-sm">
           <div className="min-w-0 flex-1">
             {/* Badges row */}
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -315,16 +315,9 @@ export default function DeckDetailPage() {
                 </span>
               )}
               {deck.verificationStatus === 'REJECTED' && (
-                <>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-bold text-red-400">
-                    Từ chối
-                  </span>
-                  {deck.verificationNote && (
-                    <p className="w-full text-xs text-red-400/80 italic">
-                      Lý do: {deck.verificationNote}
-                    </p>
-                  )}
-                </>
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-bold text-[var(--color-danger)]">
+                  Từ chối
+                </span>
               )}
               {!deck.verificationStatus && (deck.isPublic ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 px-2.5 py-1 text-xs font-bold text-[#10B981]">
@@ -355,16 +348,16 @@ export default function DeckDetailPage() {
               )}
             </div>
 
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#F5F0FA] md:text-3xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-text)] md:text-3xl">
               {deck.title}
             </h1>
             {deck.description && (
-              <p className="mt-1.5 max-w-2xl text-sm text-[#8B7A9E]">
+              <p className="mt-1.5 max-w-2xl text-sm text-[var(--color-text-muted)]">
                 {deck.description}
               </p>
             )}
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#8B7A9E]">
-              <span className="font-semibold text-[#EC4899]">{deck.cardCount} thẻ</span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--color-text-muted)]">
+              <span className="font-semibold text-[var(--color-primary)]">{deck.cardCount} thẻ</span>
               {quizzesQuery.data && quizzesQuery.data.totalElements > 0 && (
                 <span
                   className="flex items-center gap-1 cursor-pointer hover:text-[#A78BFA]"
@@ -394,6 +387,13 @@ export default function DeckDetailPage() {
             <div className="mt-3">
               <DeckTagsManager deckId={deck.id} />
             </div>
+
+            {/* Rejection Note */}
+            {deck.verificationStatus === 'REJECTED' && deck.verificationNote && (
+              <div className="mt-4 max-w-md rounded-xl bg-[var(--color-danger-subtle)] p-3 border border-[var(--color-danger)]/20">
+                <p className="text-sm text-[var(--color-danger)] font-medium">Lý do từ chối: <span className="font-normal">{deck.verificationNote}</span></p>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -455,10 +455,10 @@ export default function DeckDetailPage() {
       {/* Card list panel */}
       <section className="mt-5 px-4 md:px-0">
         {/* Panel header */}
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm px-4 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm px-4 py-3 shadow-[var(--shadow-card)]">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-[#F5F0FA]">Bộ thẻ</h2>
-            <span className="rounded-full bg-[#2D2538] px-2.5 py-0.5 text-xs font-bold text-[#8B7A9E]">
+            <h2 className="text-sm font-bold text-[var(--color-text)]">Bộ thẻ</h2>
+            <span className="rounded-full bg-[var(--color-surface-hover)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-text-muted)]">
               {searchQ
                 ? `${totalElements} / ${deck.cardCount}`
                 : deck.cardCount}
@@ -467,14 +467,14 @@ export default function DeckDetailPage() {
 
           <div className="ml-auto flex items-center gap-2">
             {/* View mode toggle */}
-            <div className="flex rounded-lg border border-[#3D3348] bg-[#1A1520] p-0.5">
+            <div className="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5">
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded-md transition-all',
                   viewMode === 'grid'
-                    ? 'bg-[#EC4899] text-white shadow-sm'
-                    : 'text-[#8B7A9E]',
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'text-[var(--color-text-muted)]',
                 )}
                 title="Lưới"
               >
@@ -485,8 +485,8 @@ export default function DeckDetailPage() {
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded-md transition-all',
                   viewMode === 'list'
-                    ? 'bg-[#EC4899] text-white shadow-sm'
-                    : 'text-[#8B7A9E]',
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'text-[var(--color-text-muted)]',
                 )}
                 title="Danh sách"
               >
@@ -496,7 +496,7 @@ export default function DeckDetailPage() {
 
             {/* Search */}
             <div className="relative min-w-[12rem] flex-1 sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8B7A9E]" />
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
               <input
                 type="search"
                 value={searchInput}
@@ -508,7 +508,7 @@ export default function DeckDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSearchInput('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-[#8B7A9E] transition-colors hover:text-[#F5F0FA]"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
                   aria-label="Xóa tìm kiếm"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -523,14 +523,14 @@ export default function DeckDetailPage() {
           {cardsQuery.isLoading && !cardsQuery.data && <CardGridSkeleton count={10} />}
 
           {!cardsQuery.isLoading && cards.length === 0 && (
-            <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#4A4060] bg-[#252030]/40 py-12 text-center">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2D2538]">
-                <Filter className="h-7 w-7 text-[#8B7A9E]" />
+            <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-hover)]/40 py-12 text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-border)]">
+                <Filter className="h-7 w-7 text-[var(--color-text-muted)]" />
               </div>
-              <p className="text-sm font-semibold text-[#F5F0FA]">
+              <p className="text-sm font-semibold text-[var(--color-text)]">
                 {searchQ ? 'Không có thẻ khớp tìm kiếm' : 'Chưa có thẻ nào'}
               </p>
-              <p className="mt-1 text-xs text-[#8B7A9E]">
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                 {searchQ ? 'Thử từ khoá khác' : 'Thêm thẻ đầu tiên để bắt đầu ôn tập'}
               </p>
               {isOwner && !searchQ && (
@@ -543,7 +543,7 @@ export default function DeckDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSearchInput('')}
-                  className="mt-3 text-xs font-bold text-[#EC4899] hover:underline"
+                  className="mt-3 text-xs font-bold text-[var(--color-primary)] hover:underline"
                 >
                   Xoá tìm kiếm
                 </button>
@@ -576,7 +576,7 @@ export default function DeckDetailPage() {
 
         {/* Pagination */}
         {totalElements > 0 && (
-          <div className="mt-3 rounded-2xl border border-[#3D3348] bg-[#252030]/80 backdrop-blur-sm px-4 py-3 shadow-sm">
+          <div className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm px-4 py-3 shadow-[var(--shadow-card)]">
             <CardListPagination
               page={page}
               totalPages={totalPages}

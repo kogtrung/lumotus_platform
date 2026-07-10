@@ -161,6 +161,17 @@ export interface QuizAttemptSummary {
 // ============================================================
 
 export const quizApi = {
+  // --- Cooldown Config ---
+  getCooldownConfig() {
+    return axiosClient.get<{
+      enabled: boolean
+      minSecondsBetweenAttempts: number
+      maxAttemptsPerQuizPerDay: number
+      maxTotalAttemptsPerDay: number
+      maxTotalAttemptsPerWeek: number
+    }>('/quizzes/cooldown/config')
+  },
+
   // --- Explore (public approved quizzes) ---
   listExplore(params?: { page?: number; size?: number; sort?: string }) {
     return axiosClient.get<{ content: QuizSummary[]; totalElements: number; totalPages: number }>(

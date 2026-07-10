@@ -216,7 +216,9 @@ public class AdminService {
             for (UUID topicId : topicIds) {
                 Topic topic = topicRepository.findById(topicId)
                         .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
-                deckTopicRepository.save(new DeckTopic(new DeckTopicId(deck.getId(), topic.getId())));
+                DeckTopic dt = new DeckTopic(new DeckTopicId(deck.getId(), topic.getId()));
+                dt.setTopic(topic);
+                deckTopicRepository.save(dt);
             }
         }
 

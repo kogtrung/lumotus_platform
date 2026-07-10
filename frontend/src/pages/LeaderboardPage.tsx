@@ -13,17 +13,17 @@ import type { LeaderboardEntry } from '@/api/progress'
 // UTILS
 // ==========================================
 function getRowStyle(rank: number) {
-  if (rank === 1) return 'border-yellow-500/50 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-yellow-500/20 via-yellow-900/10 to-[#252030]'
-  if (rank === 2) return 'border-slate-300/50 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-slate-300/20 via-slate-600/10 to-[#252030]'
-  if (rank === 3) return 'border-orange-500/50 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-orange-500/20 via-orange-900/10 to-[#252030]'
-  return 'border-[#3D3348] bg-[#252030] hover:border-[#EC4899]/40'
+  if (rank === 1) return 'border-yellow-500/50 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-yellow-500/20 via-yellow-700/10 to-[var(--color-surface)]'
+  if (rank === 2) return 'border-slate-300/50 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-slate-300/20 via-slate-500/10 to-[var(--color-surface)]'
+  if (rank === 3) return 'border-orange-500/50 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-orange-500/20 via-orange-700/10 to-[var(--color-surface)]'
+  return 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'
 }
 
 function getRankText(rank: number) {
-  if (rank === 1) return 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'
-  if (rank === 2) return 'text-slate-200 drop-shadow-[0_0_8px_rgba(226,232,240,0.5)]'
-  if (rank === 3) return 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]'
-  return 'text-[#F5F0FA]'
+  if (rank === 1) return 'text-yellow-500 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'
+  if (rank === 2) return 'text-slate-400 drop-shadow-[0_0_8px_rgba(226,232,240,0.5)]'
+  if (rank === 3) return 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]'
+  return 'text-[var(--color-text)]'
 }
 
 function getRankIcon(rank: number) {
@@ -45,7 +45,7 @@ function Avatar({ url, name, size = 'sm' }: { url: string | null; name: string, 
   const initial = name?.[0]?.toUpperCase() ?? '?'
   const sizeClasses = size === 'md' ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-7 w-7 sm:h-8 sm:w-8'
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-full border border-[#3D3348]/60 bg-[#2D2538] flex items-center justify-center shadow-md ${sizeClasses}`}>
+    <div className={`relative shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)] flex items-center justify-center shadow-md ${sizeClasses}`}>
       {url ? (
         <img src={url} alt={name} className="h-full w-full object-cover" />
       ) : (
@@ -63,25 +63,25 @@ function PlatformLeaderboardRow({ entry, isCurrentUser }: { entry: LeaderboardEn
       whileHover={{ y: -1, scale: 1.01 }}
       className={`flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all shadow-md ${getRowStyle(entry.rank)}`}
     >
-      <div className={`relative flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-[#1A1520] text-sm sm:text-base font-black ${getRankText(entry.rank)}`}>
+      <div className={`relative flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-bg)] text-sm sm:text-base font-black ${getRankText(entry.rank)}`}>
         #{entry.rank}
         {getRankIcon(entry.rank)}
       </div>
       <Avatar url={entry.avatarUrl} name={entry.username} size="md" />
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm sm:text-base font-bold flex items-center gap-2 ${isTop3 ? getRankText(entry.rank) : (isCurrentUser ? 'text-[#EC4899]' : 'text-[#F5F0FA]')}`}>
+        <p className={`truncate text-sm sm:text-base font-bold flex items-center gap-2 ${isTop3 ? getRankText(entry.rank) : (isCurrentUser ? 'text-[var(--color-primary)]' : 'text-[var(--color-text)]')}`}>
           {entry.username}
           {isCurrentUser && <span className="rounded bg-green-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-md border border-green-400 drop-shadow-[0_0_4px_rgba(34,197,94,0.6)]">BẠN</span>}
         </p>
-        <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[10px] sm:text-xs text-[#8B7A9E]">
+        <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[10px] sm:text-xs text-[var(--color-text-muted)]">
           <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5 text-orange-400" /> {entry.streak} ngày streak</span>
         </div>
       </div>
       <div className="shrink-0 text-right min-w-[60px]">
-        <p className={`text-base sm:text-lg font-black ${isTop3 ? getRankText(entry.rank) : 'text-[#EC4899]'}`}>
+        <p className={`text-base sm:text-lg font-black ${isTop3 ? getRankText(entry.rank) : 'text-[var(--color-primary)]'}`}>
           {entry.xp.toLocaleString()}
         </p>
-        <p className="text-[10px] text-[#8B7A9E]">XP</p>
+        <p className="text-[10px] text-[var(--color-text-muted)]">XP</p>
       </div>
     </motion.div>
   )
@@ -115,13 +115,13 @@ function PodiumBlock({ rank, entry }: { rank: number, entry?: LeaderboardEntry }
        {/* Flow character explicitly in bounds */}
        <div className="flex flex-col items-center w-[120%] pb-2 xl:pb-3 relative z-20">
          {crownIcon}
-         <div className={`relative w-12 h-12 xl:w-16 xl:h-16 rounded-full border-[3px] flex items-center justify-center p-0.5 ${colorRing} z-10 bg-[#1A1520]`}>
+         <div className={`relative w-12 h-12 xl:w-16 xl:h-16 rounded-full border-[3px] flex items-center justify-center p-0.5 ${colorRing} z-10 bg-[var(--color-bg)]`}>
            {entry.avatarUrl ? (
              <img src={entry.avatarUrl} className="w-full h-full rounded-full object-cover" />
            ) : (
              <span className={`font-black text-xl ${titleColor}`}>{entry.username.charAt(0).toUpperCase()}</span>
            )}
-           <div className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-black text-[9px] border-2 border-[#1A1520] ${
+           <div className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-black text-[9px] border-2 border-[var(--color-bg)] ${
               is1 ? 'bg-yellow-400 text-yellow-900' : is2 ? 'bg-slate-200 text-slate-800' : 'bg-orange-400 text-orange-950'
            }`}>
              #{rank}
@@ -194,8 +194,8 @@ export default function LeaderboardPage() {
             <Trophy className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#F5F0FA]">BXH Tổng Nền Tảng</h1>
-            <p className="hidden sm:block text-xs text-[#8B7A9E] mt-0.5">Top học sinh xuất sắc nhất hệ thống</p>
+            <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text)]">BXH Tổng Nền Tảng</h1>
+            <p className="hidden sm:block text-xs text-[var(--color-text-muted)] mt-0.5">Top học sinh xuất sắc nhất hệ thống</p>
           </div>
         </div>
       </motion.div>
@@ -206,18 +206,18 @@ export default function LeaderboardPage() {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#EC4899] border-t-transparent shadow-md shadow-[#EC4899]/30" />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row overflow-hidden relative pb-12 lg:pb-0 bg-[#1A1520] border border-[#3D3348] lg:rounded-3xl rounded-2xl shadow-2xl">
+        <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row overflow-hidden relative pb-12 lg:pb-0 bg-[var(--color-bg)] border border-[var(--color-border)] lg:rounded-3xl rounded-2xl shadow-2xl">
           
           {/* COLUMN 1: THE LIST */}
-          <div className="flex-1 min-h-0 flex flex-col w-full relative isolate lg:border-r lg:border-[#3D3348]">
-            <div className="shrink-0 p-3 sm:p-4 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/40 via-[#1A1520] to-[#1A1520] border-b border-[#3D3348]/60 flex items-center justify-between gap-2.5">
+          <div className="flex-1 min-h-0 flex flex-col w-full relative isolate lg:border-r lg:border-[var(--color-border)]">
+            <div className="shrink-0 p-3 sm:p-4 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[var(--color-primary-dark)]/40 via-[var(--color-bg)] to-[var(--color-bg)] border-b border-[var(--color-border)] flex items-center justify-between gap-2.5">
                <div className="flex items-center gap-3">
                 <div className="h-10 w-10 flex-shrink-0 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/10">
                   <Users className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm sm:text-base font-black text-[#F5F0FA]">Cộng Đồng Học Tập</h2>
-                  <p className="text-[10px] sm:text-xs text-[#8B7A9E] mt-0.5">Dựa trên nền tảng: Học Tập + Chuỗi Streak.</p>
+                  <h2 className="text-sm sm:text-base font-black text-[var(--color-text)]">Cộng Đồng Học Tập</h2>
+                  <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] mt-0.5">Dựa trên nền tảng: Học Tập + Chuỗi Streak.</p>
                 </div>
                </div>
             </div>
@@ -226,10 +226,10 @@ export default function LeaderboardPage() {
             <div className="flex-1 overflow-y-auto px-2 py-3 sm:p-4 space-y-2 custom-scrollbar relative z-0">
               {entries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
-                  <Users className="h-16 w-16 text-[#3D3348]" />
+                  <Users className="h-16 w-16 text-[var(--color-border-strong)]" />
                   <div>
-                    <p className="text-lg font-bold text-[#F5F0FA]">Chưa có dữ liệu nền tảng.</p>
-                    <p className="text-sm text-[#8B7A9E]">Hãy là người đầu tiên bứt phá!</p>
+                    <p className="text-lg font-bold text-[var(--color-text)]">Chưa có dữ liệu nền tảng.</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Hãy là người đầu tiên bứt phá!</p>
                   </div>
                 </div>
               ) : (
@@ -241,11 +241,10 @@ export default function LeaderboardPage() {
               )}
             </div>
 
-            {/* Sticky Personal Card */}
             {user && meProgressQuery.data && (
               <div 
                 className={`relative shrink-0 py-2.5 px-3 sm:px-4 z-50 flex items-center justify-between gap-3 ${
-                  isMeTop3 ? getRowStyle(myRank) : 'bg-gradient-to-t from-[#1A1520] to-[#252030]'
+                  isMeTop3 ? getRowStyle(myRank) : 'bg-gradient-to-t from-[var(--color-bg)] to-[var(--color-surface)]'
                 }`}
                 style={{ 
                   boxShadow: '0 -16px 40px -10px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.06)',
@@ -266,12 +265,12 @@ export default function LeaderboardPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <p className={`text-xs sm:text-sm font-black truncate drop-shadow-lg ${isMeTop3 ? getRankText(myRank) : 'text-[#F5F0FA]'}`}>
+                        <p className={`text-xs sm:text-sm font-black truncate drop-shadow-lg ${isMeTop3 ? getRankText(myRank) : 'text-[var(--color-text)]'}`}>
                           {user.username}
                         </p>
                         <span className={`rounded bg-green-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-md border border-green-400 drop-shadow-[0_0_4px_rgba(34,197,94,0.6)]`}>BẠN</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[9px] sm:text-[10px] text-[#8B7A9E] mt-0.5">
+                      <div className="flex flex-wrap items-center gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] mt-0.5">
                         <span className="flex items-center gap-1 drop-shadow-md"><Flame className="h-3 w-3 text-orange-400" /> {myStreak} ngày streak</span>
                       </div>
                     </div>
@@ -285,9 +284,8 @@ export default function LeaderboardPage() {
             )}
           </div>
 
-          {/* COLUMN 2: THE 3D PODIUM SECTION */}
           {entries.length >= 3 ? (
-            <div className="hidden lg:flex flex-1 flex-col items-center p-4 xl:p-8 pb-4 bg-gradient-to-br from-[#1A1520] to-[#252030] relative overflow-hidden shadow-[inset_20px_0_40px_-5px_rgba(0,0,0,0.5)] h-full w-full">
+            <div className="hidden lg:flex flex-1 flex-col items-center p-4 xl:p-8 pb-4 bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-surface)] relative overflow-hidden shadow-[inset_20px_0_40px_-5px_rgba(255,255,255,0.05)] h-full w-full">
               {/* Background ambient lighting */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 blur-[120px] pointer-events-none rounded-full" />
               
@@ -297,7 +295,7 @@ export default function LeaderboardPage() {
               {/* Title Section Inline */}
               <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center gap-3 z-10 w-full mb-auto mt-2">
                 <Trophy className="h-8 w-8 xl:h-10 xl:w-10 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-                <h3 className="text-2xl xl:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)] tracking-widest uppercase">
+                <h3 className="text-2xl xl:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-500 to-yellow-700 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)] tracking-widest uppercase">
                   BẢNG VÀNG DANH DỰ
                 </h3>
               </motion.div>
@@ -310,9 +308,9 @@ export default function LeaderboardPage() {
               </div>
             </div>
           ) : (
-            <div className="hidden lg:flex flex-1 flex-col items-center justify-center p-8 bg-gradient-to-br from-[#1A1520] to-[#252030]">
-               <Trophy className="h-16 w-16 text-[#3D3348] mb-4" />
-               <p className="text-[#8B7A9E] font-bold text-lg">Chưa đủ thống kê Bảng Vàng</p>
+            <div className="hidden lg:flex flex-1 flex-col items-center justify-center p-8 bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-surface)]">
+               <Trophy className="h-16 w-16 text-[var(--color-border)] mb-4" />
+               <p className="text-[var(--color-text-muted)] font-bold text-lg">Chưa đủ thống kê Bảng Vàng</p>
             </div>
           )}
 

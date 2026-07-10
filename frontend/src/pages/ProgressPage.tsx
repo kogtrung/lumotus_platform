@@ -2,83 +2,38 @@ import React from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
-  BookOpen, Flame, Star, Target, TrendingUp, Trophy, Zap,
+  BookOpen, Flame, Star, Zap, Trophy,
 } from 'lucide-react'
+import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Title,
+  Tooltip,
+} from 'chart.js'
+import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import { decksApi } from '@/api/decks'
 import { progressApi } from '@/api/progress'
 import { reviewApi } from '@/api/review'
+import { statsApi } from '@/api/stats'
 import { cn } from '@/utils/cn'
 import StreakProgressBar from '@/components/ui/StreakProgressBar'
 
-// ─── Animated counter ─────────────────────────────────────────────────────────
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement, LineElement,
+  PointElement, Filler, Title, Tooltip, Legend, ArcElement,
+)
 
-function useAnimatedCounter(end: number, duration = 1500, delay = 0) {
-  const [count, setCount] = React.useState(0)
-  const [started, setStarted] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting && !started) setStarted(true) },
-      { threshold: 0.3 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [started])
-
-  React.useEffect(() => {
-    if (!started) return
-    const t = setTimeout(() => {
-      let t0: number
-      const raf = (ts: number) => {
-        if (!t0) t0 = ts
-        const p = Math.min((ts - t0) / duration, 1)
-        setCount(Math.floor((1 - Math.pow(1 - p, 3)) * end))
-        if (p < 1) requestAnimationFrame(raf)
-      }
-      requestAnimationFrame(raf)
-    }, delay)
-    return () => clearTimeout(t)
-  }, [end, duration, delay, started])
-
-  return { count, ref }
-}
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
-function StatCard({
-  icon: Icon, value, label, sub, color, delay = 0,
-}: {
-  icon: typeof Star; value: number; label: string; sub?: string; color: string; delay?: number
-}) {
-  const { count, ref } = useAnimatedCounter(value, 1200, delay)
-  return (
-    <div
-      ref={ref as React.RefObject<HTMLDivElement>}
-      className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#252030]/80 border border-[#3D3348] p-3 sm:p-4 md:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#EC4899]/30 hover:shadow-xl"
-    >
-      <div
-        className="pointer-events-none absolute -right-3 -top-3 h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 rounded-full opacity-20 blur-2xl"
-        style={{ backgroundColor: color }}
-      />
-      <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-[#F5F0FA]">{count.toLocaleString()}</p>
-          <p className="mt-0.5 text-xs sm:text-sm font-semibold text-[#F5F0FA]">{label}</p>
-          {sub && <p className="mt-0.5 text-[10px] sm:text-xs text-[#8B7A9E]">{sub}</p>}
-        </div>
-        <div
-          className="flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center rounded-lg sm:rounded-xl"
-          style={{ backgroundColor: `${color}22` }}
-        >
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5" style={{ color }} />
-        </div>
-      </div>
-    </div>
-  )
-}
+// StatCard has been removed
 
 // ─── Deck progress row ────────────────────────────────────────────────────────
 
@@ -97,13 +52,13 @@ function DeckProgressRow({ deck, index }: { deck: any; index: number }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 sm:gap-4 rounded-xl border border-[#3D3348] bg-[#252030]/60 p-3 sm:p-4 transition-all hover:border-[#EC4899]/30',
+        'flex items-center gap-3 sm:gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-3 sm:p-4 transition-all hover:border-[var(--color-primary)]/30',
         'animate-fade-in',
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
       {/* Cover */}
-      <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 overflow-hidden rounded-lg sm:rounded-xl bg-[#2D2538]">
+      <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 overflow-hidden rounded-lg sm:rounded-xl bg-[var(--color-bg)]">
         {deck.coverImageUrl
           ? <img src={deck.coverImageUrl} alt="" className="h-full w-full object-cover" />
           : <BookOpen className="mx-auto mt-2.5 sm:mt-3 h-5 w-5 sm:h-6 sm:w-6 text-[#EC4899]" />
@@ -112,24 +67,24 @@ function DeckProgressRow({ deck, index }: { deck: any; index: number }) {
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-xs sm:text-sm font-bold text-[#F5F0FA]">{deck.title}</p>
-        <div className="mt-0.5 sm:mt-1 flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-[#8B7A9E]">
+        <p className="truncate text-xs sm:text-sm font-bold text-[var(--color-text)]">{deck.title}</p>
+        <div className="mt-0.5 sm:mt-1 flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-[var(--color-text-muted)]">
           <span>{total} thẻ</span>
-          <span className="text-[#10B981]">{learned} đã học</span>
-          <span className="text-[#F97316]">{mastered} thành thạo</span>
+          <span className="text-[var(--color-success)]">{learned} đã học</span>
+          <span className="text-[var(--color-warning)]">{mastered} thành thạo</span>
         </div>
       </div>
 
       {/* Progress */}
       <div className="shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-20 sm:w-24 md:w-28 h-1.5 sm:h-2 rounded-full bg-[#3D3348] overflow-hidden">
+          <div className="w-20 sm:w-24 md:w-28 h-1.5 sm:h-2 rounded-full bg-[var(--color-bg)] overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#EC4899] to-[#F97316] transition-all duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-warning)] transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-[10px] sm:text-xs font-bold text-[#8B7A9E] w-8 sm:w-10 text-right">{pct}%</span>
+          <span className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] w-8 sm:w-10 text-right">{pct}%</span>
         </div>
       </div>
     </div>
@@ -139,11 +94,11 @@ function DeckProgressRow({ deck, index }: { deck: any; index: number }) {
 // ─── Heatmap ─────────────────────────────────────────────────────────────────
 
 const HEATMAP_COLORS = [
-  '#2D2538',
-  '#9be9a8',
-  '#40c463',
-  '#30a14e',
-  '#216e39',
+  'var(--color-border)', // empty cell
+  '#6ee7b7', // emerald-300
+  '#34d399', // emerald-400
+  '#10b981', // emerald-500
+  '#059669', // emerald-600
 ]
 
 function HeatmapStrip({ data, streak }: {
@@ -227,10 +182,10 @@ function HeatmapStrip({ data, streak }: {
   }
 
   return (
-    <div className="rounded-xl sm:rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4 sm:p-5 md:p-6">
+    <div className="w-full p-4 sm:p-5">
       <div className="mb-3 sm:mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <p className="text-sm sm:text-base font-bold text-[#F5F0FA]">Contribution</p>
+          <p className="text-sm sm:text-base font-bold text-[var(--color-text)]">Đóng góp</p>
           <div className="flex gap-1">
             {years.map(year => (
               <button
@@ -238,36 +193,36 @@ function HeatmapStrip({ data, streak }: {
                 onClick={() => setSelectedYear(year)}
                 className={`px-2 py-0.5 text-[11px] sm:text-xs rounded transition-colors ${
                   year === selectedYear
-                    ? 'bg-[#EC4899] text-white'
-                    : 'text-[#8B7A9E] hover:text-[#F5F0FA]'
+                    ? 'bg-[var(--color-primary)] text-white'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                 }`}
               >
                 {year}
               </button>
             ))}
           </div>
-          <Link
+            <Link
             to="/leaderboard"
-            className="text-[11px] sm:text-xs font-semibold text-[#EC4899] hover:text-[#F97316] transition-colors"
+            className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-warning)] transition-colors"
           >
             Xem bảng xếp hạng →
           </Link>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#8B7A9E]">
-          <Flame className="h-3.5 w-3.5 text-[#EF4444]" />
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--color-text-muted)]">
+          <Flame className="h-3.5 w-3.5 text-[var(--color-danger)]" />
           {streak} ngày streak
         </div>
       </div>
 
       {/* Heatmap grid */}
-      <div className="overflow-x-auto">
-        <div className="flex gap-1.5">
+      <div className="overflow-x-auto pb-1">
+        <div className="flex gap-1">
           {/* Day labels */}
-          <div className="flex flex-col gap-1.5 mr-2 pt-5">
+          <div className="sticky left-0 bg-[var(--color-surface)] z-10 flex flex-col gap-1.5 pr-3 pt-5">
             {dayLabels.map((label, i) => (
-              <div key={i} className="h-[14px] w-8 flex items-center">
+              <div key={i} className="h-[14px] w-7 flex items-center">
                 {label && (
-                  <span className="text-[10px] text-[#8B7A9E]">{label}</span>
+                  <span className="text-[9px] font-medium tracking-tighter text-[var(--color-text-muted)]">{label}</span>
                 )}
               </div>
             ))}
@@ -276,13 +231,13 @@ function HeatmapStrip({ data, streak }: {
           {/* Month labels + Weeks */}
           <div className="flex flex-col">
             {/* Month labels row */}
-            <div className="flex gap-1.5 mb-1.5 h-5">
+            <div className="flex gap-1 mb-1 h-4">
               {weeks.map((_, weekIdx) => {
                 const label = getMonthLabel(weekIdx)
                 return (
                   <div key={weekIdx} className="h-full w-[14px]">
                     {label && (
-                      <span className="text-[10px] text-[#8B7A9E] whitespace-nowrap">{label}</span>
+                      <span className="text-[9px] font-medium tracking-tight text-[var(--color-text-muted)] whitespace-nowrap">{label}</span>
                     )}
                   </div>
                 )
@@ -290,9 +245,9 @@ function HeatmapStrip({ data, streak }: {
             </div>
 
             {/* Weeks grid */}
-            <div className="flex gap-1.5">
+            <div className="flex gap-1">
               {weeks.map((week, weekIdx) => (
-                <div key={weekIdx} className="flex flex-col gap-1.5">
+                <div key={weekIdx} className="flex flex-col gap-1">
                   {week.map((day, dayIdx) => {
                     if (!day.dateStr) {
                       return <div key={dayIdx} className="h-[14px] w-[14px]" />
@@ -306,10 +261,9 @@ function HeatmapStrip({ data, streak }: {
                       <div
                         key={dayIdx}
                         title={`${day.date.toLocaleDateString('vi')}: ${xp} XP · ${entry?.cards ?? 0} thẻ · ${entry?.quizzes ?? 0} quiz`}
-                        className="h-[14px] w-[14px] transition-transform hover:scale-125 cursor-pointer"
-                        style={{
+                        className="h-[14px] w-[14px] transition-transform hover:scale-125 cursor-pointer rounded-[2px]"                        style={{
                           backgroundColor: HEATMAP_COLORS[intensity],
-                          border: isToday ? '1.5px solid #EC4899' : '1px solid rgba(139, 122, 158, 0.2)',
+                          border: isToday ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
                         }}
                       />
                     )
@@ -322,10 +276,10 @@ function HeatmapStrip({ data, streak }: {
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex items-center justify-end gap-1.5 text-[11px] text-[#8B7A9E]">
+      <div className="mt-4 flex items-center justify-end gap-1.5 text-[10px] text-[var(--color-text-muted)]">
         <span>Less</span>
         {HEATMAP_COLORS.map((c, i) => (
-          <div key={i} className="h-[14px] w-[14px]" style={{ backgroundColor: c }} />
+          <div key={i} className="h-[14px] w-[14px] rounded-[2px]" style={{ backgroundColor: c }} />
         ))}
         <span>More</span>
       </div>
@@ -333,7 +287,143 @@ function HeatmapStrip({ data, streak }: {
   )
 }
 
+function CardStatsDonut({ total, due, mastered }: { total: number; due: number; mastered: number }) {
+  const safeLearned = Math.max(0, total - mastered - due)
+  const masteredPct = total > 0 ? Math.round((mastered / total) * 100) : 0
+  const safeLearnedPct = total > 0 ? Math.round((safeLearned / total) * 100) : 0
+  const duePct = total > 0 ? Math.round((due / total) * 100) : 0
+
+  const data = {
+    labels: ['Thành thạo', 'Đang học', 'Đến hạn'],
+    datasets: [{
+      data: [mastered, safeLearned, due],
+      backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(236, 72, 153, 0.85)', 'rgba(91, 33, 182, 0.85)'],
+      borderColor: ['#10B981', '#EC4899', '#5B21B6'],
+      borderWidth: 1,
+      hoverOffset: 6,
+    }],
+  }
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#252030', borderColor: '#3D3348', borderWidth: 1,
+        titleColor: '#F5F0FA', bodyColor: '#8B7A9E', padding: 10,
+      },
+    },
+  }
+  return (
+      <div className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-3 sm:p-4 md:p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--color-primary)]/30 hover:shadow-xl w-full h-full flex items-center">
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(236,72,153,0.08) 0%, transparent 70%)' }} />
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full relative">
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-full blur-xl opacity-30" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.6) 0%, transparent 70%)' }} />
+          <div className="relative h-40 w-40 sm:h-44 sm:w-44 lg:h-48 lg:w-48">
+            <Doughnut data={data} options={options} />
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-3xl sm:text-4xl font-black text-[var(--color-text)] drop-shadow-sm leading-none mb-1">{total}</p>
+              <p className="text-[9px] sm:text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Tổng thẻ</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 w-full space-y-4">
+          {[
+            { label: 'Thành thạo', value: mastered, pct: masteredPct, color: '#10B981', glow: 'rgba(16,185,129,0.3)' },
+            { label: 'Đang học', value: safeLearned, pct: safeLearnedPct, color: '#EC4899', glow: 'rgba(236,72,153,0.3)' },
+            { label: 'Đến hạn', value: due, pct: duePct, color: '#5B21B6', glow: 'rgba(91,33,182,0.3)' },
+          ].map(({ label, value, pct, color, glow }) => (
+            <div key={label} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ backgroundColor: color, boxShadow: `0 0 8px ${glow}` }} />
+                  <span className="text-[11px] sm:text-xs font-medium text-[var(--color-text)]">{label}</span>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-sm sm:text-base font-bold text-[var(--color-text)]">{value}</span>
+                  <span className="text-[10px] font-semibold text-[var(--color-text-muted)] w-8 text-right">{pct}%</span>
+                </div>
+              </div>
+              <div className="h-1.5 sm:h-2 rounded-full bg-[var(--color-bg)] overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color, boxShadow: `0 0 6px ${glow}` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function WeeklyChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
+  if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[var(--color-surface)]/60" />
+  const slice = data.daily.slice(-days)
+  const labels = slice.map((d: any) => new Date(d.date).toLocaleDateString('vi-VN', { weekday: 'short' }))
+  
+  // Custom font property inside options won't parse var(--color) natively in Chart.js efficiently without getting computed style,
+  // but we can pass standard fallback colors or let CSS var render if supported by browser. We'll use gray-400 equivalent.
+  const chartProps = { 
+    textColor: '#9ca3af', 
+    gridColor: 'rgba(156, 163, 175, 0.1)' 
+  }
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
+        <h3 className="mb-2 text-[11px] sm:text-xs font-semibold text-[var(--color-text)]">Thẻ ôn</h3>
+        <div className="h-32 sm:h-40">
+          <Bar
+            data={{
+              labels,
+              datasets: [{ label: 'Thẻ', data: slice.map((d: any) => d.cards), backgroundColor: 'rgba(236,72,153,0.7)', borderRadius: 4, barThickness: 12 }],
+            }}
+            options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { color: chartProps.gridColor } } } }}
+          />
+        </div>
+      </div>
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
+        <h3 className="mb-2 text-[11px] sm:text-xs font-semibold text-[var(--color-text)]">Quiz</h3>
+        <div className="h-32 sm:h-40">
+          <Bar
+            data={{
+              labels,
+              datasets: [{ label: 'Quiz', data: slice.map((d: any) => d.quizzes), backgroundColor: 'rgba(249,115,22,0.7)', borderRadius: 4, barThickness: 12 }],
+            }}
+            options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { color: chartProps.gridColor } } } }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function XpTrendChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
+  if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[var(--color-bg)]" />
+  const slice = data.daily.slice(-days)
+  const labels = slice.map((d: any) => new Date(d.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }))
+  
+  const chartProps = { 
+    textColor: '#9ca3af', 
+    gridColor: 'rgba(156, 163, 175, 0.1)' 
+  }
+
+  return (
+    <div className="h-36 sm:h-44 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3 shadow-inner">
+      <Line
+        data={{
+          labels,
+          datasets: [{ label: 'XP', data: slice.map((d: any) => d.xp), borderColor: '#EC4899', backgroundColor: 'rgba(236,72,153,0.15)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#EC4899' }],
+        }}
+        options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { color: chartProps.gridColor } } } }}
+      />
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
+
 
 export default function ProgressPage() {
   // Real progress data from API
@@ -361,14 +451,45 @@ export default function ProgressPage() {
   })
 
   const totalCards = decks.reduce((s, d) => s + (d.cardCount ?? 0), 0)
-  const totalLearned = deckProgressQueries.reduce((s, q) => s + (q.data?.learnedCards ?? 0), 0)
   const totalMastered = deckProgressQueries.reduce((s, q) => s + (q.data?.masteredCards ?? 0), 0)
 
   const xp = progressData?.xp ?? 0
   const streak = progressData?.streak ?? 0
-  const rank = progressData?.rank ?? null
-  const totalParticipants = progressData?.totalParticipants ?? 0
   const heatmap = progressData?.heatmap
+
+  // Due data
+  const { data: dueData } = useQuery({
+    queryKey: ['review', 'due-total'],
+    queryFn: () => reviewApi.getDueCount().then(r => r.data),
+  })
+  const totalDue = typeof dueData === 'number' ? dueData : 0
+
+  // Activity Data for Charts
+  const { data: activityData } = useQuery({
+    queryKey: ['stats', 'activity'],
+    queryFn: () => statsApi.getActivity({ days: 90 }).then(r => r.data),
+  })
+  
+  const [timeFilter, setTimeFilter] = React.useState<'week' | 'month'>('week')
+  
+  const chartSlice = React.useMemo(() => {
+    if (!activityData?.daily) return []
+    if (timeFilter === 'month') {
+      return activityData.daily.slice(-30)
+    }
+    // Week logic
+    const now = new Date()
+    const dayOfWeek = now.getDay()
+    const effectiveDay = dayOfWeek === 0 ? 7 : dayOfWeek
+    return activityData.daily.slice(-effectiveDay)
+  }, [activityData, timeFilter])
+  
+  const chartDays = React.useMemo(() => {
+    if (!activityData?.daily) return 7
+    if (timeFilter === 'month') return 30
+    const now = new Date()
+    return now.getDay() === 0 ? 7 : now.getDay()
+  }, [activityData, timeFilter])
 
   return (
     <div className="space-y-4 sm:space-y-6 md:space-y-8">
@@ -379,8 +500,8 @@ export default function ProgressPage() {
             <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={2.5} />
             Tiến độ
           </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#F5F0FA]">Hành trình học tập</h1>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-[#8B7A9E]">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[var(--color-text)]">Hành trình học tập</h1>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-[var(--color-text-muted)]">
             Theo dõi streak, XP và tiến độ học tập của bạn
           </p>
         </div>
@@ -409,6 +530,19 @@ export default function ProgressPage() {
             </div>
           </div>
 
+          {/* Rank */}
+          <div className="flex items-center gap-3 sm:gap-4 md:gap-5 border-l border-white/20 pl-4 sm:pl-5 md:pl-6">
+            <div>
+              <p className="text-sm sm:text-base font-semibold text-white/80">Xếp hạng hiện tại</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white">{progressData?.rank ? `#${progressData.rank}` : '-'}</h2>
+                {progressData?.totalParticipants && (
+                  <span className="text-xs text-white/70 mt-3">/ {progressData.totalParticipants}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* XP */}
           <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
             <div className="flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center rounded-lg sm:rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
@@ -420,16 +554,14 @@ export default function ProgressPage() {
             </div>
           </div>
 
-          {/* Rank */}
+          {/* Total Deck (Replaced Rank) */}
           <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
             <div className="flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center rounded-lg sm:rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
-              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-pink-200" />
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-white fill-white/20" />
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
-                {rank != null ? `#${rank}` : '—'}
-              </p>
-              <p className="text-white/70 text-xs sm:text-sm">/{totalParticipants} học sinh</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">{totalDecks}</p>
+              <p className="text-white/70 text-xs sm:text-sm">Tổng deck đã lưu</p>
             </div>
           </div>
         </div>
@@ -438,23 +570,63 @@ export default function ProgressPage() {
         <StreakProgressBar streak={streak} />
       </div>
 
-      {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard icon={BookOpen} value={totalDecks} label="Deck của bạn" sub="Tổng cộng" color="#EC4899" delay={0} />
-        <StatCard icon={Star} value={totalCards} label="Tổng thẻ" sub="Trên tất cả deck" color="#10B981" delay={100} />
-        <StatCard icon={TrendingUp} value={totalLearned} label="Đã học" sub="Thẻ đang học" color="#F97316" delay={200} />
-        <StatCard icon={Target} value={totalMastered} label="Thành thạo" sub="Đã hoàn thành" color="#A78BFA" delay={300} />
-      </div>
+      {/* ── Charts Section (Grid 2 Cột) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Cột trái: Donut + Heatmap */}
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <CardStatsDonut total={totalCards} due={totalDue} mastered={totalMastered} />
+          
+          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80">
+            <HeatmapStrip data={heatmap} streak={streak} />
+          </div>
+        </div>
 
-      {/* ── Heatmap ── */}
-      <HeatmapStrip data={heatmap} streak={streak} />
+        {/* Cột phải: XP + Activity */}
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 sm:p-5">
+             <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[var(--color-text)]">Xu hướng XP</h3>
+             </div>
+             <XpTrendChart data={{ daily: chartSlice }} days={chartDays} />
+          </div>
+
+          <div className="flex-1 rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 sm:p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-[var(--color-text)]">
+                Hoạt động {timeFilter === 'week' ? 'tuần này' : '30 ngày qua'}
+              </h3>
+              <div className="flex bg-[var(--color-bg)] rounded-xl p-1 border border-[var(--color-border)]">
+                <button 
+                  onClick={() => setTimeFilter('week')} 
+                  className={cn(
+                    "px-3 py-1 rounded-lg text-[10px] sm:text-xs font-semibold transition-all", 
+                    timeFilter === 'week' ? "bg-[var(--color-primary)] text-white shadow" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                  )}
+                >
+                  Tuần
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('month')} 
+                  className={cn(
+                    "px-3 py-1 rounded-lg text-[10px] sm:text-xs font-semibold transition-all", 
+                    timeFilter === 'month' ? "bg-[var(--color-primary)] text-white shadow" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                  )}
+                >
+                  Tháng
+                </button>
+              </div>
+            </div>
+            <WeeklyChart data={{ daily: chartSlice }} days={chartDays} />
+          </div>
+        </div>
+      </div>
 
       {/* ── Deck progress list ── */}
       {decks.length > 0 && (
         <div>
           <div className="mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
-            <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-[#EC4899]" />
-            <h2 className="text-base sm:text-lg font-bold text-[#F5F0FA]">Tiến độ theo deck</h2>
+            <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-primary)]" />
+            <h2 className="text-base sm:text-lg font-bold text-[var(--color-text)]">Tiến độ theo deck</h2>
           </div>
           <div className="space-y-2">
             {decks.slice(0, 10).map((deck, i) => (
@@ -462,7 +634,7 @@ export default function ProgressPage() {
             ))}
           </div>
           {decks.length > 10 && (
-            <p className="mt-2 sm:mt-3 text-center text-xs sm:text-sm text-[#8B7A9E]">
+            <p className="mt-2 sm:mt-3 text-center text-xs sm:text-sm text-[var(--color-text-muted)]">
               +{decks.length - 10} deck khác
             </p>
           )}
@@ -471,14 +643,14 @@ export default function ProgressPage() {
 
       {/* ── Empty state ── */}
       {decks.length === 0 && (
-        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl border border-[#3D3348] bg-[#252030]/60 p-8 sm:p-10 md:p-12 text-center">
-          <div className="pointer-events-none absolute -top-1/2 -right-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-[#EC4899]/5 blur-3xl" />
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-8 sm:p-10 md:p-12 text-center">
+          <div className="pointer-events-none absolute -top-1/2 -right-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-[var(--color-primary)]/5 blur-3xl" />
           <div className="relative">
-            <div className="mx-auto mb-3 sm:mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-xl sm:rounded-2xl md:rounded-3xl bg-gradient-to-br from-[#EC4899] to-[#F97316] shadow-lg">
-              <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-white" strokeWidth={2} />
+            <div className="mx-auto mb-3 sm:mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-xl sm:rounded-2xl md:rounded-3xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-warning)] shadow-lg">
+              <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-white" strokeWidth={2} />
             </div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-[#F5F0FA]">Bắt đầu hành trình</h2>
-            <p className="mx-auto mt-1.5 sm:mt-2 max-w-xs sm:max-w-sm text-xs sm:text-sm text-[#8B7A9E]">
+            <h2 className="text-lg sm:text-xl font-extrabold text-[var(--color-text)]">Bắt đầu hành trình</h2>
+            <p className="mx-auto mt-1.5 sm:mt-2 max-w-xs sm:max-w-sm text-xs sm:text-sm text-[var(--color-text-muted)]">
               Tạo deck đầu tiên hoặc khám phá kho deck công khai để bắt đầu học.
             </p>
           </div>

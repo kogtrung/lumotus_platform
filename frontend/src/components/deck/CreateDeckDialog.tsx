@@ -41,9 +41,11 @@ export default function CreateDeckDialog({ open, onClose, onCreated }: CreateDec
         title: data.title,
         description: data.description || undefined,
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['decks'] })
-      queryClient.invalidateQueries({ queryKey: ['stats', 'dashboard'] })
+    onSuccess: async (res) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['decks'] }),
+        queryClient.invalidateQueries({ queryKey: ['stats', 'dashboard'] })
+      ])
       lumotoast.success('Đã tạo deck')
       reset()
       onClose()

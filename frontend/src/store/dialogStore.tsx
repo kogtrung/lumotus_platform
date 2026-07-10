@@ -216,7 +216,7 @@ function ExitDialogContent({
   onClose,
 }: ExitDialogProps) {
   return (
-    <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-[#3D3348] bg-[#1F1A28] shadow-2xl">
+    <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
       <div className="h-0.5 w-full bg-gradient-to-r from-[#EC4899] to-[#F97316]" />
       <div className="flex justify-center pt-7 pb-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(236,72,153,0.3)] bg-[rgba(236,72,153,0.1)]">
@@ -244,7 +244,7 @@ function ExitDialogContent({
         )}
         <button
           onClick={() => { onConfirm?.(); onClose() }}
-          className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#3D3348] bg-[#252030] px-4 py-3 text-sm font-semibold text-[#F5F0FA]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]"
         >
           <svg className="h-4 w-4 text-[#EC4899]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

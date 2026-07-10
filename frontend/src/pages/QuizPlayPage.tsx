@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { lumotoast } from '@/components/ui/Toast'
 import ExitConfirmDialog from '@/components/ui/ExitConfirmDialog'
 import { X, RotateCcw, Zap, Check, Clock, Target, BookOpen, Info } from 'lucide-react'
@@ -142,6 +143,13 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
   const qc = useQueryClient()
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Load cooldown settings mapping
+  const { data: cooldownConfig } = useQuery({
+    queryKey: ['quiz', 'cooldown-config'],
+    queryFn: () => quizApi.getCooldownConfig().then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
 
   const [phase, setPhase] = useState<SessionPhase>('loading')
   const [quizTitle, setQuizTitle] = useState('')
@@ -601,18 +609,18 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
 
   // ─── Render ────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1520 0%, #252035 50%, #1a1520 100%)' }}>
+    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-[var(--color-bg)]">
       {/* Loading */}
       {phase === 'loading' && (
         <div className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-6">
             <div className="relative">
-              <div className="h-16 w-16 animate-spin rounded-full border-4 border-[#3D3348] border-t-[#EC4899]" />
+              <div className="h-16 w-16 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-[var(--color-primary)]" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[#EC4899]/20" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--color-primary-subtle)]/50" />
               </div>
             </div>
-            <p className="text-base font-semibold text-[#8B7A9E]">{t.loading}</p>
+            <p className="text-base font-semibold text-[var(--color-text-muted)]">{t.loading}</p>
           </div>
         </div>
       )}
@@ -621,7 +629,7 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
       {phase !== 'loading' && isNotFound && (
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center">
-            <p className="text-[#EF4444]">{t.notFound}</p>
+            <p className="text-[var(--color-danger)] font-medium">{t.notFound}</p>
             <Button onClick={() => navigate('/quiz')} className="mt-4">{t.backToQuiz}</Button>
           </div>
         </div>
@@ -630,14 +638,14 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
       {/* Result */}
       {phase === 'result' && result && !isNotFound && (
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#3D3348] px-4">
+          <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 bg-[var(--color-surface)]">
             <button
               onClick={handleExit}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#3D3348] text-[#8B7A9E] transition-all hover:border-[#EF4444] hover:text-[#EF4444]"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
             >
               <X className="h-4 w-4" strokeWidth={2.5} />
             </button>
-            <span className="truncate text-sm font-bold text-[#F5F0FA]">{quizTitle}</span>
+            <span className="truncate text-sm font-bold text-[var(--color-text)]">{quizTitle}</span>
             <div className="flex items-center gap-2">
               <Button to="/quiz" size="sm" variant="ghost" className="h-9 gap-1.5 px-3">
                 Quiz khác
@@ -669,65 +677,57 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
       {phase === 'session' && !isNotFound && (
         <div className="flex h-full flex-col">
           {/* Top Bar */}
-          <header className="shrink-0 border-b border-[#3D3348]">
-            {/* Progress bar */}
-              <div className="h-1 w-full overflow-hidden bg-[#2D2538]">
+          <header className="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] w-full relative">
+            {/* Overall Progress bar */}
+              <div className="h-1 w-full overflow-hidden bg-[var(--color-surface-hover)]">
                 <div
                   className="h-full transition-all duration-300 ease-out"
                   style={{
                     width: `${displayProgress * 100}%`,
-                    background: 'linear-gradient(90deg, #EC4899 0%, #F472B6 50%, #FB923C 100%)'
+                    background: 'var(--color-primary)'
                   }}
                 />
               </div>
 
             <div className="flex h-16 items-center justify-between px-4">
-              {/* Left: Back button + Title */}
-              <div className="flex items-center gap-3 min-w-0">
+              {/* Left: Back button only */}
+              <div className="flex items-center gap-3 w-16">
                 <button
                   onClick={handleExit}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#3D3348] text-[#8B7A9E] transition-all hover:border-[#EF4444] hover:text-[#EF4444]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
                 >
                   <X className="h-5 w-5" strokeWidth={2.5} />
                 </button>
-                <span className="truncate text-base font-bold text-[#F5F0FA]">{quizTitle}</span>
               </div>
 
-              {/* Center: Large Timer */}
-              {questionTimeRemaining !== null && (
-                <div className={cn(
-                  "flex items-center gap-3 rounded-2xl px-6 py-3 text-xl font-black transition-all",
-                  questionTimeRemaining <= 10 ? "bg-[#EF4444]/30 text-[#EF4444] animate-pulse" :
-                  questionTimeRemaining <= 30 ? "bg-[#F59E0B]/30 text-[#F59E0B]" :
-                  "bg-[#10B981]/30 text-[#10B981]"
-                )}>
-                  <Clock className="h-7 w-7" />
-                  <span>{Math.floor(questionTimeRemaining / 60)}:{String(questionTimeRemaining % 60).padStart(2, '0')}</span>
-                </div>
-              )}
+              {/* Center Title Only */}
+              <div className="flex-1 text-center truncate px-4">
+                 <span className="text-base font-bold text-[var(--color-text)]">{quizTitle}</span>
+              </div>
 
               {/* Right: Stats + Rules */}
               <div className="flex items-center gap-3">
                 {!isOnline && (
-                  <span className="rounded bg-[#F59E0B]/20 px-2 py-0.5 text-xs font-semibold text-[#F59E0B]">
+                  <span className="rounded bg-[var(--color-warning-subtle)] px-2 py-0.5 text-xs font-semibold text-[var(--color-warning)]">
                     Offline
                   </span>
                 )}
                 <button
                   onClick={() => setShowRulesDialog(true)}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#3D3348] text-[#8B7A9E] transition-all hover:border-[#EC4899] hover:text-[#EC4899]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                   title={t.rules}
                 >
                   <Info className="h-5 w-5" />
                 </button>
-                <div className="flex items-center gap-1.5 rounded-full bg-[#2D2538] px-4 py-2">
-                  <Target className="h-5 w-5 text-[#8B7A9E]" />
-                  <span className="text-sm font-bold text-[#F5F0FA]">
+                <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-surface-hover)] border border-[var(--color-border)] px-4 py-2">
+                  <Target className="h-5 w-5 text-[var(--color-text-muted)]" />
+                  <span className="text-sm font-bold text-[var(--color-text)]">
                     {navIndex + 1}/{questions.length}
                   </span>
                 </div>
               </div>
             </div>
+
           </header>
 
           {/* Main Content - Center focused */}
@@ -738,19 +738,19 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
                 {/* Question number & hint */}
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EC4899]/20 text-sm font-bold text-[#EC4899]">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)] text-sm font-bold text-[var(--color-primary)]">
                       {navIndex + 1}
                     </span>
-                    <span className="text-xs text-[#8B7A9E]">
+                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                       {t.question} {navIndex + 1} / {questions.length}
                     </span>
                   </div>
-                  <span className="text-xs text-[#8B7A9E]">{t.hint}</span>
+                  <span className="text-xs font-semibold text-[var(--color-text)]">{t.hint}</span>
                 </div>
 
                 {/* Question text */}
                 <div className="mb-6 text-center">
-                  <h2 className="text-2xl font-extrabold leading-relaxed text-[#F5F0FA] sm:text-3xl md:text-4xl">
+                  <h2 className="text-2xl font-extrabold leading-relaxed text-[var(--color-text)] sm:text-3xl md:text-4xl">
                     {currentQ?.front}
                   </h2>
                 </div>
@@ -780,23 +780,23 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
                         className={cn(
                           'group flex w-full items-center gap-3 rounded-xl border-2 p-3 transition-all duration-200',
                           isSelected
-                            ? 'border-[#EC4899] bg-[#EC4899]/15'
-                            : 'border-[#3D3348] bg-[#252030] hover:border-[#4A4060] hover:bg-[#2D2538]'
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] shadow-[var(--shadow-card)]'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)]'
                         )}
                       >
                         <span
                           className={cn(
                             'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-all',
                             isSelected
-                              ? 'bg-[#EC4899] text-white'
-                              : 'bg-[#3D3348] text-[#8B7A9E] group-hover:bg-[#4A4060] group-hover:text-[#F5F0FA]'
+                              ? 'bg-[var(--color-primary)] text-white'
+                              : 'bg-[var(--color-bg)] shadow-md border border-[var(--color-border)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-surface)] group-hover:text-[var(--color-text)]'
                           )}
                         >
                           {letter}
                         </span>
                         <span className={cn(
                           'flex-1 text-left text-sm font-medium',
-                          isSelected ? 'text-[#F5F0FA]' : 'text-[#C4B8D9]'
+                          isSelected ? 'text-[var(--color-text)] font-semibold' : 'text-[var(--color-text-muted)]'
                         )}>
                           {displayText}
                         </span>
@@ -828,14 +828,14 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
                         className={cn(
                           'flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition-all',
                           isCurrent
-                            ? 'bg-[#EC4899] text-white ring-2 ring-[#EC4899] ring-offset-2 ring-offset-[#1a1520]' // Pink: Current
+                            ? 'bg-[var(--color-primary)] text-white ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-bg)]'
                             : isPast
-                              ? 'bg-[#2D2538]/30 text-[#3D3348] cursor-not-allowed' // Mờ: Đã qua
+                              ? 'bg-[var(--color-surface-hover)] text-[var(--color-border-strong)] cursor-not-allowed'
                               : isExpired
-                                ? 'bg-[#F59E0B] text-white cursor-pointer' // Yellow: Hết giờ
+                                ? 'bg-[var(--color-warning)] text-white cursor-pointer'
                                 : isAnswered
-                                  ? 'bg-[#10B981] text-white cursor-pointer hover:opacity-80' // Green: Đã trả lời
-                                  : 'bg-[#2D2538]/40 text-[#3D3348] cursor-not-allowed' // Mờ: Chưa trả lời
+                                  ? 'bg-[var(--color-success)] text-white cursor-pointer hover:opacity-80'
+                                  : 'bg-[var(--color-surface)] text-[var(--color-border-strong)] cursor-not-allowed border border-[var(--color-border)]'
                         )}
                         disabled={isPast}
                       >
@@ -848,45 +848,68 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
             </main>
 
             {/* Bottom Bar - Submit Button */}
-            <div className="shrink-0 border-t border-[#3D3348] bg-[#1a1520] p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-[#8B7A9E]">
+            <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-4 relative">
+              {/* Timer Progress Bar */}
+              {questionTimeLimit !== null && questionTimeRemaining !== null && (
+                <div className="absolute top-0 left-0 h-1 w-full overflow-hidden bg-[var(--color-surface-hover)]">
+                  <div
+                    className="h-full transition-all duration-[1000ms] ease-linear bg-gradient-to-r from-pink-500 to-orange-500"
+                    style={{ width: `${(questionTimeRemaining / questionTimeLimit) * 100}%` }}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
+                <div className="flex items-center gap-2 justify-self-start">
+                  <span className="text-sm font-medium text-[var(--color-text-muted)]">
                     {answeredCount} {t.answered}
                   </span>
-                  <span className="text-sm text-[#8B7A9E]">
-                    •
-                  </span>
-                  <span className="text-sm text-[#8B7A9E]">
+                  <span className="text-sm text-[var(--color-text-muted)] opacity-50 px-1">•</span>
+                  <span className="text-sm font-medium text-[var(--color-text-muted)]">
                     {questions.length - answeredCount} {t.unanswered}
                   </span>
                 </div>
-                <Button
-                  onClick={() => setShowSubmitDialog(true)}
-                  disabled={submitMutation.isPending}
-                  size="lg"
-                  className={cn(
-                    "gap-2 px-8 text-base font-bold transition-all",
-                    answeredCount === questions.length
-                      ? "bg-gradient-to-r from-[#EC4899] to-[#F472B6] hover:shadow-lg hover:shadow-[#EC4899]/30"
-                      : "bg-[#3D3348] hover:bg-[#4A4060]"
+
+                <div className="justify-self-center flex items-center gap-3">
+                  {/* Timer */}
+                  {questionTimeRemaining !== null && (
+                    <div className={cn(
+                      "flex items-center gap-2 rounded-xl px-4 py-2 font-black transition-all",
+                      questionTimeRemaining <= 10 ? "bg-[var(--color-danger-subtle)] text-[var(--color-danger)] animate-pulse shadow-sm" :
+                      questionTimeRemaining <= 30 ? "bg-[var(--color-warning-subtle)] text-[var(--color-warning)] shadow-sm" :
+                      "bg-[var(--color-surface-hover)] text-[var(--color-text)] border border-[var(--color-border)] shadow-sm"
+                    )}>
+                      <Clock className="h-4 w-4 opacity-70" />
+                      <span className="text-lg tracking-wider font-mono">{Math.floor(questionTimeRemaining / 60)}:{String(questionTimeRemaining % 60).padStart(2, '0')}</span>
+                    </div>
                   )}
-                >
-                  {submitMutation.isPending ? (
-                    <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      {t.submitting}
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-5 w-5" />
-                      {t.submit}
-                      {answeredCount < questions.length && (
-                        <span className="text-xs opacity-70">({answeredCount}/{questions.length})</span>
-                      )}
-                    </>
-                  )}
-                </Button>
+                </div>
+
+                <div className="justify-self-end">
+                  <Button
+                    onClick={() => setShowSubmitDialog(true)}
+                    disabled={submitMutation.isPending}
+                    size="lg"
+                    className={cn(
+                      "gap-2 px-8 text-base font-bold transition-all shadow-sm",
+                      answeredCount === questions.length
+                        ? "bg-[var(--color-primary)] text-white shadow-[var(--color-primary-subtle)] hover:scale-[1.02] border-none"
+                        : "bg-[var(--color-surface-hover)] !text-[var(--color-text)] border border-[var(--color-border)] hover:bg-[var(--color-bg)]"
+                    )}
+                  >
+                    {submitMutation.isPending ? (
+                      <>
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-white" />
+                        {t.submitting}
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-5 w-5 opacity-80" />
+                        {t.submit}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -894,51 +917,64 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
       )}
 
       {/* Rules Dialog */}
-      {showRulesDialog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}>
-          <div className="w-full max-w-md rounded-2xl border border-[#3D3348] bg-[#1D1A24] p-6 shadow-2xl">
+      {showRulesDialog && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 backdrop-blur-md bg-black/5 dark:bg-black/40" onClick={() => setShowRulesDialog(false)} />
+          <div className="relative pointer-events-auto w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-[#EC4899]" />
-                <h3 className="text-lg font-bold text-[#F5F0FA]">{t.rulesTitle}</h3>
+                <BookOpen className="h-5 w-5 text-[var(--color-primary)]" />
+                <h3 className="text-lg font-bold text-[var(--color-text)]">{t.rulesTitle}</h3>
               </div>
               <button
                 onClick={() => setShowRulesDialog(false)}
-                className="text-[#8B7A9E] hover:text-[#F5F0FA]"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4 text-sm text-[#C4B8D9]">
+            <div className="space-y-4 text-sm text-[var(--color-text-secondary)]">
               <div className="flex gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EC4899]/20 text-xs font-bold text-[#EC4899]">1</div>
-                <p><strong className="text-[#F5F0FA]">Mỗi câu hỏi có thời gian giới hạn</strong> — Hết giờ = tự động tính sai.</p>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-xs font-bold text-[var(--color-primary)]">1</div>
+                <p><strong className="text-[var(--color-text)]">Mỗi câu hỏi có thời gian giới hạn</strong> — Hết giờ = tự động tính sai.</p>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EC4899]/20 text-xs font-bold text-[#EC4899]">2</div>
-                <p><strong className="text-[#F5F0FA]">Không quay lại câu trước</strong> — Đã trả lời hoặc hết giờ sẽ bị khóa.</p>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-xs font-bold text-[var(--color-primary)]">2</div>
+                <p><strong className="text-[var(--color-text)]">Không quay lại câu trước</strong> — Đã trả lời hoặc hết giờ sẽ bị khóa.</p>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EC4899]/20 text-xs font-bold text-[#EC4899]">3</div>
-                <p><strong className="text-[#F5F0FA]">Chọn đáp án để tiếp tục</strong> — Hệ thống tự chuyển sang câu tiếp theo.</p>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-xs font-bold text-[var(--color-primary)]">3</div>
+                <p><strong className="text-[var(--color-text)]">Chọn đáp án để tiếp tục</strong> — Hệ thống tự chuyển sang câu tiếp theo.</p>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EC4899]/20 text-xs font-bold text-[#EC4899]">4</div>
-                <p><strong className="text-[#F5F0FA]">Nộp bài khi hoàn thành</strong> — XP được tính dựa trên câu trả lời đúng.</p>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-xs font-bold text-[var(--color-primary)]">4</div>
+                <p><strong className="text-[var(--color-text)]">Nộp bài khi hoàn thành</strong> — XP được tính dựa trên câu trả lời đúng.</p>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EC4899]/20 text-xs font-bold text-[#EC4899]">5</div>
-                <p><strong className="text-[#F5F0FA]">Làm lại không được</strong> — Mỗi câu hỏi chỉ có một lần trả lời duy nhất.</p>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-xs font-bold text-[var(--color-primary)]">5</div>
+                <p><strong className="text-[var(--color-text)]">Làm lại không được</strong> — Mỗi câu hỏi chỉ có một lần trả lời duy nhất.</p>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-danger)]/20 text-xs font-bold text-[var(--color-danger)]">6</div>
+                <p>
+                  <strong className="text-[var(--color-text)]">Hạn chế lượt làm</strong> —{' '}
+                  {cooldownConfig?.enabled === false
+                    ? 'Tính năng hạn chế đang được vô hiệu hóa, bạn có thể luyện tập thoả thích.'
+                    : cooldownConfig
+                      ? `Tối đa ${cooldownConfig.maxAttemptsPerQuizPerDay} lượt/quiz mỗi ngày (tổng ${cooldownConfig.maxTotalAttemptsPerDay} lượt). Thời gian chờ: ${Math.round(cooldownConfig.minSecondsBetweenAttempts / 60)} phút.`
+                      : 'Khóa làm bài nếu nộp bài quá nhanh hoặc làm cùng 1 quiz quá 2 lần trong vòng 5 phút.'}
+                </p>
               </div>
             </div>
             <button
               onClick={() => setShowRulesDialog(false)}
-              className="mt-6 w-full rounded-xl bg-[#EC4899] py-3 font-bold text-white transition-all hover:bg-[#EC4899]/80"
+              className="mt-6 w-full rounded-xl bg-[var(--color-primary)] py-3 font-bold text-white transition-all hover:opacity-90"
             >
               Đã hiểu
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Exit dialog */}
@@ -956,25 +992,26 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
       )}
 
       {/* Submit confirmation dialog */}
-      {showSubmitDialog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}>
-          <div className="w-full max-w-sm rounded-2xl border border-[#3D3348] bg-[#1D1A24] p-6 shadow-2xl">
+      {showSubmitDialog && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 backdrop-blur-md bg-black/5 dark:bg-black/40" onClick={() => setShowSubmitDialog(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-[#EC4899]" />
-                <h3 className="text-lg font-bold text-[#F5F0FA]">{t.submitTitle}</h3>
+                <Zap className="h-5 w-5 text-[var(--color-primary)]" />
+                <h3 className="text-lg font-bold text-[var(--color-text)]">{t.submitTitle}</h3>
               </div>
               <button
                 onClick={() => setShowSubmitDialog(false)}
-                className="text-[#8B7A9E] hover:text-[#F5F0FA]"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="text-sm text-[#C4B8D9]">
-              Bạn đã trả lời <strong className="text-[#F5F0FA]">{answeredCount}/{questions.length}</strong> câu.
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Bạn đã trả lời <strong className="text-[var(--color-text)]">{answeredCount}/{questions.length}</strong> câu.
               {answeredCount < questions.length && (
-                <span className="mt-1 block text-[#8B7A9E]">Còn {questions.length - answeredCount} câu chưa trả lời sẽ bị tính là sai.</span>
+                <span className="mt-1 block text-[var(--color-text-muted)]">Còn {questions.length - answeredCount} câu chưa trả lời sẽ bị tính là sai.</span>
               )}
             </p>
             <div className="mt-6 flex gap-2">
@@ -990,13 +1027,14 @@ export default function QuizPlayPage({ locale = 'vi' }: QuizPlayProps) {
                   setShowSubmitDialog(false)
                   handleSubmit()
                 }}
-                className="flex-1 bg-gradient-to-r from-[#EC4899] to-[#F472B6]"
+                className="flex-1 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] border-none text-white hover:opacity-90"
               >
                 {t.submitConfirm}
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

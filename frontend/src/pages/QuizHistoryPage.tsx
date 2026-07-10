@@ -27,17 +27,17 @@ export default function QuizHistoryPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate('/quiz')}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#3D3348] bg-[#252030]/80 text-[#8B7A9E] transition-colors hover:border-[#EC4899]/30 hover:text-[#EC4899]"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)]/30 hover:text-[var(--color-primary)] shadow-sm"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div>
-          <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-[rgba(236,72,153,0.12)] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#EC4899]">
+          <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-subtle)] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
             <History className="h-3.5 w-3.5" strokeWidth={2.5} />
             Quiz
           </div>
-          <h1 className="text-2xl font-extrabold text-[#F5F0FA]">Lịch sử làm quiz</h1>
-          <p className="mt-0.5 text-sm text-[#8B7A9E]">
+          <h1 className="text-2xl font-extrabold text-[var(--color-text)]">Lịch sử làm quiz</h1>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
             Xem lại kết quả các bài quiz đã làm
           </p>
         </div>
@@ -113,7 +113,7 @@ export default function QuizHistoryPage() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-[#8B7A9E]">
+              <span className="text-sm text-[var(--color-text-muted)]">
                 Trang {page + 1} / {totalPages}
               </span>
               <Button
@@ -144,12 +144,12 @@ function StatCard({
   color: string
 }) {
   return (
-    <div className="rounded-xl border border-[#3D3348] bg-[#252030]/60 p-4">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon className="h-4 w-4" style={{ color }} />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8B7A9E]">{label}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">{label}</span>
       </div>
-      <p className="text-xl font-extrabold text-[#F5F0FA]">{value}</p>
+      <p className="text-xl font-extrabold text-[var(--color-text)]">{value}</p>
     </div>
   )
 }
@@ -187,27 +187,27 @@ function AttemptCard({
   }
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-[#3D3348] bg-[#252030]/60 p-4">
+    <div className="flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm p-4 transition-all hover:border-[var(--color-border-strong)]">
       {/* Score indicator */}
       <div className={cn(
         'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold',
         isPassing
-          ? 'bg-emerald-500/20 text-emerald-400'
-          : 'bg-red-500/20 text-red-400',
+          ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]'
+          : 'bg-[var(--color-danger-subtle)] text-[var(--color-danger)]',
       )}>
         {score !== null ? score : '?'}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-semibold text-[#F5F0FA]">
+        <h3 className="truncate text-sm font-semibold text-[var(--color-text)]">
           {attempt.quizTitle || 'Quiz không tên'}
         </h3>
 
-        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[#8B7A9E]">
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
           {attempt.correctAnswers !== null && attempt.totalQuestions !== null && (
             <span className="flex items-center gap-1">
-              <CheckCircle className="h-3 w-3 text-emerald-400" />
+              <CheckCircle className="h-3 w-3 text-[var(--color-success)]" />
               {attempt.correctAnswers}/{attempt.totalQuestions} đúng
             </span>
           )}
@@ -232,7 +232,7 @@ function AttemptCard({
 
       {/* Actions */}
       <div className="shrink-0 flex flex-col gap-2">
-        <Button size="sm" variant="ghost" className="text-[#8B7A9E] hover:text-[#EC4899] min-w-[80px]" onClick={onViewResult}>
+        <Button size="sm" variant="ghost" className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] min-w-[80px]" onClick={onViewResult}>
           Xem lại
         </Button>
         <Button size="sm" className="min-w-[80px]" onClick={onReplay}>
@@ -249,11 +249,11 @@ function EmptyState() {
 
   return (
     <div className="py-16 text-center">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2D2538]">
-        <History className="h-8 w-8 text-[#8B7A9E]" />
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-bg)]">
+        <History className="h-8 w-8 text-[var(--color-text-muted)]" />
       </div>
-      <p className="font-bold text-[#8B7A9E]">Chưa có lịch sử làm quiz</p>
-      <p className="mt-1 text-sm text-[#8B7A9E]">
+      <p className="font-bold text-[var(--color-text-muted)]">Chưa có lịch sử làm quiz</p>
+      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
         Hãy làm quiz đầu tiên để xem kết quả tại đây
       </p>
       <Button size="sm" className="mt-4 gap-1.5" onClick={() => navigate('/quiz')}>
@@ -268,11 +268,11 @@ function HistorySkeleton() {
   return (
     <div className="space-y-2">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="animate-pulse flex items-center gap-4 rounded-xl border border-[#3D3348] bg-[#252030]/60 p-4">
-          <div className="h-12 w-12 rounded-xl bg-[#3D3348]" />
+        <div key={i} className="animate-pulse flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-4">
+          <div className="h-12 w-12 rounded-xl bg-[var(--color-surface-hover)]" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-3/4 rounded bg-[#3D3348]" />
-            <div className="h-3 w-1/2 rounded bg-[#3D3348]" />
+            <div className="h-4 w-3/4 rounded bg-[var(--color-surface-hover)]" />
+            <div className="h-3 w-1/2 rounded bg-[var(--color-surface-hover)]" />
           </div>
         </div>
       ))}

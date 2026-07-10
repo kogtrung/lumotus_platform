@@ -6,7 +6,6 @@ const ratings: {
   value: ReviewRating
   label: string
   hint: string
-  preview: string
   shortcut: string
   icon: typeof Check
   variant: 'again' | 'hard' | 'good' | 'easy'
@@ -14,8 +13,7 @@ const ratings: {
   {
     value: 'AGAIN',
     label: 'Again',
-    hint: 'Forgot',
-    preview: '<1 day',
+    hint: 'Quên',
     shortcut: '1',
     icon: RotateCcw,
     variant: 'again',
@@ -23,8 +21,7 @@ const ratings: {
   {
     value: 'HARD',
     label: 'Hard',
-    hint: 'Struggled',
-    preview: '~3 days',
+    hint: 'Khó',
     shortcut: '2',
     icon: Clock,
     variant: 'hard',
@@ -32,8 +29,7 @@ const ratings: {
   {
     value: 'GOOD',
     label: 'Good',
-    hint: 'Remembered',
-    preview: '~7 days',
+    hint: 'Nhớ',
     shortcut: '3',
     icon: Check,
     variant: 'good',
@@ -41,8 +37,7 @@ const ratings: {
   {
     value: 'EASY',
     label: 'Easy',
-    hint: 'Instant',
-    preview: '~14 days',
+    hint: 'Quá dễ',
     shortcut: '4',
     icon: Zap,
     variant: 'easy',
@@ -63,7 +58,7 @@ export default function RatingButtonGroup({ onRate, flipped, disabled }: RatingB
         flipped ? 'opacity-100' : 'opacity-0 pointer-events-none',
       )}
     >
-      {ratings.map(({ value, label, hint, preview, shortcut, icon: Icon, variant }) => (
+      {ratings.map(({ value, label, hint, shortcut, icon: Icon, variant }) => (
         <button
           key={value}
           type="button"
@@ -90,9 +85,6 @@ export default function RatingButtonGroup({ onRate, flipped, disabled }: RatingB
             <span className="text-sm font-extrabold leading-tight">{label}</span>
             <span className="text-[10px] font-medium uppercase leading-tight opacity-75">
               {hint}
-            </span>
-            <span className="mt-1 text-[10px] font-bold opacity-70">
-              {preview}
             </span>
           </div>
         </button>

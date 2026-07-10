@@ -51,10 +51,12 @@ export default function AdminCreateDeckDialog({ open, onClose, onCreated }: Admi
         title: data.title,
         description: data.description || undefined,
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'decks'] })
-      queryClient.invalidateQueries({ queryKey: ['decks'] })
-      lumotoast.success('Đã tạo deck')
+    onSuccess: async (res) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['decks'] }),
+        queryClient.invalidateQueries({ queryKey: ['stats'] })
+      ])
+      lumotoast.success('Đã tạo official deck')
       reset()
       onClose()
       onCreated?.(res.data.slug)

@@ -107,51 +107,25 @@ export default function FlashcardStudyPage() {
   const initSession = useCallback(() => {
     dueQuery.refetch().then(({ data }) => {
       const dueCards: DueCard[] = data?.cards ?? []
-      const dueIds = new Set(dueCards.map((c) => c.cardId))
+      const ordered = dueCards
+      setAvailableCount(ordered.length)
 
-      deckCardsQuery.refetch().then(({ data: deckCards }) => {
-        let cardsToUse = dueCards
-        if (deckCards && deckCards.length > 0) {
-          const newCards: DueCard[] = deckCards
-            .filter((card) => !dueIds.has(card.id))
-            .map((card) => ({
-              cardId: card.id,
-              deckId: card.deckId,
-              front: card.front,
-              back: card.back,
-              phonetic: card.phonetic ?? null,
-              example: card.example ?? null,
-              hint: card.hint ?? null,
-              imageUrl: card.imageUrl ?? null,
-              audioUrl: card.audioUrl ?? null,
-              isNew: true,
-              isStarred: false,
-              repetitions: null,
-              intervalDays: null,
-              nextReviewAt: null,
-            }))
-          cardsToUse = [...cardsToUse, ...newCards]
-        }
-        const ordered = cardsToUse
-        setAvailableCount(ordered.length)
-
-        if (ordered.length === 0) {
-          setCards([])
-          setIndex(0)
-          setPhase('session')
-          return
-        }
-
-        sessionRef.current = createSession(deckRef, 'FLASHCARD', FLASHCARD_CONFIG, ordered)
-        persistSession()
-        setCards(ordered)
+      if (ordered.length === 0) {
+        setCards([])
         setIndex(0)
-        setFlipped(false)
-        setStats({ again: 0, hard: 0, good: 0, easy: 0, xp: 0 })
         setPhase('session')
-      })
+        return
+      }
+
+      sessionRef.current = createSession(deckRef, 'FLASHCARD', FLASHCARD_CONFIG, ordered)
+      persistSession()
+      setCards(ordered)
+      setIndex(0)
+      setFlipped(false)
+      setStats({ again: 0, hard: 0, good: 0, easy: 0, xp: 0 })
+      setPhase('session')
     })
-  }, [dueQuery, deckCardsQuery, deckRef, persistSession])
+  }, [dueQuery, deckRef, persistSession])
 
   const handleRate = useCallback((rating: ReviewRating) => {
     rateMutation.mutate(rating)
@@ -249,13 +223,14 @@ export default function FlashcardStudyPage() {
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
-        if (!flipped) {
-          setFlipped(true)
+        setFlipped(prev => {
+          const newFlipped = !prev
           if (sessionRef.current?.progress.flashcard) {
-            sessionRef.current.progress.flashcard.flipped = true
+            sessionRef.current.progress.flashcard.flipped = newFlipped
             persistSession()
           }
-        }
+          return newFlipped
+        })
       } else if (flipped) {
         const map: Record<string, ReviewRating> = { '1': 'AGAIN', '2': 'HARD', '3': 'GOOD', '4': 'EASY' }
         if (map[e.key]) {
@@ -316,10 +291,10 @@ export default function FlashcardStudyPage() {
   // Loading
   if (deckQuery.isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center" style={{ background: '#1A1520' }}>
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg)]">
         <div className="flex flex-col items-center gap-4">
           <div className="review-loader" />
-          <p className="text-sm font-semibold text-[#8B7A9E]">Loading...</p>
+          <p className="text-sm font-semibold text-[var(--color-text-muted)]">Loading...</p>
         </div>
       </div>
     )
@@ -327,9 +302,9 @@ export default function FlashcardStudyPage() {
 
   if (deckQuery.isError || !deckQuery.data) {
     return (
-      <div className="flex h-screen items-center justify-center" style={{ background: '#1A1520' }}>
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg)]">
         <div className="text-center">
-          <p className="text-[#EF4444]">Deck not found.</p>
+          <p className="text-[var(--color-danger)]">Deck not found.</p>
           <Button to={`/decks/${deckRef}`} className="mt-4">Back to deck</Button>
         </div>
       </div>
@@ -344,13 +319,13 @@ export default function FlashcardStudyPage() {
     const ago = Math.floor((Date.now() - savedAt.getTime()) / 60000)
     const agoText = ago < 1 ? 'just now' : ago < 60 ? `${ago} min ago` : `${Math.floor(ago / 60)} hours ago`
     return (
-      <div className="flex h-screen items-center justify-center" style={{ background: '#1A1520' }}>
-        <div className="w-full max-w-sm rounded-3xl border border-[#3D3348] bg-[#252030] p-6 text-center shadow-2xl">
-          <h2 className="text-xl font-extrabold text-[#F5F0FA]">Continue studying?</h2>
-          <p className="mt-2 text-sm text-[#8B7A9E]">Session from {agoText}.</p>
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg)]">
+        <div className="w-full max-w-sm rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center shadow-2xl">
+          <h2 className="text-xl font-extrabold text-[var(--color-text)]">Tiếp tục học chứ?</h2>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">Phiên học từ {agoText}.</p>
           <div className="mt-5 flex gap-2">
-            <Button onClick={handleDiscard} variant="outline" className="flex-1">Start new</Button>
-            <Button onClick={handleResume} className="flex-1">Continue</Button>
+            <Button onClick={handleDiscard} variant="outline" className="flex-1">Bắt đầu mới</Button>
+            <Button onClick={handleResume} className="flex-1">Tiếp tục</Button>
           </div>
         </div>
       </div>
@@ -360,15 +335,15 @@ export default function FlashcardStudyPage() {
   // Empty state
   if (phase === 'session' && !current && cards.length === 0) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center px-4" style={{ background: '#1A1520' }}>
+      <div className="flex h-screen flex-col items-center justify-center px-4 bg-[var(--color-bg)]">
         <div className="text-center">
-          <h2 className="text-xl font-extrabold text-[#F5F0FA]">No cards available!</h2>
-          <p className="mt-2 text-sm text-[#8B7A9E]">
-            Only {availableCount} cards ready.
+          <h2 className="text-xl font-extrabold text-[var(--color-text)]">Không còn thẻ nào!</h2>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+            Chỉ có {availableCount} thẻ sẵn sàng.
           </p>
           <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button onClick={handleRestart}>Try again</Button>
-            <Button to={`/decks/${deckRef}`} variant="outline">Back to deck</Button>
+            <Button onClick={handleRestart}>Thử lại</Button>
+            <Button to={`/decks/${deckRef}`} variant="outline">Về bộ thẻ</Button>
           </div>
         </div>
       </div>
@@ -379,55 +354,55 @@ export default function FlashcardStudyPage() {
   if (phase === 'result' || done) {
     const total = stats.again + stats.hard + stats.good + stats.easy
     return (
-      <div className="flex h-screen flex-col" style={{ background: '#1A1520' }}>
-        <header className="shrink-0">
+      <div className="flex h-screen flex-col bg-[var(--color-bg)]">
+        <header className="shrink-0 bg-[var(--color-surface)] shadow-header">
           <DeckProgressBar mastered={stats.good + stats.easy} total={total} showLabel={false} size="sm" />
           <div className="flex h-14 items-center px-4">
             <button
               onClick={() => navigate(`/decks/${deckRef}`)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#3D3348] text-[#8B7A9E] transition-all hover:border-[#EF4444] hover:text-[#EF4444]"
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
             >
               <X className="h-4 w-4" strokeWidth={2.5} />
             </button>
-            <span className="ml-3 truncate text-sm font-bold text-[#F5F0FA]">{deck.title}</span>
+            <span className="ml-3 truncate text-sm font-bold text-[var(--color-text)]">{deck.title}</span>
           </div>
         </header>
-        <main className="flex flex-1 flex-col items-center justify-center gap-4 overflow-auto px-4 py-6 sm:gap-6">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(16,185,129,0.2)] shadow-lg sm:h-20 sm:w-20">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-[#10B981] sm:w-10 sm:h-10" style={{ width: '2rem', height: '2rem' }}>
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 overflow-auto px-4 py-6 sm:gap-6 animate-fade-in">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-success-subtle)] shadow-lg sm:h-20 sm:w-20">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-[var(--color-success)] sm:w-10 sm:h-10" style={{ width: '2rem', height: '2rem' }}>
               <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
           <div className="text-center">
-            <h2 className="text-2xl font-extrabold text-[#F5F0FA] sm:text-3xl">Complete!</h2>
-            <p className="mt-2 text-sm text-[#8B7A9E]">
-              Reviewed <span className="font-extrabold text-[#F5F0FA]">{total}</span> cards
+            <h2 className="text-2xl font-extrabold text-[var(--color-text)] sm:text-3xl">Hoàn thành!</h2>
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+              Đã ôn tập <span className="font-extrabold text-[var(--color-text)]">{total}</span> thẻ
             </p>
           </div>
           <div className="grid w-full max-w-md grid-cols-4 gap-2">
             {[
-              { label: 'Again', count: stats.again, color: '#EF4444' },
-              { label: 'Hard', count: stats.hard, color: '#F59E0B' },
-              { label: 'Good', count: stats.good, color: '#10B981' },
+              { label: 'Again', count: stats.again, color: 'var(--color-danger)' },
+              { label: 'Hard', count: stats.hard, color: 'var(--color-warning)' },
+              { label: 'Good', count: stats.good, color: 'var(--color-success)' },
               { label: 'Easy', count: stats.easy, color: '#3B82F6' },
             ].map(({ label, count, color }) => (
-              <div key={label} className="flex flex-col items-center gap-1 rounded-2xl border px-3 py-2 sm:py-3" style={{ background: `${color}18`, borderColor: `${color}66` }}>
+              <div key={label} className="flex flex-col items-center gap-1 rounded-2xl border px-3 py-2 sm:py-3" style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }}>
                 <span className="text-lg font-extrabold sm:text-xl" style={{ color }}>{count}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider sm:text-xs" style={{ color }}>{label}</span>
               </div>
             ))}
           </div>
           {stats.xp > 0 && (
-            <div className="flex items-center gap-2 rounded-full border border-[rgba(236,72,153,0.4)] bg-[rgba(236,72,153,0.1)] px-5 py-2">
+            <div className="flex items-center gap-2 rounded-full border border-[var(--color-primary-subtle)] bg-[var(--color-primary-subtle)] px-5 py-2 hover:scale-105 transition-transform">
               <span className="text-xl">⚡</span>
-              <span className="text-xl font-extrabold text-[#EC4899]">+{stats.xp} XP</span>
+              <span className="text-xl font-extrabold text-[var(--color-primary)]">+{stats.xp} XP</span>
             </div>
           )}
           <div className="flex w-full max-w-md flex-col gap-2">
-            <Button onClick={handleRestart} size="lg" className="w-full">Study more</Button>
+            <Button onClick={handleRestart} size="lg" className="w-full">Học tiếp</Button>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button to={`/decks/${deckRef}`} variant="outline" className="flex-1">Back to deck</Button>
-              <Button to="/flashcard" variant="outline" className="flex-1">Choose another deck</Button>
+              <Button to={`/decks/${deckRef}`} variant="outline" className="flex-1">Về bộ thẻ</Button>
+              <Button to="/flashcard" variant="outline" className="flex-1">Chọn bộ thẻ khác</Button>
             </div>
           </div>
         </main>
@@ -437,23 +412,23 @@ export default function FlashcardStudyPage() {
 
   // Session
   return (
-    <div className="flex h-screen flex-col" style={{ background: 'linear-gradient(180deg, #1A1520 0%, #252030 100%)' }}>
-      <header className="shrink-0">
+    <div className="flex h-screen flex-col bg-[var(--color-bg)]">
+      <header className="shrink-0 bg-[var(--color-surface)] shadow-header">
         <DeckProgressBar mastered={index} total={cards.length} showLabel={false} size="sm" />
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(`/decks/${deckRef}`)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#3D3348] text-[#8B7A9E] transition-all hover:border-[#EF4444] hover:text-[#EF4444]"
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
             >
               <X className="h-4 w-4" strokeWidth={2.5} />
             </button>
-            <span className="truncate text-sm font-bold text-[#F5F0FA]">{deck.title}</span>
+            <span className="truncate text-sm font-bold text-[var(--color-text)]">{deck.title}</span>
           </div>
-          <span className="text-sm font-semibold text-[#8B7A9E]">
-            <span className="font-bold text-[#F5F0FA]">{index + 1}</span>
+          <span className="text-sm font-semibold text-[var(--color-text-muted)]">
+            <span className="font-bold text-[var(--color-text)]">{index + 1}</span>
             <span className="mx-1">/</span>
-            <span className="font-bold text-[#F5F0FA]">{cards.length}</span>
+            <span className="font-bold text-[var(--color-text)]">{cards.length}</span>
           </span>
         </div>
       </header>
@@ -468,7 +443,7 @@ export default function FlashcardStudyPage() {
             />
           )}
         </div>
-        <div className="mt-3 h-[100px] w-full max-w-2xl">
+        <div className="mt-3 h-[100px] w-full max-w-2xl animate-fade-in" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
           <RatingButtonGroup onRate={handleRate} flipped={flipped} disabled={rateMutation.isPending} />
         </div>
       </main>

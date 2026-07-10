@@ -62,7 +62,7 @@ export default function QuizView({
       <div className="flex flex-row gap-2 overflow-x-auto pb-2 lg:order-none lg:h-auto lg:w-52 lg:shrink-0 lg:flex-col lg:overflow-visible lg:pb-0">
         {/* Timer */}
         {timeRemaining !== null && (
-          <div className="w-full shrink-0 rounded-xl border border-[#3D3348] bg-[#252030] p-3 lg:w-auto">
+          <div className="w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 lg:w-auto">
             <QuizTimer
               seconds={timeRemaining}
               perQuestion={perQuestionTimer}
@@ -72,7 +72,7 @@ export default function QuizView({
         )}
 
         {/* Progress */}
-        <div className="min-w-0 flex-1 rounded-xl border border-[#3D3348] bg-[#252030] p-3 lg:min-w-0 lg:flex-1">
+        <div className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 lg:min-w-0 lg:flex-1">
           <div className="mb-2 flex items-center justify-between text-xs">
             <span className="text-[#8B7A9E]">Đã trả lời</span>
             <span className="font-bold text-[#F5F0FA]">{answeredCount} / {total}</span>
@@ -86,7 +86,7 @@ export default function QuizView({
         </div>
 
         {/* Navigator - scrollable on mobile */}
-        <div className="min-w-0 flex-[2] overflow-x-auto rounded-xl border border-[#3D3348] bg-[#252030] p-3 lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
+        <div className="min-w-0 flex-[2] overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
           <div className="mb-2 text-nowrap text-xs font-semibold text-[#8B7A9E]">
             Câu hỏi
           </div>
@@ -168,7 +168,7 @@ export default function QuizView({
 
       {/* RIGHT: Question Content */}
       <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="rounded-xl border border-[#3D3348] bg-[#252030] p-4 sm:p-5">
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-xs font-semibold text-[#8B7A9E]">
               Câu {questionIndex + 1}

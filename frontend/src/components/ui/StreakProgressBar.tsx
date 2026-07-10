@@ -32,18 +32,18 @@ export default function StreakProgressBar({ streak, className }: { streak: numbe
             >
                <div className={cn(
                  "w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 transition-all duration-300",
-                 isReached ? "bg-[#EC4899] border-white shadow-[0_0_8px_rgba(236,72,153,0.8)]" : "bg-[#252030]/80 border-white/40"
+                 isReached ? "bg-[#EC4899] border-[var(--color-primary)] shadow-[0_0_8px_rgba(236,72,153,0.8)]" : "bg-[var(--color-surface)]/80 border-[var(--color-border)]"
                )} />
                
                {/* Tooltip */}
                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1 transition-all pointer-events-none z-20">
-                 <div className="bg-[#1A1520] border border-[#3D3348] shadow-xl p-2.5 rounded-lg text-center min-w-[120px] whitespace-nowrap">
+                 <div className="bg-[var(--color-bg)] border border-[var(--color-border)] shadow-xl p-2.5 rounded-lg text-center min-w-[120px] whitespace-nowrap">
                    <p className="text-xs font-bold text-white">Mốc {m} ngày</p>
                    <p className="text-[10px] text-yellow-400 font-semibold mt-1 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 w-fit mx-auto">
                      +5% XP Xếp hạng
                    </p>
                  </div>
-                 <div className="w-2.5 h-2.5 bg-[#1A1520] border-b border-r border-[#3D3348] rotate-45 absolute -bottom-[5px] left-1/2 -translate-x-1/2" />
+                 <div className="w-2.5 h-2.5 bg-[var(--color-bg)] border-b border-r border-[var(--color-border)] rotate-45 absolute -bottom-[5px] left-1/2 -translate-x-1/2" />
                </div>
             </div>
           )

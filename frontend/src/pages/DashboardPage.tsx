@@ -1,25 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
-import {
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-} from 'chart.js'
-import { Bar, Doughnut, Line } from 'react-chartjs-2'
-import {
-  AlertTriangle, BookOpen, ChevronRight, Compass, FileUp, Flame,
-  Globe, Layers, List, Lock, Play, Plus, Search,
-  Sparkles, Zap,
-} from 'lucide-react'
+import { AlertTriangle, BookOpen, ChevronRight, Compass, FileUp, Flame, Globe, Layers, List, Lock, Play, Plus, Search, Sparkles, Zap } from 'lucide-react'
 import { decksApi } from '@/api/decks'
 import { quizApi } from '@/api/study'
 import { reviewApi } from '@/api/review'
@@ -34,13 +16,7 @@ import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 import { findAnyActiveSession, clearSession, relativeTime } from '@/utils/studySession'
 import type { StudySession } from '@/utils/studySession'
-import heroImage from '@/assets/hero.png'
 import StreakProgressBar from '@/components/ui/StreakProgressBar'
-
-ChartJS.register(
-  CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, Filler, Title, Tooltip, Legend, ArcElement,
-)
 
 type VisibilityFilter = 'ALL' | 'PUBLIC' | 'PRIVATE'
 type SortMode = 'newest' | 'oldest' | 'az' | 'za'
@@ -137,108 +113,6 @@ function StreakBanner({ streak, xpToday }: { streak: number; xpToday: number }) 
   )
 }
 
-function CardStatsDonut({
-  total,
-  due,
-  mastered,
-}: {
-  total: number
-  due: number
-  mastered: number
-}) {
-  // 'due' naturally contains both Review-due cards and New (unstudied) cards from backend via "countTotalDueCards".
-  // Ergo, due + mastered + (total - due - mastered) = total perfectly.
-  const safeLearned = Math.max(0, total - mastered - due)
-  
-  const masteredPct = total > 0 ? Math.round((mastered / total) * 100) : 0
-  const safeLearnedPct = total > 0 ? Math.round((safeLearned / total) * 100) : 0
-  const duePct = total > 0 ? Math.round((due / total) * 100) : 0
-
-  const data = {
-    labels: ['Thành thạo', 'Đang học', 'Đến hạn'],
-    datasets: [{
-      data: [mastered, safeLearned, due],
-      backgroundColor: [
-        'rgba(16, 185, 129, 0.85)', // Xanh ngọc
-        'rgba(236, 72, 153, 0.85)', // Hồng
-        'rgba(91, 33, 182, 0.85)',  // Tím đậm
-      ],
-      borderColor: [
-        '#10B981',
-        '#EC4899',
-        '#5B21B6',
-      ],
-      borderWidth: 1,
-      hoverOffset: 6,
-    }],
-  }
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '72%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#252030',
-        borderColor: '#3D3348',
-        borderWidth: 1,
-        titleColor: '#F5F0FA',
-        bodyColor: '#8B7A9E',
-        padding: 10,
-        callbacks: {
-          label: (ctx: any) => ` ${ctx.label}: ${ctx.raw} thẻ`,
-        },
-      },
-    },
-  }
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#EC4899]/30 hover:shadow-[0_0_30px_rgba(236,72,153,0.15)] w-full h-full flex items-center">
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(236,72,153,0.08) 0%, transparent 70%)' }}
-      />
-      <div className="flex items-center gap-8 w-full relative">
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-full blur-xl opacity-30" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.6) 0%, transparent 70%)' }} />
-          <div className="relative h-52 w-52">
-            <Doughnut data={data} options={options} />
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-4xl font-black text-white drop-shadow-lg">{total}</p>
-              <p className="text-sm font-medium text-[#8B7A9E]">Tổng thẻ</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 space-y-5">
-          {[
-            { label: 'Thành thạo', value: mastered, pct: masteredPct, color: '#10B981', glow: 'rgba(16,185,129,0.3)' },
-            { label: 'Đang học', value: safeLearned, pct: safeLearnedPct, color: '#EC4899', glow: 'rgba(236,72,153,0.3)' },
-            { label: 'Đến hạn', value: due, pct: duePct, color: '#5B21B6', glow: 'rgba(91,33,182,0.3)' },
-          ].map(({ label, value, pct, color, glow }) => (
-            <div key={label} className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: color, boxShadow: `0 0 8px ${glow}` }} />
-                  <span className="text-sm font-medium text-[#8B7A9E]">{label}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-white">{value}</span>
-                  <span className="text-xs font-semibold text-[#8B7A9E] w-10 text-right">{pct}%</span>
-                </div>
-              </div>
-              <div className="h-2 rounded-full bg-[#1A1520] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${pct}%`, backgroundColor: color, boxShadow: `0 0 6px ${glow}` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function QuickCard({
   icon: Icon, value, label, color, onClick,
 }: {
@@ -248,7 +122,10 @@ function QuickCard({
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#EC4899]/30 hover:shadow-lg w-full flex-1"
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] w-full flex-1",
+        "shadow-[var(--shadow-card)]"
+      )}
     >
       <div
         className="pointer-events-none absolute -right-3 -top-3 h-24 w-24 rounded-full opacity-15 blur-xl transition-opacity group-hover:opacity-25"
@@ -262,8 +139,8 @@ function QuickCard({
           <Icon className="h-7 w-7" style={{ color }} />
         </div>
         <div>
-          <p className="text-3xl font-extrabold text-[#F5F0FA]">{value}</p>
-          <p className="text-sm text-[#8B7A9E]">{label}</p>
+          <p className="text-3xl font-extrabold text-[var(--color-text)]">{value}</p>
+          <p className="text-sm text-[var(--color-text-muted)] font-medium">{label}</p>
         </div>
       </div>
     </button>
@@ -291,20 +168,20 @@ function DeckRow({ deck }: { deck: any }) {
   return (
     <Link
       to={`/decks/${deck.slug}`}
-      className="group flex items-center gap-3 rounded-xl border border-[#3D3348] bg-[#252030]/60 p-4 transition-all hover:-translate-y-0.5 hover:border-[#EC4899]/40 hover:bg-[#2D2538]/40"
+      className="group flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--color-primary-subtle)] hover:bg-[var(--color-surface-hover)]"
     >
-      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#2D2538]">
+      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[var(--color-surface-hover)]">
         {deck.coverImageUrl
           ? <img src={deck.coverImageUrl} alt="" className="h-full w-full object-cover" />
-          : <Layers className="mx-auto mt-2.5 h-6 w-6 text-[#EC4899]" />
+          : <Layers className="mx-auto mt-2.5 h-6 w-6 text-[var(--color-primary)]" />
         }
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-[#F5F0FA] group-hover:text-[#EC4899] transition-colors">
+        <p className="truncate text-sm font-bold text-[var(--color-text)] group-hover:text-[var(--color-primary)] transition-colors">
           {deck.title}
         </p>
-        <div className="mt-0.5 flex items-center gap-3 text-[11px] text-[#8B7A9E]">
+        <div className="mt-0.5 flex items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
           <span className="flex items-center gap-1">
             <Layers className="h-3 w-3" />{total} thẻ
           </span>
@@ -487,167 +364,6 @@ function QuizSessionBanner({
   )
 }
 
-function WeeklyChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
-  if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[#252030]" />
-
-  const slice = data.daily.slice(-days)
-  const labels = slice.map((d: any) => {
-    const dt = new Date(d.date)
-    return dt.toLocaleDateString('vi-VN', { weekday: 'short' })
-  })
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: { color: '#8B7A9E', font: { size: 11 } },
-      },
-    },
-    scales: {
-      x: {
-        ticks: { color: '#8B7A9E', font: { size: 11 } },
-        grid: { color: '#3D3348' },
-      },
-      y: {
-        ticks: { color: '#8B7A9E', font: { size: 11 } },
-        grid: { color: '#3D3348' },
-        beginAtZero: true,
-      },
-    },
-  }
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border border-[#3D3348] bg-[#252030]/60 p-3">
-        <h3 className="mb-2 text-xs font-semibold text-[#F5F0FA]">Thẻ ôn</h3>
-        <div className="h-40">
-          <Bar
-            data={{
-              labels,
-              datasets: [
-                {
-                  label: 'Thẻ',
-                  data: slice.map((d: any) => d.cards),
-                  backgroundColor: 'rgba(236,72,153,0.7)',
-                  borderRadius: 4,
-                  barThickness: 16,
-                },
-              ],
-            }}
-            options={options}
-          />
-        </div>
-      </div>
-      <div className="rounded-xl border border-[#3D3348] bg-[#252030]/60 p-3">
-        <h3 className="mb-2 text-xs font-semibold text-[#F5F0FA]">Quiz</h3>
-        <div className="h-40">
-          <Bar
-            data={{
-              labels,
-              datasets: [
-                {
-                  label: 'Quiz',
-                  data: slice.map((d: any) => d.quizzes),
-                  backgroundColor: 'rgba(249,115,22,0.7)',
-                  borderRadius: 4,
-                  barThickness: 16,
-                },
-              ],
-            }}
-            options={options}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function XpTrendChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
-  if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[#252030]" />
-
-  const slice = data.daily.slice(-days)
-  const labels = slice.map((d: any) => {
-    const dt = new Date(d.date)
-    return dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-  })
-
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: 'XP kiếm được',
-        data: slice.map((d: any) => d.xp),
-        borderColor: '#EC4899',
-        backgroundColor: 'rgba(236,72,153,0.15)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointBackgroundColor: '#EC4899',
-      },
-    ],
-  }
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-    scales: {
-      x: {
-        ticks: { color: '#8B7A9E', font: { size: 10 } },
-        grid: { display: false },
-      },
-      y: {
-        ticks: { color: '#8B7A9E', font: { size: 11 } },
-        grid: { color: '#3D3348' },
-      },
-    },
-  }
-
-  return (
-    <div className="h-48">
-      <Line data={chartData} options={options} />
-    </div>
-  )
-}
-
-function ActivityHeatmap({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
-  if (!data) return null
-  const slice = data.daily.slice(-days)
-  const maxXp = Math.max(...slice.map((d: any) => d.xp), 1)
-
-  return (
-    <div className="grid grid-cols-7 gap-1">
-      {slice.map((d: any, i: number) => {
-        const intensity = d.xp > 0 ? Math.max(1, Math.ceil((d.xp / maxXp) * 4)) : 0
-        const colors = [
-          'bg-[#3D3348]',
-          'bg-[rgba(236,72,153,0.25)]',
-          'bg-[rgba(236,72,153,0.5)]',
-          'bg-[rgba(236,72,153,0.75)]',
-          'bg-[#EC4899]',
-        ]
-        const date = new Date(d.date)
-        const label = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-        return (
-          <div
-            key={i}
-            title={`${label}: ${d.xp} XP · ${d.cards} thẻ`}
-            className={cn(
-              'h-6 w-full rounded-sm transition-all hover:ring-2 hover:ring-[#EC4899]',
-              colors[intensity],
-            )}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
 function LibrarySection({
   decks,
   totalDecks,
@@ -694,14 +410,14 @@ function LibrarySection({
     <div ref={sectionRef} className="space-y-5 scroll-mt-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-[#F5F0FA]">Thư viện Deck</h2>
-          <p className="mt-0.5 text-sm text-[#8B7A9E]">
-            <span className="font-bold text-[#EC4899]">{totalDecks}</span> deck ·{' '}
+          <h2 className="text-xl font-extrabold text-[var(--color-text)]">Thư viện Deck</h2>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+            <span className="font-bold text-[var(--color-primary)]">{totalDecks}</span> deck ·{' '}
             {totalDecks === 0 ? 'Bắt đầu tạo deck đầu tiên' : 'Quản lý bộ từ của bạn'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-xl border border-[#3D3348] bg-[#1A1520] p-1">
+          <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
             {(['grid', 'list'] as const).map((mode) => (
               <button
                 key={mode}
@@ -709,8 +425,8 @@ function LibrarySection({
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-lg transition-all',
                   viewMode === mode
-                    ? 'bg-[#EC4899] text-white shadow-sm'
-                    : 'text-[#8B7A9E] hover:bg-[#2D2538] hover:text-[#F5F0FA]',
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]',
                 )}
               >
                 {mode === 'grid' ? <Layers className="h-4 w-4" /> : <List className="h-4 w-4" />}
@@ -734,26 +450,26 @@ function LibrarySection({
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[180px] max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B7A9E]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tìm kiếm deck..."
-            className="h-10 w-full rounded-xl border border-[#3D3348] bg-[#252030]/80 pl-10 pr-4 text-sm text-[#F5F0FA] placeholder:text-[#8B7A9E] shadow-sm transition-all focus:border-[#EC4899] focus:outline-none focus:ring-2 focus:ring-[#EC4899]/20"
+            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-4 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] shadow-[var(--shadow-card)] transition-all focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-subtle)]"
           />
         </div>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortMode)}
-          className="h-10 cursor-pointer appearance-none rounded-xl border border-[#3D3348] bg-[#252030]/80 pl-9 pr-8 text-sm font-semibold text-[#F5F0FA] shadow-sm transition-all hover:border-[#EC4899] focus:outline-none"
+          className="h-10 cursor-pointer appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-9 pr-8 text-sm font-semibold text-[var(--color-text)] shadow-[var(--shadow-card)] transition-all hover:border-[var(--color-primary)] focus:outline-none"
         >
           <option value="newest">Mới nhất</option>
           <option value="oldest">Cũ nhất</option>
           <option value="az">A → Z</option>
           <option value="za">Z → A</option>
         </select>
-        <div className="flex gap-1 rounded-xl border border-[#3D3348] bg-[#1A1520] p-1">
+        <div className="flex gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-1">
           {([
             { id: 'ALL' as const, label: 'Tất cả' },
             { id: 'PUBLIC' as const, label: 'Công khai' },
@@ -766,8 +482,8 @@ function LibrarySection({
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
                 visibility === f.id
-                  ? 'bg-[#EC4899] text-white shadow-sm'
-                  : 'text-[#8B7A9E] hover:bg-[#2D2538] hover:text-[#F5F0FA]',
+                  ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]',
               )}
             >
               {f.label}
@@ -777,18 +493,18 @@ function LibrarySection({
       </div>
 
       {loading && (
-        <div className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'space-y-3'}>
+        <div className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6' : 'space-y-3'}>
           {Array.from({ length: 8 }).map((_, i) => <DeckGridSkeleton key={i} />)}
         </div>
       )}
 
       {!loading && totalDecks === 0 && (
-        <div className="relative overflow-hidden rounded-3xl border border-dashed border-[#4A4060] bg-[#252030]/40 p-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EC4899] to-[#F97316] shadow-lg">
+        <div className="relative overflow-hidden rounded-3xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-hover)]/40 p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] shadow-[var(--shadow-primary)]">
             <Sparkles className="h-8 w-8 text-white" strokeWidth={2} />
           </div>
-          <h2 className="text-lg font-extrabold text-[#F5F0FA]">Thư viện trống</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-[#8B7A9E]">
+          <h2 className="text-lg font-extrabold text-[var(--color-text)]">Thư viện trống</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-text-muted)]">
             Tạo deck đầu tiên hoặc khám phá kho deck công khai từ cộng đồng.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -799,12 +515,12 @@ function LibrarySection({
       )}
 
       {!loading && totalDecks > 0 && filtered.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-[#4A4060] bg-[#252030]/40 p-8 text-center">
-          <p className="text-sm font-semibold text-[#F5F0FA]">Không có deck phù hợp</p>
+        <div className="rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-hover)]/40 p-8 text-center">
+          <p className="text-sm font-semibold text-[var(--color-text)]">Không có deck phù hợp</p>
           <button
             type="button"
             onClick={() => { setQuery(''); setVisibility('ALL') }}
-            className="mt-2 text-xs font-bold text-[#EC4899] hover:underline"
+            className="mt-2 text-xs font-bold text-[var(--color-primary)] hover:underline"
           >
             Xoá bộ lọc
           </button>
@@ -813,11 +529,11 @@ function LibrarySection({
 
       {!loading && filtered.length > 0 && (
         <>
-          <p className="text-sm text-[#8B7A9E]">
-            Hiển thị <span className="font-bold text-[#F5F0FA]">{filtered.length}</span> /{' '}
-            <span className="font-bold text-[#EC4899]">{totalDecks}</span> deck
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Hiển thị <span className="font-bold text-[var(--color-text)]">{filtered.length}</span> /{' '}
+            <span className="font-bold text-[var(--color-primary)]">{totalDecks}</span> deck
           </p>
-          <div className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'space-y-2'}>
+          <div className={viewMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6' : 'space-y-2'}>
             {filtered.map((deck) => (
               <DeckCard key={deck.id} deck={deck} variant="library" />
             ))}
@@ -834,16 +550,11 @@ export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [weekOffset, setWeekOffset] = useState(0)
 
   const librarySectionRef = useRef<HTMLDivElement | null>(null)
   const setLibrarySectionRef = useCallback((el: HTMLDivElement | null) => {
     librarySectionRef.current = el
   }, [])
-
-  const scrollToLibrary = () => {
-    librarySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   // Active flashcard session (localStorage)
   const [activeFlashcardSession, setActiveFlashcardSession] = useState<{ deckRef: string; session: StudySession } | null>(null)
@@ -925,6 +636,8 @@ export default function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['decks', { mine: true, page: 0, size: 50 }],
     queryFn: () => decksApi.list({ mine: true, page: 0, size: 50 }).then((r) => r.data),
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   // Public decks for suggestions
@@ -939,48 +652,6 @@ export default function DashboardPage() {
     queryFn: () => statsApi.getDashboard().then((r) => r.data),
   })
 
-  const { data: activityData } = useQuery({
-    queryKey: ['stats', 'activity'],
-    queryFn: () => statsApi.getActivity({ days: 90 }).then((r) => r.data),
-  })
-
-  // Compute this-week totals from activityData (last 7 days)
-  const weekTotal = useMemo(() => {
-    if (!activityData?.daily) return { cards: 0, quizzes: 0, xp: 0 }
-    const last7 = activityData.daily.slice(-7)
-    return {
-      cards: last7.reduce((s, d) => s + d.cards, 0),
-      quizzes: last7.reduce((s, d) => s + d.quizzes, 0),
-      xp: last7.reduce((s, d) => s + d.xp, 0),
-    }
-  }, [activityData])
-
-  // Slices for weekOffset: 0 = this week (last N days up to today), 1 = last week (8-14), 2 = week before (15-21)
-  const weekSlice = useMemo(() => {
-    if (!activityData?.daily) return []
-    const now = new Date()
-    const dayOfWeek = now.getDay() // 0=Sun
-    const effectiveDay = dayOfWeek === 0 ? 7 : dayOfWeek // Mon=1..Sun=7
-
-    if (weekOffset === 0) {
-      // This week: show days 1..effectiveDay (Mon to today)
-      const thisWeek = activityData.daily.slice(-effectiveDay)
-      return thisWeek
-    }
-    const base = weekOffset * 7
-    return activityData.daily.slice(-(base + 7), base === 0 ? undefined : -base)
-  }, [activityData, weekOffset])
-
-  // Days in current week slice for chart rendering
-  const chartDays = useMemo(() => {
-    if (!activityData?.daily) return 7
-    if (weekOffset === 0) {
-      const now = new Date()
-      return now.getDay() === 0 ? 7 : now.getDay()
-    }
-    return 7
-  }, [activityData, weekOffset])
-
   // Real progress data (for rank)
   const { data: progressData } = useQuery({
     queryKey: ['progress', 'me'],
@@ -990,7 +661,6 @@ export default function DashboardPage() {
 
   const myDecks = data?.content ?? []
   const totalDecks = data?.totalElements ?? 0
-  const totalCards = myDecks.reduce((s, d) => s + (d.cardCount ?? 0), 0)
   const suggestedDecks = publicData?.content ?? []
 
   const recentDecks = useMemo(
@@ -998,28 +668,8 @@ export default function DashboardPage() {
     [myDecks],
   )
 
-  const dueQuery = useQuery({
-    queryKey: ['review', 'due-total'],
-    queryFn: () => reviewApi.getDueCount().then((r) => r.data),
-    staleTime: 30_000,
-  })
-
-  const totalDue = typeof dueQuery.data === 'number' ? dueQuery.data : 0
-
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: '#1A1520' }}>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage: `url(${heroImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(8px) saturate(1.2)',
-        }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#1A1520] via-[#252030]/95 to-[#1A1520] opacity-90" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(236,72,153,0.08)_0%,transparent_60%)]" />
-
+    <div className="min-h-screen relative overflow-hidden">
       <div className="relative z-10 space-y-10">
         {/* ── Streak banner ── */}
         <StreakBanner
@@ -1055,154 +705,13 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* ── Quick stats + Heatmap ── */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <CardStatsDonut 
-            total={totalCards} 
-            due={totalDue} 
-            mastered={dashboardStats?.totalMastered ?? 0}
-          />
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            {/* Heatmap row */}
-            <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-[#F5F0FA]">
-                  {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Tuần ${weekOffset} trước`}
-                </h3>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={weekOffset >= 2}
-                    onClick={() => setWeekOffset((o) => Math.min(3, o + 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
-                  >
-                    ‹
-                  </button>
-                  <span className="px-2 text-xs font-semibold text-[#8B7A9E] min-w-[60px] text-center">
-                    {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Trước nữa`}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={weekOffset <= 0}
-                    onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-              <ActivityHeatmap data={{ daily: weekSlice }} days={chartDays} />
-              <div className="mt-2 flex items-center gap-2 text-[10px] text-[#8B7A9E]">
-                <span>Ít</span>
-                {[0, 1, 2, 3, 4].map(i => (
-                  <div key={i} className={cn('h-3 w-3 rounded-sm', [
-                    'bg-[#3D3348]', 'bg-[rgba(236,72,153,0.25)]', 'bg-[rgba(236,72,153,0.5)]',
-                    'bg-[rgba(236,72,153,0.75)]', 'bg-[#EC4899]',
-                  ][i])} />
-                ))}
-                <span>Nhiều</span>
-              </div>
-            </div>
-            {/* QuickCard row */}
-            <div className="flex gap-4">
-              <QuickCard icon={Layers} value={totalDecks} label="Deck của bạn" color="#10B981" onClick={scrollToLibrary} />
-              <QuickCard icon={Sparkles} value={`${activityData?.totalQuizzes ?? 0}`} label="Tổng Quiz" color="#06B6D4" />
-            </div>
-          </div>
+        {/* ── Quick stats ── */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <QuickCard icon={Layers} value={dashboardStats?.cardsToday ?? 0} label="Card học trong ngày" color="var(--color-success)" />
+          <QuickCard icon={Sparkles} value={`${dashboardStats?.quizzesToday ?? 0}`} label="Quiz đã làm trong ngày" color="var(--color-primary)" />
         </div>
 
-        {/* ── Stats charts ── */}
-        <section>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              📊 Hoạt động
-            </h2>
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <div className="flex items-center gap-2 rounded-lg bg-[#EC4899]/20 px-3 py-1.5 text-[#EC4899]">
-                <span className="font-semibold">Hôm nay:</span>
-                <span>{dashboardStats?.cardsToday ?? 0} thẻ</span>
-                <span className="text-white/50">·</span>
-                <span>{dashboardStats?.quizzesToday ?? 0} quiz</span>
-              </div>
-              <div className="flex items-center gap-2 text-[#8B7A9E]">
-                <span className="font-semibold">7 ngày:</span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#EC4899]" /> {weekTotal.cards} thẻ
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#F97316]" /> {weekTotal.quizzes} quiz
-                </span>
-                <span className="flex items-center gap-1 text-[#EC4899] font-semibold">
-                  ⚡ {weekTotal.xp} XP
-                </span>
-              </div>
-            </div>
-          </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            {/* Weekly bar chart */}
-            <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-[#F5F0FA]">
-                  {weekOffset === 0 ? 'Hoạt động tuần này' : `Hoạt động ${weekOffset === 1 ? 'tuần trước' : `tuần ${weekOffset} trước`}`}
-                </h3>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={weekOffset >= 2}
-                    onClick={() => setWeekOffset((o) => Math.min(3, o + 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
-                  >
-                    ‹
-                  </button>
-                  <span className="px-2 text-xs font-semibold text-[#8B7A9E] min-w-[80px] text-center">
-                    {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Trước nữa`}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={weekOffset <= 0}
-                    onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-              <WeeklyChart data={{ daily: weekSlice }} days={chartDays} />
-            </div>
-
-            {/* XP trend */}
-            <div className="rounded-2xl border border-[#3D3348] bg-[#252030]/80 p-4">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-[#F5F0FA]">
-                  XP {weekOffset === 0 ? 'tuần này' : weekOffset === 1 ? 'tuần trước' : 'trước nữa'}
-                </h3>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={weekOffset >= 2}
-                    onClick={() => setWeekOffset((o) => Math.min(3, o + 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
-                  >
-                    ‹
-                  </button>
-                  <span className="px-2 text-xs font-semibold text-[#8B7A9E] min-w-[80px] text-center">
-                    {weekOffset === 0 ? 'Tuần này' : weekOffset === 1 ? 'Tuần trước' : `Trước nữa`}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={weekOffset <= 0}
-                    onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
-                    className="rounded-lg border border-[#3D3348] bg-[#252030] px-2 py-1 text-xs text-[#8B7A9E] disabled:opacity-30 hover:text-white transition-colors"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-              <XpTrendChart data={{ daily: weekSlice }} days={chartDays} />
-            </div>
-          </div>
-        </section>
 
         {/* ── Library management ── */}
         <LibrarySection
@@ -1218,7 +727,7 @@ export default function DashboardPage() {
         {!isLoading && recentDecks.length > 0 && (
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold text-[var(--color-text)] flex items-center gap-2">
                 📋 Deck gần đây
               </h2>
             </div>
@@ -1228,7 +737,7 @@ export default function DashboardPage() {
               ))}
             </div>
             {recentDecks.length > 6 && (
-              <p className="mt-3 text-center text-sm text-[#8B7A9E]">
+              <p className="mt-3 text-center text-sm text-[var(--color-text-muted)]">
                 +{recentDecks.length - 6} deck khác
               </p>
             )}
@@ -1239,17 +748,17 @@ export default function DashboardPage() {
         {!isLoading && suggestedDecks.length > 0 && (
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold text-[var(--color-text)] flex items-center gap-2">
                 ✨ Gợi ý từ cộng đồng
               </h2>
               <Link
                 to="/explore"
-                className="text-sm font-semibold text-[#EC4899] hover:text-[#F97316] flex items-center gap-1 transition-colors"
+                className="text-sm font-semibold text-[var(--color-primary)] hover:text-[var(--color-accent)] flex items-center gap-1 transition-colors"
               >
                 Khám phá <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {suggestedDecks.slice(0, 8).map((deck) => (
                 <DeckCard key={deck.id} deck={deck} variant="explore" />
               ))}

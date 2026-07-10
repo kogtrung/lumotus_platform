@@ -165,7 +165,7 @@ public class DeckService {
         }
         Deck saved = deckRepository.save(deck);
         if (request.topicIds() != null) {
-            replaceTopics(saved, request.topicIds());
+            replaceTopics(saved, request.topicIds(), principal);
         }
         return toSummary(saved);
     }
@@ -291,7 +291,7 @@ public class DeckService {
         }
         Deck saved = deckRepository.save(deck);
         if (request.topicIds() != null) {
-            replaceTopics(saved, request.topicIds());
+            replaceTopics(saved, request.topicIds(), principal);
         } else if (Boolean.FALSE.equals(request.isPublic())) {
             deckTopicRepository.deleteAllByDeckId(saved.getId());
         }
@@ -723,9 +723,11 @@ public class DeckService {
                 .orElse(null);
     }
 
-    private void replaceTopics(Deck deck, List<UUID> topicIds) {
+    private void replaceTopics(Deck deck, List<UUID> topicIds, UserPrincipal principal) {
         List<UUID> normalized = normalizeTopicIds(topicIds);
-        if (!deck.isPublic() && !normalized.isEmpty()) {
+        boolean isAdmin = "ADMIN".equals(principal.getRole());
+        
+        if (!isAdmin && !deck.isPublic() && !normalized.isEmpty()) {
             throw new BadRequestException(
                     "Chủ đề hệ thống chỉ gắn được với deck công khai — bật Công khai hoặc bỏ chọn chủ đề");
         }
@@ -734,7 +736,9 @@ public class DeckService {
             Topic topic = topicRepository
                     .findById(topicId)
                     .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
-            deckTopicRepository.save(new DeckTopic(new DeckTopicId(deck.getId(), topic.getId())));
+            DeckTopic dt = new DeckTopic(new DeckTopicId(deck.getId(), topic.getId()));
+            dt.setTopic(topic);
+            deckTopicRepository.save(dt);
         }
     }
 

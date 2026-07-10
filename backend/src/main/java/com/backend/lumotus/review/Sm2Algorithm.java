@@ -34,14 +34,26 @@ public final class Sm2Algorithm {
             newInterval = 0;
         } else {
             newReps = repetitions + 1;
-            if (newReps == 1) {
-                newInterval = properties.intervals().first();
-            } else if (newReps == 2) {
-                newInterval = properties.intervals().second();
-            } else if (newReps == 3) {
-                newInterval = properties.intervals().third();
+            
+            if (q == 3) {
+                // EASY rating accelerates intervals significantly
+                if (repetitions == 0) {
+                    newInterval = properties.intervals().second() + 1;
+                } else {
+                    int base = Math.max(intervalDays, properties.intervals().second());
+                    newInterval = (int) Math.ceil(base * newEase * 1.3);
+                }
             } else {
-                newInterval = (int) Math.ceil(intervalDays * newEase);
+                if (newReps == 1) {
+                    newInterval = properties.intervals().first();
+                } else if (newReps == 2) {
+                    // Prevent interval regression if previously rated EASY
+                    newInterval = Math.max(intervalDays, properties.intervals().second());
+                } else if (newReps == 3) {
+                    newInterval = Math.max(intervalDays, properties.intervals().third());
+                } else {
+                    newInterval = (int) Math.ceil(intervalDays * newEase);
+                }
             }
         }
 

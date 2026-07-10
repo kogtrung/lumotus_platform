@@ -86,6 +86,18 @@ public class QuizController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/cooldown/config")
+    public ResponseEntity<PublicCooldownConfigResponse> getCooldownConfig() {
+        CooldownSettingsResponse s = quizCooldownService.getSettings();
+        return ResponseEntity.ok(new PublicCooldownConfigResponse(
+            s.enabled(),
+            s.minSecondsBetweenAttempts(),
+            s.maxAttemptsPerQuizPerDay(),
+            s.maxTotalAttemptsPerDay(),
+            s.maxTotalAttemptsPerWeek()
+        ));
+    }
+
     /**
      * Auto-save an answer during quiz play.
      * Called debounced from frontend when user selects an answer.
