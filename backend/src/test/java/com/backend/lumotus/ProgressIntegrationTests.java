@@ -1,0 +1,125 @@
+package com.backend.lumotus;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+
+import com.backend.lumotus.dto.request.RegisterRequest;
+import com.backend.lumotus.service.AuthService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
+
+import java.util.UUID;
+
+@SpringBootTest
+@Transactional
+public class ProgressIntegrationTests {
+
+    @Autowired
+    private WebApplicationContext context;
+
+    @Autowired
+    private AuthService authService;
+
+    private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private String jwtToken;
+    private String cardId;
+
+    private String getUniqueStr() {
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    @BeforeEach
+    void setup() throws Exception {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        
+        String randomStr = getUniqueStr();
+        var res = authService.register(new RegisterRequest("tester_" + randomStr, "tester_" + randomStr + "@example.com", "Password123!"));
+        jwtToken = res.toResponse().accessToken();
+
+        // Thêm deck
+        String randomSlug = "pr-deck-" + randomStr;
+        String deckJson = String.format("""
+                {
+                  "title": "Progress Deck",
+                  "slug": "%s",
+                  "isPublic": true
+                }
+                """, randomSlug);
+        MvcResult deckResult = mockMvc.perform(post("/api/v1/decks")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(deckJson))
+                .andReturn();
+        String deckId = objectMapper.readTree(deckResult.getResponse().getContentAsString()).get("id").asText();
+
+        // Thêm card
+        String addCardJson = """
+                {
+                  "front": "Focus",
+                  "back": "Tap trung",
+                  "orderIndex": 1
+                }
+                """;
+        MvcResult cardResult = mockMvc.perform(post("/api/v1/decks/" + deckId + "/cards")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(addCardJson))
+                .andReturn();
+        cardId = objectMapper.readTree(cardResult.getResponse().getContentAsString()).get("id").asText();
+    }
+
+    @Test
+    @DisplayName("Kiểm tra tiến độ Gamification")
+    void testGamificationProgress() throws Exception {
+        // Tương tác ban đầu để sinh XP
+        String rateJson = """
+                {
+                  "rating": "EASY"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/flashcards/" + cardId + "/rate")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(rateJson))
+                .andExpect(status().isOk());
+
+        // Call Progress API
+        mockMvc.perform(get("/api/v1/progress/me")
+                        .header("Authorization", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.xp").exists())
+                .andExpect(jsonPath("$.streak").exists());
+    }
+
+    @Test
+    @DisplayName("Lấy Leaderboard")
+    void testGetLeaderboard() throws Exception {
+        mockMvc.perform(get("/api/v1/progress/leaderboard")
+                        .param("limit", "10")
+                        .header("Authorization", "Bearer " + jwtToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Lấy dữ liệu Heatmap hàng tháng")
+    void testGetHeatmap() throws Exception {
+        mockMvc.perform(get("/api/v1/progress/heatmap")
+                        .param("year", "2026")
+                        .param("month", "7")
+                        .header("Authorization", "Bearer " + jwtToken))
+                .andExpect(status().isOk());
+    }
+}

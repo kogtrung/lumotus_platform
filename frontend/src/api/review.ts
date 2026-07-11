@@ -28,6 +28,13 @@ export const reviewApi = {
     return axiosClient.post<RateReviewResponse>(`/flashcards/${cardId}/rate`, { rating })
   },
 
+  batchRate(reviews: { cardId: string; rating: ReviewRating; ratedAt: string }[]) {
+    return axiosClient.post<{ totalProcessed: number; totalXpEarned: number; details: RateReviewResponse[] }>(
+      '/flashcards/batch-rate',
+      { reviews }
+    )
+  },
+
   star(cardId: string, starred?: boolean) {
     return axiosClient.post<StarReviewResponse>(`/flashcards/${cardId}/star`, starred != null ? { starred } : {})
   },

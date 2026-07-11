@@ -1,8 +1,6 @@
 package com.backend.lumotus.dto.response;
 
-import com.backend.lumotus.entity.QuizAnswer;
 import com.backend.lumotus.entity.QuizAttempt;
-import com.backend.lumotus.entity.User;
 import lombok.*;
 import java.time.Instant;
 import java.util.List;

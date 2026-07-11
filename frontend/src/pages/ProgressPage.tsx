@@ -357,41 +357,50 @@ function CardStatsDonut({ total, due, mastered }: { total: number; due: number; 
   )
 }
 
-function WeeklyChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
+function WeeklyChart({ data, weekOffset }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; weekOffset: number }) {
   if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[var(--color-surface)]/60" />
-  const slice = data.daily.slice(-days)
-  const labels = slice.map((d: any) => new Date(d.date).toLocaleDateString('vi-VN', { weekday: 'short' }))
   
-  // Custom font property inside options won't parse var(--color) natively in Chart.js efficiently without getting computed style,
-  // but we can pass standard fallback colors or let CSS var render if supported by browser. We'll use gray-400 equivalent.
+  // Calculate index window for the selected week
+  // weekOffset = 0 means the last 7 days. weekOffset = 1 means 8-14 days ago, etc.
+  const endIdx = data.daily.length - (weekOffset * 7);
+  const startIdx = Math.max(0, endIdx - 7);
+  const slice = data.daily.slice(startIdx, endIdx);
+  
+  const labels = slice.map((d: any) => {
+    const date = new Date(d.date);
+    const weekday = date.toLocaleDateString('vi-VN', { weekday: 'short' });
+    const dayMonth = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    return [weekday, dayMonth];
+  })
+  
   const chartProps = { 
     textColor: '#9ca3af', 
     gridColor: 'rgba(156, 163, 175, 0.1)' 
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
+    <div className="grid h-full w-full gap-4 sm:grid-cols-2">
+      <div className="flex h-full flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
         <h3 className="mb-2 text-[11px] sm:text-xs font-semibold text-[var(--color-text)]">Thẻ ôn</h3>
-        <div className="h-32 sm:h-40">
+        <div className="flex-1 min-h-[140px]">
           <Bar
             data={{
               labels,
-              datasets: [{ label: 'Thẻ', data: slice.map((d: any) => d.cards), backgroundColor: 'rgba(236,72,153,0.7)', borderRadius: 4, barThickness: 12 }],
+              datasets: [{ label: 'Thẻ', data: slice.map((d: any) => d.cards), backgroundColor: 'rgba(236,72,153,0.7)', borderRadius: 4, barThickness: 10 }],
             }}
-            options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { color: chartProps.gridColor } } } }}
+            options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 9 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 9 } }, border: { display: false }, grid: { color: chartProps.gridColor }, beginAtZero: true } } }}
           />
         </div>
       </div>
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
+      <div className="flex h-full flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
         <h3 className="mb-2 text-[11px] sm:text-xs font-semibold text-[var(--color-text)]">Quiz</h3>
-        <div className="h-32 sm:h-40">
+        <div className="flex-1 min-h-[140px]">
           <Bar
             data={{
               labels,
-              datasets: [{ label: 'Quiz', data: slice.map((d: any) => d.quizzes), backgroundColor: 'rgba(249,115,22,0.7)', borderRadius: 4, barThickness: 12 }],
+              datasets: [{ label: 'Quiz', data: slice.map((d: any) => d.quizzes), backgroundColor: 'rgba(249,115,22,0.7)', borderRadius: 4, barThickness: 10 }],
             }}
-            options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { color: chartProps.gridColor } } } }}
+            options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 9 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 9 } }, border: { display: false }, grid: { color: chartProps.gridColor }, beginAtZero: true } } }}
           />
         </div>
       </div>
@@ -399,25 +408,87 @@ function WeeklyChart({ data, days }: { data: { daily: { date: string; cards: num
   )
 }
 
+const alwaysShowDataPlugin = {
+  id: 'alwaysShowData',
+  afterDatasetsDraw: (chart: any) => {
+    const { ctx, data } = chart;
+    ctx.save();
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.fillStyle = '#EC4899';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    
+    chart.getDatasetMeta(0).data.forEach((datapoint: any, index: number) => {
+      const val = data.datasets[0].data[index];
+      if (val > 0) {
+        ctx.fillText(val.toString(), datapoint.x, datapoint.y - 6);
+      }
+    });
+    ctx.restore();
+  }
+}
+
 function XpTrendChart({ data, days }: { data: { daily: { date: string; cards: number; quizzes: number; xp: number }[] } | undefined; days: number }) {
   if (!data) return <div className="h-48 animate-pulse rounded-xl bg-[var(--color-bg)]" />
   const slice = data.daily.slice(-days)
-  const labels = slice.map((d: any) => new Date(d.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }))
+  const labels = slice.map((d: any) => {
+    const date = new Date(d.date);
+    if (days === 7) {
+      const weekday = date.toLocaleDateString('vi-VN', { weekday: 'short' });
+      const dayMonth = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      return [weekday, dayMonth];
+    }
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  });
   
   const chartProps = { 
     textColor: '#9ca3af', 
     gridColor: 'rgba(156, 163, 175, 0.1)' 
   }
 
+  // Calculate minimum width based on data points to enable horizontal scrolling
+  const minWidthStr = slice.length > 10 ? `${slice.length * 40}px` : '100%';
+
   return (
-    <div className="h-36 sm:h-44 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3 shadow-inner">
-      <Line
-        data={{
-          labels,
-          datasets: [{ label: 'XP', data: slice.map((d: any) => d.xp), borderColor: '#EC4899', backgroundColor: 'rgba(236,72,153,0.15)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#EC4899' }],
-        }}
-        options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { color: chartProps.gridColor } } } }}
-      />
+    <div className="h-40 sm:h-full min-h-[220px] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-inner overflow-x-auto overflow-y-hidden custom-scrollbar">
+      <div className="h-full px-2 py-4 sm:px-3 flex items-center" style={{ minWidth: minWidthStr }}>
+        <div className="w-full h-full min-h-[160px]">
+          <Line
+            data={{
+            labels,
+            datasets: [{ 
+              label: 'XP', 
+              data: slice.map((d: any) => d.xp), 
+              borderColor: '#EC4899', 
+              backgroundColor: 'rgba(236,72,153,0.15)', 
+              fill: true, 
+              tension: 0.4, 
+              pointRadius: 2.5, 
+              borderWidth: 1.5,
+              pointBackgroundColor: '#EC4899' 
+            }],
+          }}
+          options={{ 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+              legend: { display: false },
+              tooltip: { enabled: false } // Disabled tooltip since labels are always visible
+            }, 
+            scales: { 
+              x: { ticks: { color: chartProps.textColor, font: { size: 10 } }, grid: { display: false } }, 
+              y: { 
+                ticks: { color: chartProps.textColor, font: { size: 10 } },
+                grid: { color: chartProps.gridColor },
+                border: { display: false },
+                suggestedMax: Math.max(...slice.map((d: any) => d.xp)) * 1.2 || 10 // Give some top padding for text labels
+              } 
+            } 
+          }}
+          plugins={[alwaysShowDataPlugin]}
+        />
+        </div>
+      </div>
     </div>
   )
 }
@@ -470,26 +541,13 @@ export default function ProgressPage() {
     queryFn: () => statsApi.getActivity({ days: 90 }).then(r => r.data),
   })
   
-  const [timeFilter, setTimeFilter] = React.useState<'week' | 'month'>('week')
+  const [weekOffset, setWeekOffset] = React.useState(0);
+  const [xpTimeFilter, setXpTimeFilter] = React.useState<7 | 14 | 30 | 90>(30);
   
   const chartSlice = React.useMemo(() => {
     if (!activityData?.daily) return []
-    if (timeFilter === 'month') {
-      return activityData.daily.slice(-30)
-    }
-    // Week logic
-    const now = new Date()
-    const dayOfWeek = now.getDay()
-    const effectiveDay = dayOfWeek === 0 ? 7 : dayOfWeek
-    return activityData.daily.slice(-effectiveDay)
-  }, [activityData, timeFilter])
-  
-  const chartDays = React.useMemo(() => {
-    if (!activityData?.daily) return 7
-    if (timeFilter === 'month') return 30
-    const now = new Date()
-    return now.getDay() === 0 ? 7 : now.getDay()
-  }, [activityData, timeFilter])
+    return activityData.daily.slice(-xpTimeFilter)
+  }, [activityData, xpTimeFilter])
 
   return (
     <div className="space-y-4 sm:space-y-6 md:space-y-8">
@@ -570,53 +628,75 @@ export default function ProgressPage() {
         <StreakProgressBar streak={streak} />
       </div>
 
-      {/* ── Charts Section (Grid 2 Cột) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Cột trái: Donut + Heatmap */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+      {/* ── Charts Section (Row-based for height alignment) ── */}
+      <div className="flex flex-col gap-4 sm:gap-6">
+        
+        {/* ROW 1: Donut + XP Trend */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
           <CardStatsDonut total={totalCards} due={totalDue} mastered={totalMastered} />
           
-          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80">
-            <HeatmapStrip data={heatmap} streak={streak} />
+          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 sm:p-5 flex flex-col h-full">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-[var(--color-text)]">Xu hướng XP</h3>
+              <div className="flex items-center gap-1 bg-[var(--color-bg)] rounded-xl p-1 border border-[var(--color-border)]">
+                {([7, 14, 30, 90] as const).map((days) => (
+                  <button 
+                    key={days}
+                    onClick={() => setXpTimeFilter(days)} 
+                    className={cn(
+                      "px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all", 
+                      xpTimeFilter === days ? "bg-[var(--color-primary)] text-white shadow" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                    )}
+                  >
+                    {days}N
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1">
+              <XpTrendChart data={{ daily: chartSlice }} days={xpTimeFilter} />
+            </div>
           </div>
         </div>
 
-        {/* Cột phải: XP + Activity */}
-        <div className="flex flex-col gap-4 sm:gap-6">
-          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 sm:p-5">
-             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[var(--color-text)]">Xu hướng XP</h3>
-             </div>
-             <XpTrendChart data={{ daily: chartSlice }} days={chartDays} />
+        {/* ROW 2: Heatmap + Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
+          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 flex h-full">
+            <HeatmapStrip data={heatmap} streak={streak} />
           </div>
 
-          <div className="flex-1 rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 sm:p-5">
+          <div className="rounded-xl sm:rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 sm:p-5 flex flex-col h-full">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-[var(--color-text)]">
-                Hoạt động {timeFilter === 'week' ? 'tuần này' : '30 ngày qua'}
+                So sánh số liệu
               </h3>
-              <div className="flex bg-[var(--color-bg)] rounded-xl p-1 border border-[var(--color-border)]">
+              
+              {/* Week Paginator */}
+              <div className="flex items-center gap-2 bg-[var(--color-bg)] rounded-xl p-1 border border-[var(--color-border)]">
                 <button 
-                  onClick={() => setTimeFilter('week')} 
-                  className={cn(
-                    "px-3 py-1 rounded-lg text-[10px] sm:text-xs font-semibold transition-all", 
-                    timeFilter === 'week' ? "bg-[var(--color-primary)] text-white shadow" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                  )}
+                  onClick={() => setWeekOffset(w => Math.min(w + 1, 10))} // max 10 weeks backward ~70 days limit
+                  disabled={weekOffset >= 10}
+                  className="px-2 py-1 rounded-lg text-[10px] sm:text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                  title="Tuần trước"
                 >
-                  Tuần
+                  &larr;
                 </button>
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-primary)] w-16 text-center">
+                  {weekOffset === 0 ? "Tuần này" : weekOffset === 1 ? "Tuần trước" : `Tuần -${weekOffset}`}
+                </span>
                 <button 
-                  onClick={() => setTimeFilter('month')} 
-                  className={cn(
-                    "px-3 py-1 rounded-lg text-[10px] sm:text-xs font-semibold transition-all", 
-                    timeFilter === 'month' ? "bg-[var(--color-primary)] text-white shadow" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                  )}
+                  onClick={() => setWeekOffset(w => Math.max(w - 1, 0))}
+                  disabled={weekOffset === 0}
+                  className="px-2 py-1 rounded-lg text-[10px] sm:text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                  title="Tuần sau"
                 >
-                  Tháng
+                  &rarr;
                 </button>
               </div>
             </div>
-            <WeeklyChart data={{ daily: chartSlice }} days={chartDays} />
+            <div className="flex-1 h-full min-h-[140px]">
+              <WeeklyChart data={activityData} weekOffset={weekOffset} />
+            </div>
           </div>
         </div>
       </div>
@@ -624,9 +704,9 @@ export default function ProgressPage() {
       {/* ── Deck progress list ── */}
       {decks.length > 0 && (
         <div>
-          <div className="mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+          <div className="mb-3 sm:mb-4 flex h-8 items-center gap-1.5 sm:gap-2">
             <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-primary)]" />
-            <h2 className="text-base sm:text-lg font-bold text-[var(--color-text)]">Tiến độ theo deck</h2>
+            <h2 className="text-base sm:text-lg font-bold text-[var(--color-text)] leading-none">Tiến độ theo deck</h2>
           </div>
           <div className="space-y-2">
             {decks.slice(0, 10).map((deck, i) => (

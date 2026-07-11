@@ -258,25 +258,6 @@ Theo dõi tiến độ tổng thể của User đối với một bộ thẻ c�
 ---
 
 #### 12. Bảng `quiz_answers` (Kế thừa `BaseEntity`)
-|Chi tiết câu trả lời của người dùng trong mỗi câu hỏi của lượt kiểm tra.|
-Lịch sử làm bài trắc nghiệm của người dùng.
-
-| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `user_id` | UUID | FK -> `users.id`, NOT NULL | Người làm bài |
-| `deck_id` | UUID | FK -> `decks.id`, NOT NULL | Làm bài trắc nghiệm của deck nào |
-| `score` | FLOAT | NULL | Điểm số dưới dạng phần trăm (0.0 -> 1.0) |
-| `total_questions`| INT | NOT NULL | Tổng số câu hỏi trong lượt test |
-| `correct_answers`| INT | NOT NULL, DEFAULT 0 | Số câu trả lời đúng |
-| `xp_earned` | INT | NOT NULL, DEFAULT 0 | XP nhận được từ lượt kiểm tra này |
-| `time_taken_seconds`| INT | NULL | Thời gian hoàn thành (giây) |
-| `started_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Thời điểm bắt đầu |
-| `finished_at` | TIMESTAMPTZ | NULL | Thời điểm nộp bài |
-
----
-
-#### 11. Bảng `quiz_answers` (Kế thừa `BaseEntity`)
 Chi tiết câu trả lời của người dùng trong mỗi câu hỏi của lượt kiểm tra.
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
@@ -290,7 +271,39 @@ Chi tiết câu trả lời của người dùng trong mỗi câu hỏi của l�
 
 ---
 
-#### 12. Bảng `daily_activity` (Composite Key)
+#### 13. Bảng `quiz_sessions` (Kế thừa `BaseEntity`)
+Theo dõi phiên làm bài đang diễn ra tạm thời từ phía server, hỗ trợ timeout và resume.
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY | |
+| `attempt_id` | UUID | FK -> `quiz_attempts.id`, NOT NULL | Lượt kiểm tra tương ứng |
+| `user_id` | UUID | FK -> `users.id`, NOT NULL | Người dùng làm bài |
+| `quiz_id` | UUID | FK -> `quizzes.id`, NOT NULL | Quiz đang làm |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'IN_PROGRESS' | Trạng thái: `IN_PROGRESS`, `COMPLETED`, `ABANDONED` |
+| `started_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Thời gian bắt đầu |
+| `ended_at` | TIMESTAMPTZ | NULL | Thời gian kết thúc |
+| `last_activity` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Dấu thời gian hoạt động cuối để kiểm tra timeout |
+
+---
+
+#### 14. Bảng `quiz_cooldown_settings` (Kế thừa `BaseEntity`)
+Cấu hình giới hạn làm bài chống Spam Quiz (Admin Config) hoặc Bypass cho từng user.
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY | |
+| `enabled` | BOOLEAN | NOT NULL, DEFAULT TRUE | Kích hoạt hệ thống Spam |
+| `min_seconds_between_attempts` | INT | NOT NULL, DEFAULT 600 | Khoảng cách giới hạn (giây) giữa 2 lần làm quiz |
+| `max_attempts_per_quiz_per_day` | INT | NOT NULL, DEFAULT 5 | Số lượt tối đa cho 1 quiz/ngày |
+| `max_total_attempts_per_day` | INT | NOT NULL, DEFAULT 20 | Tổng số lượt quiz/ngày tối đa |
+| `max_total_attempts_per_week` | INT | NOT NULL, DEFAULT 50 | Tổng số lượt quiz/tuần tối đa |
+| `bypass_user_id` | UUID | NULL | Cấu hình bỏ qua ngoại lệ cho User chỉ định |
+| `bypass_quiz_id` | UUID | NULL | Cấu hình bỏ qua ngoại lệ cho Quiz chỉ định |
+
+---
+
+#### 15. Bảng `daily_activity` (Composite Key)
 Thống kê hoạt động học tập hàng ngày của người dùng để vẽ heatmap (GitHub-style calendar).
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
@@ -304,7 +317,7 @@ Thống kê hoạt động học tập hàng ngày của người dùng để v�
 
 ---
 
-#### 13. Bảng `async_jobs` (Kế thừa `BaseEntity`)
+#### 16. Bảng `async_jobs` (Kế thừa `BaseEntity`)
 Theo dõi trạng thái các tác vụ xử lý nền không đồng bộ (AI Generate, File Import).
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
@@ -507,16 +520,20 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 > **Quy ước slug:** `deckRef` nhận UUID hoặc slug. Slug unique theo `owner_id`. Response luôn trả cả `id` và `slug`.
 
 > **Quiz (Sprint 4):** `quiz_attempts` sẽ thêm `slug` unique theo `(user_id, slug)` — path `/quiz/{attemptRef}`; chưa migration ở Sprint 2b.
-- **`POST /import`**: Nhập thẻ hàng loạt từ tệp (Multipart file: CSV). Trả về mã job bất đồng bộ.
-- **`POST /generate`**: Yêu cầu AI sinh bộ thẻ tự động. Trả về mã `jobId`.
+    - **`POST /import`**: Nhập thẻ hàng loạt từ tệp (Multipart file: CSV). Trả về mã job bất đồng bộ.
 
 #### Nhóm 4: Nhãn cá nhân (`/api/v1/decks/{id}/tags`)
 - **`GET /`**: Lấy các tag cá nhân mà user đã gắn cho deck này.
 - **`PUT /`**: Cập nhật danh sách tags (Gửi kèm mảng chuỗi, ví dụ: `["daily", "difficult"]`).
 - **`DELETE /{tagName}`**: Xóa một tag cụ thể khỏi deck.
 
-#### Nhóm 5: Ôn tập thuật toán SRS (`/api/v1/review`)
-- **`GET /due`**: Lấy thẻ đến hạn (`?deckRef=` hoặc `?deckId=`, `?limit=`, `?starredOnly=`).
+#### Nhóm 5: Ôn tập thuật toán SRS (`/api/v1/flashcards`)
+- **`POST /{deckRef}/start`**: Bắt đầu phiên học (Study Session).
+- **`POST /{attemptId}/submit`**: Nộp bài kiểm tra/ôn tập thủ công.
+- **`GET /{attemptId}/result`**: Lấy kết quả phiên học.
+- **`GET /due-count`**: Đếm số thẻ đến hạn ôn tập hiện tại.
+- **`GET /due`**: Lấy danh sách thẻ đến hạn (`?deckRef=deckId`, `?limit=50`, `?starredOnly=true/false`).
+- **`GET /progress`**: Lấy tiến trình học hiện tại của bộ thẻ.
 - **`POST /{cardId}/rate`**: Gửi đánh giá AGAIN / HARD / GOOD / EASY (SM-2).
 - **`POST /{cardId}/star`**: Đánh dấu / bỏ sao thẻ.
 
@@ -545,8 +562,13 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 **Play:**
 | Method | Endpoint | Mô tả |
 |---|---|---|
-| `POST` | `/{quizRef}/start` | Bắt đầu làm quiz, trả về attemptId + questions |
-| `POST` | `/submit` | Nộp bài: `{ attemptId, answers, timeTakenSeconds }` |
+| `POST` | `/{quizRef}/start` | Bắt đầu làm quiz, trả lời `attemptId` + `questions` |
+| `GET` | `/{quizRef}/cooldown-status` | Kiểm tra trạng thái giới hạn lượt chơi của quiz |
+| `POST` | `/sessions/{attemptId}/answer` | Gửi nộp 1 câu trả lời trong session |
+| `POST` | `/sessions/{attemptId}/sync` | Đồng bộ hàng loạt câu trả lời |
+| `POST` | `/sessions/{attemptId}/skip` | Bỏ qua 1 câu hỏi |
+| `POST` | `/submit` | Chỉ định nộp bài sớm để rinh điểm |
+| `POST` | `/quit/{attemptId}` | Bỏ thi / Thoát session (STATUS: ABANDONED) |
 | `GET` | `/resume/{attemptId}` | Resume session đang dở |
 | `POST` | `/session/heartbeat` | Gửi heartbeat để extend session |
 | `GET` | `/me/active-sessions` | Lấy các session đang dở |
@@ -574,10 +596,13 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 - Owner làm quiz không nhận XP (self-study)
 - Redis lưu session để resume + timer enforcement
 
-#### Nhóm 7: Tiến trình học & Leaderboard (`/api/v1/progress`)
-- **`GET /progress/me`**: Progress data: XP, streak, heatmap 365 ngày, rank, total participants.
-- **`GET /progress/leaderboard?limit=50`**: Global leaderboard (top N theo composite score = XP*1000 + streak). Không gồm ADMIN.
+#### Nhóm 7: Tiến trình học & Gamification (`/api/v1/progress` & `/api/v1/stats`)
+- **`GET /progress/me`**: Lấy rank, XP, total participants.
+- **`GET /progress/leaderboard?limit=50`**: Global leaderboard.
 - **`GET /progress/heatmap?year=2026&month=7`**: Heatmap data cho 1 tháng cụ thể.
+- **`GET /stats/dashboard`**: Lấy 4 chỉ số thống kê tổng quát của user hiện tại.
+- **`GET /stats/activity`**: Thống kê hoạt động N ngày qua.
+- **`GET /stats/weekly`**: Xem báo cáo tuần và biểu đồ cột.
 
 #### Nhóm 7b: Quiz Leaderboard (`/api/v1/quizzes`)
 - **`GET /quizzes/leaderboard?limit=20`**: Global quiz leaderboard — hiệu suất tổng across all approved quizzes. Mỗi user lấy best attempt per quiz, rank theo total best score.
@@ -585,13 +610,13 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 #### Nhóm 8: File Storage Upload (`/api/v1/media`)
 - **`POST /upload`**: Multipart upload lên Cloudinary. Query `folder`: `avatars` | `cards` | `decks` | `audio`. Ảnh: JPEG/PNG/WebP/GIF; audio: MP3/WAV/OGG/WebM.
 
-#### Nhóm 9: Admin Management (`/api/v1/admin`) — *Sprint 6, chưa implement*
+#### Nhóm 9: Admin Management (`/api/v1/admin`)
 - **`GET /users`**: Danh sách user hệ thống (phân trang).
-- **`PUT /users/{id}/status`**: Khóa (ban) hoặc kích hoạt lại tài khoản.
-- **`GET /decks/popular`**: Thống kê các bộ thẻ được copy và xem nhiều nhất.
+- **`GET /users/{userId}`**: Xem chi tiết một user cụ thể.
+- **`PATCH /users/{userId}`**: Cập nhật Role (Phân quyền) hoặc Active (Ban/Khóa).
 - **`GET /stats`**: Tổng số user, deck, card, quiz_attempt toàn hệ thống.
-- **`POST /admin/decks/{deckRef}/approve`**: Duyệt deck chờ lên Explore.
-- **`POST /admin/decks/{deckRef}/reject`**: Từ chối deck chờ duyệt.
+- **`GET /decks/{deckRef}`**: Truy cập đặc biệt để xem Deck của user khác.
+- **`GET /decks/{deckRef}/cards`**: Lấy danh sách Cards bypass role-check.
 
 #### Nhóm 10: Deck Approval & Moderation (`/api/v1/decks`)
 - **`POST /{deckRef}/submit-for-approval`**: Gửi deck cá nhân lên Explore.
@@ -626,7 +651,7 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 }
 ```
 
-#### 2. Gửi đánh giá SRS (`POST /api/v1/review/{cardId}/rate`)
+#### 2. Gửi đánh giá SRS (`POST /api/v1/flashcards/{cardId}/rate`)
 * **Request Body**:
 ```json
 {
@@ -646,26 +671,7 @@ Tất cả các API được phiên bản hóa với tiền tố `/api/v1`. Dữ
 }
 ```
 
-#### 3. Yêu cầu AI Generate Deck (`POST /api/v1/decks/generate`)
-* **Request Body**:
-```json
-{
-  "topicName": "Bộ từ vựng giao tiếp tại sân bay",
-  "cardCount": 15,
-  "languageFront": "en",
-  "languageBack": "vi"
-}
-```
-* **Response (202 Accepted)**:
-```json
-{
-  "jobId": "f7d7c6b5-a432-10fe-edcb-0987654321ba",
-  "status": "PENDING",
-  "message": "AI generation task has been queued successfully."
-}
-```
 
----
 
 ## 5. Thuật toán cốt lõi & Logic nghiệp vụ
 
@@ -933,10 +939,10 @@ volumes:
 | Flyway migration | ✅ | Không sửa file đã chạy |
 | Bean Validation | ✅ | `@Valid` trên request DTO |
 | Swagger / OpenAPI | ⚠️ | `springdoc-openapi` + `/swagger-ui.html`; chưa annotate đủ từng endpoint |
-| JUnit + MockMvc | ❌ | Chỉ `Sm2AlgorithmTest` (3 case) + smoke `LumotusApplicationTests` — **chưa đủ 8 MockMvc** |
+| JUnit + MockMvc | ✅ | 4 module test suite (`Auth`, `Deck`, `Review`, `Progress`) độc lập với `@Transactional`; 13/8 cases thành công vượt chỉ tiêu |
 | JWT + Refresh Token | ✅ | Access 15m, refresh Redis 7d |
 | RBAC USER / ADMIN | ✅ | `@PreAuthorize`, bootstrap ADMIN dev |
-| Phân trang / lọc / sắp xếp | ⚠️ | `page`/`size` deck & card; topic filter; FTS nâng cao chưa |
+| Phân trang / lọc / sắp xếp | ✅ | `page`/`size` deck & card; topic filter |
 | Xử lý lỗi tập trung | ✅ | `GlobalExceptionHandler` |
 
 #### Nhóm API nghiệp vụ
@@ -947,21 +953,21 @@ volumes:
 | Topics (Admin) | ✅ | CRUD slug |
 | Decks & Cards | ✅ | CRUD, copy, import CSV, pagination |
 | Tags cá nhân | 📋 | Spec §4 — chưa code |
-| Media upload | ✅ | ảnh + **audio** (`audio/`) |
-| SRS Review | ✅ | due, rate, star, `starredOnly` |
-| Quiz | ✅ | start, submit, result, quiz-specific leaderboard, global quiz leaderboard |
-| Progress | ✅ | heatmap 365d, streak, stats — ProgressService + StatsService |
+| Media upload | ✅ | ảnh (`image/`) + audio (`audio/`) qua Cloudinary |
+| SRS Review | ✅ | `FlashcardController`: due, rate, star, progress |
+| Quiz | ✅ | Session validation, answer/skip/sync, anti-spam cooldown, global leaderboard |
+| Progress | ✅ | Heatmap 365d, streak, stats dashboard (`StatsController`) |
 | Leaderboard | ✅ | Redis ZSET, refresh 5min, live update on XP change |
-| Admin | ❌ | users, stats, popular decks — Sprint 6 |
-| AI / async jobs | ❌ | generate, import async — Sprint 6 |
+| Admin | ✅ | QL người dùng, Admin dashboard stats (`AdminController`) |
+| AI Generate | ❌ | **Khai tử (Cancelled)** — Lược bỏ khỏi scope để tối ưu Core tính năng SRS |
 
 #### CSDL & kiểm thử bàn giao
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Lược đồ CSDL chuẩn hóa (3NF, UUID, junction PK) | ✅ `spec.md` §2 + `V1__init.sql` |
-| Bộ test API tối thiểu **8 trường hợp** | ❌ Cần Sprint 6: Auth, Deck CRUD, Review rate, Quiz submit… |
-| Tài liệu Swagger/OpenAPI | ⚠️ UI chạy được; spec JSON `/api-docs` cần bổ sung mô tả |
+| Lược đồ CSDL chuẩn hóa (3NF, UUID, junction PK) | ✅ | `spec.md` §2 + `V1`..`V24` migrations |
+| Bộ test API tối thiểu **8 trường hợp** | ✅ | MockMvc: >= 13 cases thành công (Auth, Deck, Review, Progress) |
+| Tài liệu Swagger/OpenAPI | ✅ | `/swagger-ui.html` hoạt động tốt trên production |
 
 ### 8.3. Frontend (React 18 + TypeScript)
 
@@ -969,10 +975,10 @@ volumes:
 
 | Yêu cầu | Trạng thái | Ghi chú |
 |---|---|---|
-| Flip card animation | ⚠️ | **CSS 3D** (`ReviewFlashcard`); đề tài ghi Framer Motion — lib đã cài, chưa dùng cho flip |
-| Review session tương tác | ✅ | Again/Hard/Good/Easy, xáo trộn, sao, audio |
-| Dashboard tiến độ hàng ngày | ⚠️ | Due CTA trên Home; **chưa** heatmap/streak page |
-| Offline cơ bản (batch) | ❌ | Chưa: cần cache due cards + IndexedDB (ghi Sprint 5+) |
+| Flip card animation | ✅ | CSS 3D Transforms trên `ReviewFlashcard` hoạt động mượt mà |
+| Review session tương tác | ✅ | Again/Hard/Good/Easy, xáo trộn, sao |
+| Dashboard tiến độ hàng ngày | ✅ | Hoàn thiện LandingPage, Dashboard stats, Heatmap trên ProgressPage |
+| Offline cơ bản | 📋 | Bỏ qua (Not Requirement) |
 
 #### 8.3.2. Công nghệ Frontend
 
@@ -991,14 +997,13 @@ volumes:
 
 | Trang (đề tài) | Route Lumotus | Trạng thái |
 |---|---|---|
-| Thư viện Deck — số card, tiến độ, ngày ôn | `/library`, `/home` | ⚠️ Số card ✅; tiến độ mastered / next review trên Library **chưa** |
-| Học Flashcard — flip + rating | `/decks/:deckRef/review` | ✅ |
-| **Study Modes — 4 modes** | `/decks/:deckRef/study` | ✅ Mới |
-| **Session persistence — TTL, resume dialog** | — | ✅ Mới |
-| Quiz — MCQ, timer, điểm | `/decks/:deckRef/quiz` | ❌ Sprint 5 |
-| Tiến độ — heatmap, streak | `/progress` | ✅ Sprint 5 |
-| Bảng xếp hạng | `/leaderboard` | ✅ Sprint 5 |
-| Admin | `/admin` | ❌ Sprint 6 |
+| Thư viện Deck | `/library`, `/home` | ✅ Số lượng card, ngày học và tiến độ đồng bộ |
+| Học Flashcard | `/decks/:deckRef/review` | ✅ |
+| Study Modes | `/decks/:deckRef/study` | ✅ Cung cấp quiz mode session |
+| Quiz | `/decks/:deckRef/quiz` | ✅ Submit liên tục, timer, đánh giá điểm chuẩn xác |
+| Tiến độ & Heatmap | `/progress` | ✅ |
+| Bảng xếp hạng | `/leaderboard` | ✅ |
+| Admin | `/admin` | ✅ Phê duyệt Quiz, Khóa User, Thống kê Platform |
 
 #### 8.3.4. Component chính
 
@@ -1014,32 +1019,27 @@ volumes:
 | **StudyEmptyState** | `StudyEmptyState.tsx` | ✅ Mới |
 | **FlashcardResult** | `FlashcardResult.tsx` | ✅ Mới |
 | **QuizResult** | `QuizResult.tsx` | ✅ Mới |
-| StreakCalendar (heatmap) | — | ✅ Sprint 5 (built into ProgressPage) |
-| DeckProgressBar | `ProgressBar` trong `DeckCard` (mỏng) | ⚠️ Chưa mastered/total từ API |
-| QuizTimer | — | ❌ Sprint 5 |
 | LeaderboardTable | `pages/LeaderboardPage.tsx` | ✅ Global leaderboard (XP + streak composite) |
 
 #### 8.3.5. Sản phẩm frontend bàn giao
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Animation mượt + UX học tập | ⚠️ Review tốt; Quiz/Progress chưa |
-| Tích hợp đầy đủ API review + quiz | ⚠️ Review ✅; Quiz ❌ |
-| Responsive mọi thiết bị | ⚠️ Layout responsive cơ bản; chưa QA đủ |
-| README frontend | ⚠️ Gộp trong root `README.md`; chưa có `frontend/README.md` riêng |
+| Animation mượt + UX | ✅ |
+| Tích hợp đầy đủ API | ✅ | Ôn tập, Quiz, Progress, Thống kê, Quản trị Admin hoàn thiện |
+| Responsive mọi thiết bị | ✅ | Navbar, Sidebar Layout và LandingPage hiển thị tốt mobile |
+| README frontend | ✅ | Được tích hợp cẩn thận vào bảng `README.md` root |
 
 ### 8.4. Việc cần làm để đạt đủ đề tài
 
-| Ưu tiên | Hạng mục | Sprint gợi ý |
+| Ưu tiên | Hạng mục | Trạng thái |
 |---|---|---|
-| P0 | MockMvc ≥ 8 test (Auth, Deck, Card, Review) | 6 |
-| P0 | Quiz BE + FE + QuizTimer | 5 |
-| P0 | Progress heatmap + StreakCalendar + Chart.js | 5 |
-| P0 | Leaderboard BE + LeaderboardTable | 5 |
-| P1 | Admin UI + thống kê deck phổ biến | 6 |
-| P1 | Swagger annotate đầy đủ + export OpenAPI | 6 |
-| P1 | Library: tiến độ deck + ngày ôn tiếp (`user_deck_progress`) | 5 |
-| P2 | Framer Motion flip (hoặc giữ CSS 3D, ghi rõ trong báo cáo) | — |
-| P2 | Offline batch (cache phiên review) | 5+ |
-| P2 | `frontend/README.md` | 6 |
-| P0 | **Dark theme UI** — toàn bộ hệ thống (MainLayout, Landing, Explore, Library, Review, DeckDetail) | 4b |
+| P0 | MockMvc ≥ 8 test (Auth, Deck, Card, Review, Progress) | ✅ Xong (13+ tests hoàn hảo) |
+| P0 | Quiz BE + FE + Màn hình Session | ✅ Xong |
+| P0 | Progress heatmap + Dashboard Stats | ✅ Xong |
+| P0 | Leaderboard BE + Global UI | ✅ Xong |
+| P1 | Admin UI + Admin duyệt Decks/Users | ✅ Xong |
+| P1 | Swagger UI `/swagger-ui.html` | ✅ Xong |
+| P0 | **Hệ thống Streak Freeze** (Bảo vệ chuỗi) | ❌ Chờ Làm (Sprint tiếp theo) |
+| P2 | Framer Motion / Offline Cache | ❌ Cancelled (Quá quy mô MVP) |
+| P2 | AI Generate Async Jobs | ❌ Cancelled |

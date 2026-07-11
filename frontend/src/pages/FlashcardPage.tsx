@@ -239,6 +239,11 @@ export default function FlashcardPage() {
                             <span className="shrink-0 rounded bg-[var(--color-primary)]/10 px-1 py-0.5 text-[9px] font-bold text-[var(--color-primary)] whitespace-nowrap">
                               {deck.cardCount} thẻ
                             </span>
+                            {tab === 'personal' && deck.sourceType === 'CLONE' && (
+                              <span className="shrink-0 rounded bg-[var(--color-text-muted)]/10 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-text-muted)] whitespace-nowrap">
+                                Clone
+                              </span>
+                            )}
                           </div>
                           {tab === 'explore' && user?.id && deck.ownerId === user.id && (
                             <span className="shrink-0 rounded bg-[var(--color-warning-subtle)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-warning)]">

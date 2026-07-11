@@ -1,10 +1,12 @@
 package com.backend.lumotus.controller;
 
+import com.backend.lumotus.dto.request.BatchRateRequest;
 import com.backend.lumotus.dto.request.RateReviewRequest;
 import com.backend.lumotus.dto.request.StarReviewRequest;
 import com.backend.lumotus.dto.request.StartStudyRequest;
 import com.backend.lumotus.dto.request.SubmitStudyRequest;
 import com.backend.lumotus.dto.response.DeckProgressResponse;
+import com.backend.lumotus.dto.response.BatchRateResponse;
 import com.backend.lumotus.dto.response.DueCardsResponse;
 import com.backend.lumotus.dto.response.RateReviewResponse;
 import com.backend.lumotus.dto.response.StarReviewResponse;
@@ -107,6 +109,13 @@ public class FlashcardController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody RateReviewRequest request) {
         return ResponseEntity.ok(flashcardService.rateCard(cardId, request, principal));
+    }
+
+    @PostMapping("/batch-rate")
+    public ResponseEntity<BatchRateResponse> batchRate(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody BatchRateRequest request) {
+        return ResponseEntity.ok(flashcardService.batchRateCards(request, principal));
     }
 
     @PostMapping("/{cardId}/star")

@@ -1,5 +1,6 @@
 package com.backend.lumotus.service;
 
+import com.backend.lumotus.dto.request.BatchRateRequest;
 import com.backend.lumotus.dto.request.RateReviewRequest;
 import com.backend.lumotus.dto.request.StarReviewRequest;
 import com.backend.lumotus.dto.request.StartStudyRequest;
@@ -8,6 +9,7 @@ import com.backend.lumotus.dto.response.DeckProgressResponse;
 import com.backend.lumotus.dto.response.DueCardResponse;
 import com.backend.lumotus.dto.response.DueCardsResponse;
 import com.backend.lumotus.dto.response.QuestionResponse;
+import com.backend.lumotus.dto.response.BatchRateResponse;
 import com.backend.lumotus.dto.response.RateReviewResponse;
 import com.backend.lumotus.dto.response.StarReviewResponse;
 import com.backend.lumotus.dto.response.StartStudyResponse;
@@ -205,7 +207,7 @@ public class FlashcardService {
     public int countTotalDueCards(UserPrincipal principal, UUID deckId, boolean starredOnly) {
         UUID userId = principal.getId();
         if (deckId != null) {
-            assertOwnedDeck(deckId, userId);
+            deckRepository.findAccessibleById(deckId, userId).orElseThrow(() -> new ForbiddenException("Deck not found or access denied"));
         }
         Instant now = Instant.now();
         long totalDue = reviewRepository.countDueReviews(userId, deckId, now, starredOnly)
@@ -217,7 +219,7 @@ public class FlashcardService {
     public DueCardsResponse getDueCards(UserPrincipal principal, UUID deckId, int limit, boolean starredOnly) {
         UUID userId = principal.getId();
         if (deckId != null) {
-            assertOwnedDeck(deckId, userId);
+            deckRepository.findAccessibleById(deckId, userId).orElseThrow(() -> new ForbiddenException("Deck not found or access denied"));
         }
 
         int max = limit > 0 ? Math.min(limit, 100) : DEFAULT_DUE_LIMIT;
@@ -355,6 +357,99 @@ public class FlashcardService {
         return new StarReviewResponse(cardId, starred);
     }
 
+    @Transactional
+    public BatchRateResponse batchRateCards(BatchRateRequest request, UserPrincipal principal) {
+        UUID userId = principal.getId();
+        log.info("[OFFLINE SYNC] Received batch-rate request from userId {} for {} cards.", userId, request.reviews().size());
+        
+        int totalXpEarned = 0;
+        int totalProcessed = 0;
+        List<RateReviewResponse> details = new ArrayList<>();
+        Map<LocalDate, int[]> dailyStats = new HashMap<>(); // [xp, count]
+
+        User user = null;
+
+        for (BatchRateRequest.ReviewItem item : request.reviews()) {
+            UUID cardId = item.cardId();
+            Card card = cardRepository.findById(cardId).orElse(null);
+            if (card == null) continue;
+
+            Deck deck = deckRepository.findAccessibleById(card.getDeckId(), userId).orElse(null);
+            if (deck == null) continue;
+
+            Instant ratedAt = item.ratedAt();
+            UserCardReviewId reviewId = new UserCardReviewId(userId, cardId);
+            UserCardReview review = reviewRepository.findById(reviewId).orElse(null);
+
+            // Chống sync lặp hoặc conflict: Nếu updatedAt trên DB của server mới hơn ratedAt từ client -> Bỏ qua.
+            if (review != null && review.getUpdatedAt().isAfter(ratedAt)) {
+                log.info(" - Skipped card {} because DB updatedAt {} is after ratedAt {}", cardId, review.getUpdatedAt(), ratedAt);
+                continue;
+            }
+
+            if (review == null) {
+                review = new UserCardReview(reviewId, deck.getId(), ratedAt);
+            }
+
+            int oldReps = review.getRepetitions();
+            int oldInterval = review.getIntervalDays();
+            boolean wasLearned = oldReps > 0;
+            boolean wasMastered = oldInterval >= sm2Properties.masteredIntervalDays();
+
+            Sm2Algorithm.Result sm2 = Sm2Algorithm.apply(
+                    review.getEaseFactor(), review.getRepetitions(), review.getIntervalDays(),
+                    item.rating(), ratedAt, sm2Properties);
+
+            review.setDeckId(deck.getId());
+            review.setEaseFactor(sm2.easeFactor());
+            review.setRepetitions(sm2.repetitions());
+            review.setIntervalDays(sm2.intervalDays());
+            review.setNextReviewAt(sm2.nextReviewAt());
+            review.setLastRating(item.rating());
+            review.setUpdatedAt(Instant.now()); // Thời điểm sync thực tế
+            reviewRepository.save(review);
+            
+            log.info(" -> Synced cardId {} | rating: {} | historical time: {}", cardId, item.rating(), ratedAt);
+
+            int xpEarned = applyXpMultiplier(xpForRating(item.rating()), deck.getXpMultiplier());
+            totalXpEarned += xpEarned;
+            totalProcessed++;
+
+            LocalDate date = ratedAt.atZone(AppProperties.APP_ZONE).toLocalDate();
+            int[] stats = dailyStats.computeIfAbsent(date, k -> new int[2]);
+            stats[0] += xpEarned;
+            stats[1] += 1;
+
+            UserDeckProgress progress = ensureDeckProgress(userId, deck);
+            if (progress.getLastStudiedAt() == null || progress.getLastStudiedAt().isBefore(ratedAt)) {
+                progress.setLastStudiedAt(ratedAt);
+                progress.setUpdatedAt(Instant.now());
+            }
+
+            boolean isLearned = sm2.repetitions() > 0;
+            boolean isMastered = sm2.intervalDays() >= sm2Properties.masteredIntervalDays();
+            if (isLearned && !wasLearned) progress.setLearnedCards(progress.getLearnedCards() + 1);
+            if (isMastered && !wasMastered) progress.setMasteredCards(progress.getMasteredCards() + 1);
+            if (!isMastered && wasMastered) progress.setMasteredCards(Math.max(0, progress.getMasteredCards() - 1));
+            progressRepository.save(progress);
+
+            details.add(new RateReviewResponse(cardId, sm2.repetitions(), sm2.easeFactor(), sm2.intervalDays(), sm2.nextReviewAt(), xpEarned));
+        }
+
+        if (totalXpEarned > 0) {
+            user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            user.setXp(user.getXp() + totalXpEarned);
+            userRepository.save(user);
+        }
+
+        for (Map.Entry<LocalDate, int[]> entry : dailyStats.entrySet()) {
+            upsertDailyActivityAtDate(userId, entry.getKey(), entry.getValue()[0], entry.getValue()[1]);
+        }
+
+        return new BatchRateResponse(totalProcessed, totalXpEarned, details);
+    }
+
+
     // ============================================================
     // HELPERS
     // ============================================================
@@ -370,11 +465,10 @@ public class FlashcardService {
                 });
     }
 
-    private void upsertDailyActivity(UUID userId, int xpEarned, int addedCards) {
-        LocalDate today = LocalDate.now(AppProperties.APP_ZONE);
+    private void upsertDailyActivityAtDate(UUID userId, LocalDate date, int xpEarned, int addedCards) {
         DailyActivity activity = dailyActivityRepository
-                .findById(new com.backend.lumotus.entity.DailyActivityId(userId, today))
-                .orElseGet(() -> new DailyActivity(userId, today));
+                .findById(new com.backend.lumotus.entity.DailyActivityId(userId, date))
+                .orElseGet(() -> new DailyActivity(userId, date));
 
         int oldCardsCount = activity.getCardsReviewed();
         int newCardsCount = oldCardsCount + addedCards;
@@ -396,6 +490,10 @@ public class FlashcardService {
         leaderboardService.updateUserScore(userId);
     }
 
+    private void upsertDailyActivity(UUID userId, int xpEarned, int addedCards) {
+        upsertDailyActivityAtDate(userId, LocalDate.now(AppProperties.APP_ZONE), xpEarned, addedCards);
+    }
+
     private Map<UUID, Card> loadCards(List<UserCardReview> reviews) {
         Map<UUID, Card> map = new HashMap<>();
         for (UserCardReview review : reviews) {
@@ -412,27 +510,26 @@ public class FlashcardService {
         return cardRepository.countNewCardsForUserAcrossDecks(userId);
     }
 
-    private void assertOwnedDeck(UUID deckId, UUID userId) {
-        deckRepository
-                .findByIdAndOwnerId(deckId, userId)
-                .orElseThrow(() -> new ForbiddenException("Deck not found or not owned"));
-    }
-
     @Transactional(readOnly = true)
     public int countTotalDueCardsForDeckRef(UserPrincipal principal, String deckRef, boolean starredOnly) {
-        Deck deck = resolveOwnedDeck(deckRef, principal.getId());
-        return countTotalDueCards(principal, deck.getId(), starredOnly);
+        UUID deckId = resolveDeckIdByRef(principal, deckRef);
+        return countTotalDueCards(principal, deckId, starredOnly);
     }
 
     @Transactional(readOnly = true)
     public DueCardsResponse getDueCardsForDeckRef(
             UserPrincipal principal, String deckRef, int limit, boolean starredOnly) {
-        Deck deck = resolveOwnedDeck(deckRef, principal.getId());
-        return getDueCards(principal, deck.getId(), limit, starredOnly);
+        UUID deckId = resolveDeckIdByRef(principal, deckRef);
+        return getDueCards(principal, deckId, limit, starredOnly);
     }
 
     @Transactional(readOnly = true)
     public UUID resolveDeckIdByRef(UserPrincipal principal, String deckRef) {
+        if (SlugUtils.isUuid(deckRef)) {
+            Deck d = deckRepository.findAccessibleById(SlugUtils.parseUuid(deckRef), principal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+            return d.getId();
+        }
         List<Deck> decks = deckRepository.findAccessibleBySlug(principal.getId(), deckRef);
         if (decks.isEmpty()) {
             throw new ResourceNotFoundException("Deck not found");
@@ -440,26 +537,15 @@ public class FlashcardService {
         return decks.get(0).getId();
     }
 
-    private Deck resolveOwnedDeck(String deckRef, UUID userId) {
-        if (SlugUtils.isUuid(deckRef)) {
-            return deckRepository
-                    .findByIdAndOwnerId(SlugUtils.parseUuid(deckRef), userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
-        }
-        return deckRepository
-                .findByOwnerIdAndSlug(userId, deckRef)
-                .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
-    }
-
     private Deck resolveAccessibleDeck(String deckRef, UUID userId) {
         if (SlugUtils.isUuid(deckRef)) {
             return deckRepository
-                    .findById(SlugUtils.parseUuid(deckRef))
+                    .findAccessibleById(SlugUtils.parseUuid(deckRef), userId)
                     .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
         }
-        return deckRepository
-                .findByOwnerIdAndSlug(userId, deckRef)
-                .orElseThrow(() -> new ResourceNotFoundException("Deck not found"));
+        List<Deck> decks = deckRepository.findAccessibleBySlug(userId, deckRef);
+        if (decks.isEmpty()) throw new ResourceNotFoundException("Deck not found");
+        return decks.get(0);
     }
 
     private static int xpForRating(ReviewRating rating) {

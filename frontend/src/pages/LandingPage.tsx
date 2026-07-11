@@ -5,6 +5,8 @@ import {
   useInView,
   useScroll,
   useTransform,
+  useMotionValue,
+  useMotionTemplate,
   type Variants,
 } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
@@ -508,17 +510,20 @@ function HeroSection() {
       {/* Hero content — split layout: giant text left, CTA right */}
       <div
         ref={ref}
-        className="relative h-full flex items-end text-left px-5 sm:px-8 md:px-12 lg:px-16 pb-16 md:pb-20 pt-16 sm:pt-20"
+        className="relative h-full flex flex-col md:flex-row items-center justify-end md:items-end text-center md:text-left px-5 sm:px-8 md:px-12 lg:px-16 pb-16 pt-24 md:pt-16 gap-6 md:gap-0"
       >
         {/* Left: Giant heading */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="flex-1"
+          className="flex-1 flex justify-center md:justify-start w-full"
         >
           <h1 className="text-[20vw] xs:text-[18vw] sm:text-[16vw] md:text-[14vw] lg:text-[12vw] xl:text-[10vw] font-extrabold leading-[0.88] tracking-tight">
-            <span className="bg-gradient-to-r from-[#F472B6] via-[#EC4899] to-[#F97316] bg-clip-text text-transparent drop-shadow-lg">
+            <span 
+              className="bg-gradient-to-r from-[#FBCFE8] via-[#EC4899] to-[#F97316] bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(236,72,153,0.5)]"
+              style={{ animation: 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+            >
               Lumotus
             </span>
           </h1>
@@ -529,7 +534,7 @@ function HeroSection() {
           initial={{ opacity: 0, x: 30 }}
           animate={isInView ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-start gap-4 sm:gap-5 md:gap-6 max-w-xs sm:max-w-sm md:max-w-md mb-4"
+          className="flex flex-col items-center md:items-start gap-4 sm:gap-5 md:gap-6 w-full max-w-sm md:max-w-md lg:max-w-lg mb-4"
         >
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20">
@@ -548,11 +553,11 @@ function HeroSection() {
           </p>
 
           {/* CTA buttons */}
-          <div className="flex flex-col xs:flex-row sm:flex-row gap-2 sm:gap-3 w-full">
+          <div className="flex flex-col sm:flex-row gap-3 w-full justify-center md:justify-start">
             {user ? (
               <a
                 href="/home"
-                className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg w-full xs:w-auto"
+                className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg w-full sm:w-auto"
                 style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
               >
                 Tiếp tục học tập
@@ -562,15 +567,15 @@ function HeroSection() {
               <>
                 <a
                   href="/register"
-                  className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-105 hover:gap-3 shadow-lg w-full xs:w-auto"
+                  className="flex items-center justify-center gap-2 bg-[#EC4899] hover:bg-[#DB2777] text-white rounded-full px-4 sm:px-6 py-3 text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-lg w-full sm:w-auto"
                   style={{ boxShadow: '0 8px 24px rgba(236, 72, 153, 0.35)' }}
                 >
                   Bắt đầu ngay
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <ArrowRight className="w-4 h-4" />
                 </a>
                 <a
                   href="/login"
-                  className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20 w-full xs:w-auto"
+                  className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-4 sm:px-6 py-3 text-sm font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20 w-full sm:w-auto"
                 >
                   Đăng nhập
                 </a>
@@ -579,7 +584,7 @@ function HeroSection() {
           </div>
 
           {/* Stats row */}
-          <div className="flex items-center gap-3 sm:gap-4 md:gap-5 text-white/60">
+          <div className="flex items-center justify-center md:justify-start gap-4 sm:gap-5 text-white/60 w-full">
             {[
               { icon: Users, label: '50K+' },
               { icon: BookOpen, label: '500K+' },
@@ -689,11 +694,12 @@ function FeatureCardVideo() {
   return (
     <motion.div
       ref={ref}
-      className="relative rounded-xl sm:rounded-2xl overflow-hidden"
+      className="group relative rounded-xl sm:rounded-2xl overflow-hidden border border-white/10"
       variants={cardVariants}
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
       custom={0}
+      whileHover={{ y: -5, borderColor: 'rgba(236,72,153,0.5)', boxShadow: '0 20px 40px -15px rgba(236,72,153,0.3)' }}
     >
       <video
         src={FEATURE_CARD_VIDEO}
@@ -701,14 +707,15 @@ function FeatureCardVideo() {
         loop
         muted
         playsInline
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 group-hover:from-black/80 transition-colors duration-500" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#EC4899]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0" style={{ mixBlendMode: 'overlay' }} />
       <div className="relative z-10 p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col justify-end h-full min-h-[240px] sm:min-h-[280px] md:min-h-[320px] lg:min-h-[400px]">
-        <p className="text-sm sm:text-base md:text-lg font-semibold text-white mb-0.5 sm:mb-1">
+        <p className="text-sm sm:text-base md:text-lg font-bold text-white mb-0.5 sm:mb-1 drop-shadow-md">
           Nền tảng học tập
         </p>
-        <p className="text-[10px] sm:text-xs md:text-sm text-white/70">
+        <p className="text-[10px] sm:text-xs md:text-sm text-white/80 group-hover:text-white transition-colors">
           Mọi thứ bạn cần trong một ứng dụng
         </p>
       </div>
@@ -731,41 +738,62 @@ function FeatureCardContent({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+
+  function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+    const { left, top } = currentTarget.getBoundingClientRect()
+    mouseX.set(clientX - left)
+    mouseY.set(clientY - top)
+  }
 
   return (
     <motion.div
       ref={ref}
-      className="relative rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col border transition-all duration-300 min-h-[240px] sm:min-h-[280px] md:min-h-[320px] lg:min-h-[400px]"
-      style={{
-        background: 'rgba(37, 32, 48, 0.7)',
-        borderColor: '#3D3348',
-      }}
+      onMouseMove={handleMouseMove}
+      className="group relative rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col border transition-all duration-300 min-h-[240px] sm:min-h-[280px] md:min-h-[320px] lg:min-h-[400px] overflow-hidden bg-[rgba(37,32,48,0.4)] border-white/5"
       variants={cardVariants}
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
       custom={delay}
+      whileHover={{ y: -5, borderColor: 'rgba(236,72,153,0.4)', boxShadow: '0 20px 40px -15px rgba(236,72,153,0.2)' }}
     >
+      {/* Spotlight Hover Effect */}
+      <motion.div
+        className="pointer-events-none absolute -inset-px rounded-xl sm:rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 z-0"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              450px circle at ${mouseX}px ${mouseY}px,
+              rgba(236, 72, 153, 0.15),
+              transparent 80%
+            )
+          `,
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0" />
+
       {/* Top icon */}
-      <div className="flex items-center gap-2 mb-3 sm:mb-4 md:mb-5">
+      <div className="relative z-10 flex items-center gap-2 mb-3 sm:mb-4 md:mb-5">
         <img
           src={iconUrl}
           alt=""
-          className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded object-cover"
+          className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded object-cover shadow-[0_0_15px_rgba(236,72,153,0.3)] group-hover:scale-110 transition-transform duration-500"
         />
-        <span className="text-[#EC4899] text-[10px] sm:text-xs font-semibold">{number}</span>
+        <span className="text-[#EC4899] text-[10px] sm:text-xs font-semibold tracking-widest">{number}</span>
       </div>
 
       {/* Title */}
-      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-3 sm:mb-4 md:mb-5" style={{ color: '#F5F0FA' }}>
+      <h3 className="relative z-10 text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-3 sm:mb-4 md:mb-5 transition-colors group-hover:text-white" style={{ color: '#F5F0FA' }}>
         {title}
       </h3>
 
       {/* Checklist */}
-      <ul className="space-y-1.5 sm:space-y-2 md:space-y-2.5 flex-1">
+      <ul className="relative z-10 space-y-1.5 sm:space-y-2 md:space-y-2.5 flex-1">
         {items.map((item) => (
-          <li key={item} className="flex items-start gap-2">
-            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 text-[#EC4899] shrink-0 mt-0.5" />
-            <span className="text-[10px] sm:text-xs md:text-sm leading-snug" style={{ color: '#C4B8D9' }}>{item}</span>
+          <li key={item} className="flex items-start gap-2 group/item">
+            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 text-[#EC4899] shrink-0 mt-0.5 group-hover/item:scale-125 transition-transform" />
+            <span className="text-[10px] sm:text-xs md:text-sm leading-snug transition-colors group-hover/item:text-white" style={{ color: '#C4B8D9' }}>{item}</span>
           </li>
         ))}
       </ul>
@@ -773,48 +801,18 @@ function FeatureCardContent({
       {/* Learn more */}
       <a
         href="#"
-        className="inline-flex items-center gap-1.5 mt-4 sm:mt-5 text-[#EC4899] text-[10px] sm:text-xs md:text-sm font-semibold hover:gap-2.5 transition-all duration-200"
+        className="relative z-10 inline-flex items-center gap-1.5 mt-4 sm:mt-5 text-[#EC4899] text-[10px] sm:text-xs md:text-sm font-semibold hover:gap-2.5 transition-all duration-200"
       >
         Tìm hiểu thêm
-        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 rotate-[-45deg]" />
+        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 rotate-[-45deg] group-hover:rotate-0 transition-transform duration-300" />
       </a>
     </motion.div>
   )
 }
 
-function StatCard({ value, label, delay }: { value: string; label: string; delay: number }) {
-  const ref = useRef(null)
-  const isIn = useInView(ref, { once: true, margin: '-50px' })
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 15 }}
-      animate={isIn ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay }}
-      className="rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 text-center border"
-      style={{ background: 'rgba(37, 32, 48, 0.7)', borderColor: '#3D3348' }}
-    >
-      <p
-        className="text-xl sm:text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-[#EC4899] to-[#F97316] bg-clip-text text-transparent mb-0.5 sm:mb-1"
-        style={{ fontFamily: 'Literata, serif' }}
-      >
-        {value}
-      </p>
-      <p className="text-[10px] sm:text-xs md:text-sm font-medium" style={{ color: '#8B7A9E' }}>{label}</p>
-    </motion.div>
-  )
-}
+
 
 function FeaturesSection() {
-  const headerRef = useRef<HTMLDivElement>(null)
-  useInView(headerRef, { once: true, margin: '-50px' })
-
-  const stats = [
-    { value: '50K+', label: 'Người dùng' },
-    { value: '500K+', label: 'Từ vựng' },
-    { value: '95%', label: 'Độ chính xác AI' },
-    { value: '4.9★', label: 'Đánh giá' },
-  ]
 
   return (
     <section id="features-section" className="min-h-screen relative py-16 sm:py-20 md:py-24 lg:py-32 px-4 sm:px-6 overflow-hidden" style={{ background: '#1A1520' }}>
@@ -822,27 +820,20 @@ function FeaturesSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-[rgba(236,72,153,0.04)] via-transparent to-[rgba(249,115,22,0.04)] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Stats highlight strip */}
-        <div ref={headerRef} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
-          {stats.map(({ value, label }, i) => (
-            <StatCard key={label} value={value} label={label} delay={i * 0.1} />
-          ))}
-        </div>
-
         {/* Card grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
           <FeatureCardVideo />
 
           <FeatureCardContent
             number="01"
-            title="Tạo với AI."
+            title="Ôn tập thông minh."
             iconUrl={STORYBOARD_ICON}
             delay={0}
             items={[
-              'Sinh flashcard từ văn bản',
-              'Gợi ý từ vựng liên quan',
-              'Phát âm chuẩn tự động',
-              'Dịch nghĩa thông minh',
+              'Học qua Flashcard linh hoạt',
+              'Lặp lại ngắt quãng (SRS)',
+              'Thuật toán đánh giá SM-2',
+              'Tối ưu hóa thời gian học',
             ]}
           />
 

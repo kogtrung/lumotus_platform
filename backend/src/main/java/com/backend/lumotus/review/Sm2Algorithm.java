@@ -66,7 +66,7 @@ public final class Sm2Algorithm {
             }
         }
 
-        Instant nextReviewAt = newInterval == 0 ? now : now.plus(newInterval, ChronoUnit.DAYS);
+        Instant nextReviewAt = newInterval == 0 ? now.plus(10, ChronoUnit.MINUTES) : now.plus(newInterval, ChronoUnit.DAYS);
         return new Result(newEase, newReps, newInterval, nextReviewAt);
     }
 }

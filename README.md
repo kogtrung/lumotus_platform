@@ -22,10 +22,10 @@
 Lumotus là ứng dụng học từ vựng Tiếng Anh fullstack, lấy cảm hứng từ **Quizlet**, được xây dựng với:
 
 - **Spaced Repetition System (SRS)** theo thuật toán SM-2 — ôn đúng thẻ, đúng lúc
-- **AI Generate** — tự động tạo bộ thẻ từ một chủ đề bằng OpenAI / Claude
-- **Import CSV / Excel / DOCX** — nhập từ vựng hàng loạt
-- **Quiz mode** — trắc nghiệm MCQ / True-False có timer
-- **Leaderboard + XP** — gamification giữ động lực học tập
+- **Import CSV / Excel** — nhập từ vựng hàng loạt
+- **Quiz mode** — trắc nghiệm nâng cao: MCQ, True/False, Giới hạn thời gian (Timer) & Hệ thống Cooldown chống Spam
+- **Gamification** — Leaderboard, XP System, Daily Streaks để duy trì động lực học
+- **UX/UI System** — Hệ thống Design System tối ưu với Auto Dark/Light Mode chuyển đổi cực mượt (Tailwind v4)
 - **Cloudinary** — lưu ảnh minh hoạ card trên cloud CDN miễn phí
 
 ---
@@ -55,7 +55,6 @@ Lumotus là ứng dụng học từ vựng Tiếng Anh fullstack, lấy cảm h�
 | **Auth** | JWT Access Token (15m) + Refresh Token in Redis (7d) + RBAC |
 | **Database** | PostgreSQL 17 (main) + Redis 7 (cache & token store) |
 | **Media** | Cloudinary (25GB free CDN, auto image transform) |
-| **AI** | OpenAI GPT / Anthropic Claude (pluggable via config) |
 | **DevOps** | Docker Compose, GitHub Actions CI/CD, Nginx |
 
 ---
@@ -86,7 +85,6 @@ JWT_SECRET=<chuỗi random ≥ 256-bit>
 CLOUDINARY_CLOUD_NAME=<your-cloud-name>
 CLOUDINARY_API_KEY=<your-api-key>
 CLOUDINARY_API_SECRET=<your-api-secret>
-OPENAI_API_KEY=<sk-...>          # nếu dùng AI Generate
 ```
 
 > 💡 JWT secret tự sinh khi chạy backend (`./mvnw spring-boot:run`). Thủ công: `node scripts/ensure-jwt-secret.mjs`
@@ -184,8 +182,6 @@ lumotus/
 | `CLOUDINARY_CLOUD_NAME` | ✅ | — | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | ✅ | — | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | ✅ | — | Cloudinary API secret |
-| `AI_PROVIDER` | ❌ | `openai` | AI provider: `openai` \| `claude` |
-| `OPENAI_API_KEY` | ❌ | — | OpenAI API key |
 | `CORS_ALLOWED_ORIGINS` | ❌ | `http://localhost:3000` | Frontend origin |
 
 Xem đầy đủ trong [.env.example](.env.example).
@@ -209,7 +205,7 @@ Sau khi backend chạy, truy cập:
 | Authentication | `/api/v1/auth/*` | Public |
 | Topics | `/api/v1/topics` | Public (GET), Admin (CUD) |
 | Decks & Cards | `/api/v1/decks/*` | User |
-| SRS Review | `/api/v1/review/*` | User |
+| SRS Review & Flashcards | `/api/v1/flashcards/*` | User |
 | Quiz | `/api/v1/quiz/*` | User |
 | Progress | `/api/v1/progress/*` | User |
 | Leaderboard | `/api/v1/leaderboard` | User |
@@ -242,8 +238,10 @@ Schema được quản lý bởi **Flyway** — không bao giờ sửa file migr
 | `deck_tags` | Nhãn cá nhân của User |
 | `user_card_review` | Trạng thái SRS mỗi user × card |
 | `quiz_attempts` | Lịch sử làm quiz |
+| `quiz_sessions` | Quản lý phiên làm bài & chống cheat/timeout |
+| `quiz_cooldown_settings` | Cấu hình giới hạn làm bài (Anti-spam) |
 | `daily_activity` | Hoạt động học theo ngày (heatmap) |
-| `async_jobs` | Trạng thái AI generate / import |
+| `async_jobs` | Trạng thái Job chạy ngầm (File import) |
 
 ---
 
@@ -295,16 +293,11 @@ git push origin feature/your-feature-name
 
 ## 📚 Documentation
 
-Tài liệu chi tiết trong thư mục [`docs/`](docs/README.md):
+Để giữ kho mã nguồn tinh gọn và phản ánh chính xác kết quả 98% hoàn thiện, các bộ tài liệu (docs) hệ thống đã được tái cấu trúc thành một tập tin duy nhất:
 
 | File | Nội dung |
 |---|---|
-| [`docs/progress.md`](docs/progress.md) | **Tiến độ session** — đã xong gì, làm tiếp gì |
-| [`docs/development-plan.md`](docs/development-plan.md) | Kế hoạch sprint code (Sprint 0–6) |
-| [`docs/spec.md`](docs/spec.md) | Đặc tả kỹ thuật: schema, API, SM-2, **§8 đối chiếu đề tài** |
-| [`docs/flashcard-project-plan.md`](docs/flashcard-project-plan.md) | Roadmap tổng thể, Redis, deploy |
-| [`docs/ui-design-plan.md`](docs/ui-design-plan.md) | Design system & màn hình FE |
-| [`docs/figma-wireframe-spec.md`](docs/figma-wireframe-spec.md) | Wireframe Figma |
+| [`docs/spec.md`](docs/spec.md) | **Đặc tả kỹ thuật cốt lõi (Technical Specification)**: schema database, danh sách API, thuật toán chấm điểm SM-2, đối chiếu đề tài. |
 
 ---
 

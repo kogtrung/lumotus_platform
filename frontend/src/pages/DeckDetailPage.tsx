@@ -398,6 +398,21 @@ export default function DeckDetailPage() {
 
           {/* Action buttons */}
           <div className="flex shrink-0 flex-wrap gap-2">
+            <Button
+              size="md"
+              onClick={() => navigate(`/decks/${deckRef}/flashcard`)}
+            >
+              <Play className="h-4 w-4" strokeWidth={2.5} />
+              Học Flashcard
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => navigate('/quiz')}
+            >
+              Quiz
+            </Button>
+            
             {!isOwner && deck.isPublic && deck.isCopyable && (
               <Button
                 variant="outline"
@@ -411,20 +426,6 @@ export default function DeckDetailPage() {
             )}
             {isOwner && (
               <div className="flex flex-wrap gap-2">
-                <Button
-                  size="md"
-                  onClick={() => navigate(`/decks/${deckRef}/flashcard`)}
-                >
-                  <Play className="h-4 w-4" strokeWidth={2.5} />
-                  Học Flashcard
-                </Button>
-                <Button
-                  variant="outline"
-                  size="md"
-                  onClick={() => navigate('/quiz')}
-                >
-                  Quiz
-                </Button>
                 {!deck.isPublic && (
                   <Button
                     size="md"
