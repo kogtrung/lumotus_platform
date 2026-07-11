@@ -8,7 +8,6 @@ import com.backend.lumotus.dto.response.CooldownCheckResult.CooldownViolationTyp
 import com.backend.lumotus.dto.response.CooldownSettingsResponse;
 import com.backend.lumotus.entity.QuizAttempt;
 import com.backend.lumotus.entity.QuizCooldownSettings;
-import com.backend.lumotus.exception.BadRequestException;
 import com.backend.lumotus.exception.ResourceNotFoundException;
 import com.backend.lumotus.repository.QuizAttemptRepository;
 import com.backend.lumotus.repository.QuizCooldownSettingsRepository;
@@ -29,7 +28,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuizCooldownService {
 
-    private static final UUID SETTINGS_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final ZoneId VN_ZONE = AppProperties.APP_ZONE;
 
     private final QuizCooldownSettingsRepository cooldownRepository;

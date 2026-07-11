@@ -45,14 +45,10 @@ public class AdminService {
     private final QuizRepository quizRepository;
     private final DailyActivityRepository dailyActivityRepository;
     private final QuizAttemptRepository quizAttemptRepository;
-    private final QuizAnswerRepository quizAnswerRepository;
     private final DeckModerationLogRepository deckModerationLogRepository;
     private final DeckTopicRepository deckTopicRepository;
     private final TopicRepository topicRepository;
-    private final QuizQuestionRepository quizQuestionRepository;
-    private final UserCardReviewRepository userCardReviewRepository;
     private final UserDeckProgressRepository userDeckProgressRepository;
-    private final DeckTagRepository deckTagRepository;
 
     /**
      * Get system-wide statistics.
@@ -209,6 +205,7 @@ public class AdminService {
         deck.setVerifiedById(moderatorId);
         deck.setVerificationNote(note);
         deck.setPublic(true);
+        deck.setXpMultiplier(1.0);
         deckRepository.save(deck);
 
         if (topicIds != null && !topicIds.isEmpty()) {
@@ -249,6 +246,7 @@ public class AdminService {
         deck.setVerificationStatus("APPROVED");
         deck.setVerifiedAt(java.time.Instant.now());
         deck.setVerifiedById(moderatorId);
+        deck.setXpMultiplier(1.0);
         deckRepository.save(deck);
 
         User moderator = userRepository.findById(moderatorId)

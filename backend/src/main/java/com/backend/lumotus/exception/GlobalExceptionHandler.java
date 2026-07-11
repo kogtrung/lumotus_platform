@@ -1,7 +1,6 @@
 package com.backend.lumotus.exception;
 
 import com.backend.lumotus.dto.response.CooldownApiError;
-import com.backend.lumotus.dto.response.CooldownCheckResult;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;

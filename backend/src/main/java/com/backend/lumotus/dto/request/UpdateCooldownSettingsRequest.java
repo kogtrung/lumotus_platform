@@ -3,9 +3,6 @@ package com.backend.lumotus.dto.request;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.Instant;
-import java.util.UUID;
-
 public record UpdateCooldownSettingsRequest(
         @NotNull(message = "enabled is required") Boolean enabled,
         @NotNull(message = "minSecondsBetweenAttempts is required")

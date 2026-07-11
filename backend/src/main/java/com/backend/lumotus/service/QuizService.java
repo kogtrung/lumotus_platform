@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,8 +34,6 @@ public class QuizService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final QuizAnswerRepository quizAnswerRepository;
     private final QuizSessionRepository quizSessionRepository;
-    private final DeckRepository deckRepository;
-    private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final DailyActivityRepository dailyActivityRepository;
     private final QuizSessionService quizSessionService;
@@ -621,9 +618,6 @@ public class QuizService {
         int correct = 0;
         int skipped = 0;
         List<AnswerResultDetail> details = new ArrayList<>();
-
-        // Get all shuffle mappings from Redis
-        Map<String, String> allShuffleMappings = quizSessionService.getAllQuestionShuffles(attemptId.toString());
 
         // Use shuffled order if available, otherwise fall back to DB order
         List<QuizQuestion> orderedQuestions;

@@ -10,7 +10,6 @@ import com.backend.lumotus.dto.response.PageResponse;
 import com.backend.lumotus.dto.response.CardResponse;
 import com.backend.lumotus.dto.response.QuizAttemptAdminResponse;
 import com.backend.lumotus.dto.response.UserAdminResponse;
-import com.backend.lumotus.security.UserPrincipal;
 import com.backend.lumotus.service.AdminService;
 import com.backend.lumotus.service.QuizCooldownService;
 import jakarta.validation.Valid;
