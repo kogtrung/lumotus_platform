@@ -9,6 +9,7 @@ import Flashcard from '@/components/flashcard/Flashcard'
 import RatingButtonGroup from '@/components/review/RatingButtonGroup'
 import DeckProgressBar from '@/components/flashcard/DeckProgressBar'
 import Button from '@/components/ui/Button'
+import { useOfflineSyncQueue } from '@/hooks/useOfflineSyncQueue'
 import {
   type StudySession,
   type StudyConfig,
@@ -40,6 +41,12 @@ export default function FlashcardStudyPage() {
   const [showResume, setShowResume] = useState(false)
   const [savedSession, setSavedSession] = useState<StudySession | null>(null)
   const resumeDismissed = useRef(false)
+
+  // Dev Toggle
+  const [simulatedOffline, setSimulatedOffline] = useState(false)
+
+  // Offline Sync
+  const { addToQueue, processSync } = useOfflineSyncQueue()
 
   // Session state
   const [cards, setCards] = useState<DueCard[]>([])
@@ -128,7 +135,28 @@ export default function FlashcardStudyPage() {
   }, [dueQuery, deckRef, persistSession])
 
   const handleRate = useCallback((rating: ReviewRating) => {
-    rateMutation.mutate(rating)
+    if (!navigator.onLine || simulatedOffline) {
+      addToQueue(cards[index]!.cardId, rating)
+      const multiplier = deckQuery.data?.xpMultiplier ?? 1;
+      const baseOfflineXp = rating === 'AGAIN' ? 0 : rating === 'HARD' ? 5 : rating === 'GOOD' ? 10 : 12;
+      const offlineXp = Math.ceil(baseOfflineXp * multiplier);
+      
+      setStats((s) => {
+        const next = { ...s }
+        if (rating === 'AGAIN') next.again++
+        else if (rating === 'HARD') next.hard++
+        else if (rating === 'GOOD') next.good++
+        else if (rating === 'EASY') next.easy++
+        next.xp += offlineXp
+        return next
+      })
+      if (offlineXp > 0) {
+        lumotoast.success(`+${offlineXp} XP (Tạm tính)`, 1500)
+      }
+    } else {
+      rateMutation.mutate(rating)
+    }
+
     setFlipped(false)
     requestAnimationFrame(() => {
       const next = index + 1
@@ -145,7 +173,7 @@ export default function FlashcardStudyPage() {
         setIndex(next)
       }
     })
-  }, [rateMutation, index, cards.length, deckRef, persistSession])
+  }, [rateMutation, index, cards.length, deckRef, persistSession, addToQueue])
 
   const handleResume = useCallback(() => {
     if (!savedSession) return
@@ -424,6 +452,19 @@ export default function FlashcardStudyPage() {
               <X className="h-4 w-4" strokeWidth={2.5} />
             </button>
             <span className="truncate text-sm font-bold text-[var(--color-text)]">{deck.title}</span>
+            <button 
+              onClick={() => {
+                if (simulatedOffline) {
+                  setSimulatedOffline(false);
+                  processSync();
+                } else {
+                  setSimulatedOffline(true);
+                }
+              }}
+              className={`px-2 py-0.5 ml-2 rounded text-xs font-semibold border transition-colors ${simulatedOffline ? 'bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30' : 'bg-transparent text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-text-muted)]'}`}
+            >
+              {simulatedOffline ? '[DEV] Đang Rớt Mạng' : '[DEV] Test Offline'}
+            </button>
           </div>
           <span className="text-sm font-semibold text-[var(--color-text-muted)]">
             <span className="font-bold text-[var(--color-text)]">{index + 1}</span>

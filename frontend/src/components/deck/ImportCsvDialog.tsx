@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FileUp, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { lumotoast } from '@/components/ui/Toast'
 import { decksApi } from '@/api/decks'
 import { topicsApi } from '@/api/topics'
@@ -40,6 +41,7 @@ export default function ImportCsvDialog({
   const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
   const [topics, setTopics] = useState<Topic[]>([])
+  const qc = useQueryClient()
 
   useEffect(() => {
     if (!open) return
@@ -101,6 +103,7 @@ export default function ImportCsvDialog({
       if (errors.length > 0) {
         console.warn('Import warnings:', errors)
       }
+      qc.invalidateQueries({ queryKey: ['decks'] })
       setFile(null)
       setTitle('')
       setSelectedTopicIds(new Set())
